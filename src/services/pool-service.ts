@@ -2,7 +2,7 @@ import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball } from "../common/pool-types";
 import * as Phaser from "phaser";
 
-const MAX_POWER = 10;
+const MAX_POWER = 20;
 const MAX_STEPS = 200;
 
 const Vector2 = Phaser.Math.Vector2;
@@ -92,14 +92,14 @@ export class PoolService {
 
 								const dvn = dvx * nx + dvy * ny;
 
-								if (dvn < 0) { // only if balls are moving to each other
+								if (dvn > 0) { // only if balls are moving to each other
 									const impulse = dvn * collisionDamping;
 
 									const impulseX = impulse * nx;
 									const impulseY = impulse * ny;
 
-									vel1.add({ x: impulseX, y: impulseY });
-									vel2.subtract({ x: impulseX, y: impulseY });
+									vel1.subtract({ x: impulseX, y: impulseY });
+									vel2.add({ x: impulseX, y: impulseY });
 								}
 							}
 						}
