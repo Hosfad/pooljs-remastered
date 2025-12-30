@@ -1,27 +1,109 @@
-/**
- * Responsible for loading all pool game assets
- */
-
 import * as Phaser from "phaser";
 import { POOL_ASSETS, POOL_SCENE_KEYS } from "../common/pool-constants";
 
 export class PoolPreLoadScene extends Phaser.Scene {
+    private balls: Phaser.GameObjects.Image[] = [];
+    private orbitRadius = 150;
+    private animationDuration = 1500;
+    private loops = 1;
+    private readonly CENTER_Y_OFFSET = 30;
+
     constructor() {
         super({ key: POOL_SCENE_KEYS.POOL_PRELOAD });
     }
 
-    public preload(): void {
-        this.load.setPath("assets/game");
-        this.load.image(POOL_ASSETS.BACKGROUND, "background.png");
-        this.load.image(POOL_ASSETS.WHITE_BALL, "spr_ball2.png");
-        this.load.image(POOL_ASSETS.SOLID_BALL, "spr_yellowBall2.png");
-        this.load.image(POOL_ASSETS.STRIPED_BALL, "spr_redBall2.png");
-        this.load.image(POOL_ASSETS.BLACK_BALL, "spr_blackBall2.png");
-        this.load.image(POOL_ASSETS.CUE_STICK, "spr_stick.png");
-        this.load.image(POOL_ASSETS.DRAG_ICON, "drag.png");
+    preload(): void {
+        this.load.setPath("assets");
+
+        this.load.image(
+            POOL_ASSETS.LOADING_BACKGROUND,
+            "/images/loading-background.png"
+        );
+
+        // Load all the assets
+        this.load.image(POOL_ASSETS.WHITE_BALL, "/game/spr_ball2.png");
+        this.load.image(POOL_ASSETS.BLACK_BALL, "/game/spr_blackBall2.png");
+        this.load.image(POOL_ASSETS.STRIPED_BALL, "/game/spr_redBall2.png");
+        this.load.image(POOL_ASSETS.SOLID_BALL, "/game/spr_yellowBall2.png");
+        this.load.image(POOL_ASSETS.BACKGROUND, "/game/background.png");
+        this.load.image(POOL_ASSETS.CUE_STICK, "/game/spr_stick.png");
+        this.load.image(POOL_ASSETS.DRAG_ICON, "/game/drag.png");
     }
 
-    public create(): void {
-        this.scene.start(POOL_SCENE_KEYS.POOL_GAME);
+    create(): void {
+        const { width, height } = this.cameras.main;
+        this.add
+            .image(width / 2, height / 2, "loading-background")
+            .setDisplaySize(width, height);
+
+        // Create animation AFTER assets are loaded
+        this.createLoadingAnimation();
+    }
+
+    private createLoadingAnimation(): void {
+        const textures = [
+            POOL_ASSETS.WHITE_BALL,
+            POOL_ASSETS.BLACK_BALL,
+            POOL_ASSETS.STRIPED_BALL,
+            POOL_ASSETS.SOLID_BALL,
+            POOL_ASSETS.STRIPED_BALL,
+            POOL_ASSETS.SOLID_BALL,
+            POOL_ASSETS.STRIPED_BALL,
+        ];
+
+        const centerX = this.cameras.main.centerX;
+        const centerY = this.cameras.main.centerY + this.CENTER_Y_OFFSET;
+
+        textures.forEach((key, index) => {
+            const ball = this.add.image(centerX, centerY, key);
+            ball.setVisible(false);
+            ball.setScale(0.5);
+
+            this.balls.push(ball);
+
+            // Staggered start (200ms increments)
+            this.time.delayedCall(index * 200, () => {
+                this.startOrbit(ball);
+            });
+        });
+    }
+
+    private startOrbit(ball: Phaser.GameObjects.Image): void {
+        ball.setVisible(true);
+
+        let rotation = { angle: 0 };
+        let completedLoops = 0;
+
+        this.tweens.add({
+            targets: rotation,
+            angle: 360,
+            duration: this.animationDuration,
+            ease: "Cubic.easeInOut",
+            repeat: this.loops - 1,
+            onUpdate: () => {
+                const rad = Phaser.Math.DegToRad(rotation.angle);
+                ball.x =
+                    this.cameras.main.centerX +
+                    Math.cos(rad) * this.orbitRadius;
+                ball.y =
+                    this.cameras.main.centerY +
+                    this.CENTER_Y_OFFSET +
+                    Math.sin(rad) * this.orbitRadius;
+                ball.rotation = rad;
+            },
+            onRepeat: () => {
+                completedLoops++;
+            },
+            onComplete: () => {
+                ball.setVisible(false);
+
+                // When last ball finishes → start game
+                if (ball === this.balls[this.balls.length - 1]) {
+                    this.time.delayedCall(500, () => {
+                        this.scene.start(POOL_SCENE_KEYS.POOL_GAME);
+                    });
+                }
+            },
+        });
     }
 }
