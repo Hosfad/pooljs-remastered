@@ -519,12 +519,11 @@ export class PoolGameScene extends Phaser.Scene {
 			);
 
 			const pullDir = aimDir.clone().negate();
-
 			const pullAmount = this.dragVector.dot(pullDir);
 
 			// Only allow positive pull (dragging backward)
 			const maxDrag = 200;
-			const power = Math.max(pullAmount, 0) / maxDrag;
+			const power = Math.max(Math.min(pullAmount, maxDrag) / maxDrag, 0);
 			this.setPower(power);
 		} else {
 			// Free aiming when not dragging
