@@ -37,6 +37,8 @@ export class PoolGameScene extends Phaser.Scene {
 
     // Graphics
     private background!: Phaser.GameObjects.Image;
+    private updateDebug!: () => void;
+    private readonly MAX_DEBUG_LOGS = 10;
 
     // Input state
     private mousePosition: Phaser.Math.Vector2 = new Phaser.Math.Vector2();
@@ -50,6 +52,8 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     public create(): void {
+        if (DEBUG_GRAPHICS) this.setupDebugPanel();
+
         this.background = this.add.image(
             POOL_TABLE_WIDTH / 2,
             POOL_TABLE_HEIGHT / 2,
@@ -512,6 +516,7 @@ export class PoolGameScene extends Phaser.Scene {
 
     public override update(): void {
         this.updateCue();
+        this.updateDebug?.();
     }
 
     private updateCue(): void {
@@ -563,5 +568,69 @@ export class PoolGameScene extends Phaser.Scene {
         this.cue.phaserSprite.setPosition(offsetX, offsetY);
         this.cue.phaserSprite.setRotation(angle);
         this.cue.rotation = angle;
+    }
+
+    private setupDebugPanel() {
+        const logs: string[] = [];
+        const MAX_LOGS = 10;
+
+        const originalLog = console.log;
+        console.log = (...args: any[]) => {
+            originalLog(...args);
+
+            const msg = args
+                .map((a) =>
+                    typeof a === "object" ? JSON.stringify(a) : String(a)
+                )
+                .join(" ");
+
+            logs.push(msg);
+            if (logs.length > MAX_LOGS) logs.shift();
+        };
+        console.log("Debug panel initialized");
+        // --- UI ---
+        const BOX_HEIGHT = 180;
+        const bg = this.add.graphics();
+        bg.fillStyle(0x000000, 0.85);
+        bg.fillRect(0, POOL_TABLE_HEIGHT, POOL_TABLE_WIDTH, BOX_HEIGHT);
+        bg.lineStyle(2, 0x00ff00, 0.6);
+        bg.strokeRect(0, POOL_TABLE_HEIGHT, POOL_TABLE_WIDTH, BOX_HEIGHT);
+
+        const text = this.add.text(10, POOL_TABLE_HEIGHT + 10, "", {
+            fontFamily: "monospace",
+            fontSize: "14px",
+            color: "#00ff00",
+            wordWrap: { width: POOL_TABLE_WIDTH - 20 },
+        });
+
+        this.updateDebug = () => {
+            const whiteBall = this.balls[this.balls.length - 1]!;
+            const angleDeg = Phaser.Math.RadToDeg(this.cue.rotation).toFixed(1);
+
+            const configLines = [
+                "=== CONFIG ===",
+                `BALL_RADIUS: ${BALL_RADIUS}`,
+                `POWER: ${this.powerMeter.power.toFixed(2)}`,
+                `CUE ANGLE: ${angleDeg}°`,
+                `WHITE BALL: (${whiteBall.sprite.position.x.toFixed(
+                    1
+                )}, ${whiteBall.sprite.position.y.toFixed(1)})`,
+            ];
+
+            const logLines = ["=== LOGS ===", ...logs];
+
+            const columnWidth = 40; // adjust to taste
+            const maxLines = Math.max(configLines.length, logLines.length);
+
+            const lines: string[] = [];
+
+            for (let i = 0; i < maxLines; i++) {
+                const left = (configLines[i] ?? "").padEnd(columnWidth, " ");
+                const right = logLines[i] ?? "";
+                lines.push(left + right);
+            }
+
+            text.setText(lines.join("\n"));
+        };
     }
 }
