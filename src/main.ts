@@ -17,6 +17,11 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
         width: BASE_WIDTH,
         height: BASE_HEIGHT,
     },
+    input: {
+        keyboard: true,
+        mouse: true,
+        touch: true,
+    },
 
     scene: [PoolPreLoadScene, PoolGameScene],
 };

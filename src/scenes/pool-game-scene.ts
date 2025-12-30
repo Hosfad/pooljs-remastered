@@ -14,12 +14,14 @@ import {
     POWER_METER,
 } from "../common/pool-constants";
 import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
+import { DebugPanel } from "../services/debug-panel";
 import { PoolService } from "../services/pool-service";
 
 const Vector2 = Phaser.Math.Vector2;
 
 export class PoolGameScene extends Phaser.Scene {
     private service = new PoolService();
+    private debugPanel: DebugPanel | undefined;
     private keyPositions: KeyPositions = [];
 
     // Game state
@@ -38,8 +40,6 @@ export class PoolGameScene extends Phaser.Scene {
 
     // Graphics
     private background!: Phaser.GameObjects.Image;
-    private updateDebug!: () => void;
-    private readonly MAX_DEBUG_LOGS = 10;
 
     // Input state
     private mousePosition = new Vector2();
@@ -61,7 +61,6 @@ export class PoolGameScene extends Phaser.Scene {
 
     public create(): void {
         if (DEBUG_GRAPHICS) this.setupDebugPanel();
-
         this.background = this.add.image(POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 2, POOL_ASSETS.BACKGROUND);
         this.background.setDisplaySize(POOL_TABLE_WIDTH, POOL_TABLE_HEIGHT);
 
@@ -76,10 +75,16 @@ export class PoolGameScene extends Phaser.Scene {
         this.setupInput();
 
         for (let i = 0; i < 100; i++) {
-            console.log("This is a test log " + i);
+            console.log(`This is a log line ${i}`);
         }
 
         console.log("Pool game initialized with", this.balls.length, "balls");
+    }
+
+    public override update(): void {
+        this.updateCue();
+        this.updateKeyPositions();
+        this.debugPanel?.update();
     }
 
     private createBalls() {
@@ -351,12 +356,6 @@ export class PoolGameScene extends Phaser.Scene {
         this.updatePowerMeterFromPower();
     }
 
-    public override update(): void {
-        this.updateCue();
-        this.updateKeyPositions();
-        this.updateDebug?.();
-    }
-
     private updateKeyPositions(): void {
         if (!this.keyPositions.length) return;
 
@@ -523,136 +522,20 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private setupDebugPanel() {
-        let logs: string[] = [];
-        const MAX_LOGS = 100;
-        let scrollOffset = 0;
-
-        const originalLog = console.log;
-        console.log = (...args: any[]) => {
-            originalLog(...args);
-            const msg = args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" ");
-            logs.push(msg);
-            if (logs.length > MAX_LOGS) logs.shift();
-
-            if (scrollOffset === 0) {
-                scrollOffset = 0;
-            }
-        };
-
-        console.log("Debug panel initialized");
-
-        // --- UI ---
-        const BOX_HEIGHT = 190;
-        const VISIBLE_LOGS = 8;
-
-        const getMaxScroll = () => Math.max(0, logs.length - VISIBLE_LOGS);
-
-        const scrollToTop = () => {
-            scrollOffset = 0;
-        };
-
-        const scrollToBottom = () => {
-            scrollOffset = getMaxScroll();
-        };
-
-        const bg = this.add.graphics();
-        bg.fillStyle(0x000000, 0.85);
-        bg.fillRect(0, POOL_TABLE_HEIGHT, POOL_TABLE_WIDTH, BOX_HEIGHT);
-        bg.lineStyle(2, 0x00ff00, 0.6);
-        bg.strokeRect(0, POOL_TABLE_HEIGHT, POOL_TABLE_WIDTH, BOX_HEIGHT);
-
-        const text = this.add.text(10, POOL_TABLE_HEIGHT + 10, "", {
-            fontFamily: "monospace",
-            fontSize: "14px",
-            color: "#00ff00",
-            wordWrap: { width: POOL_TABLE_WIDTH - 20 },
-        });
-
-        const scrollIndicator = this.add.text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + BOX_HEIGHT - 25, "", {
-            fontFamily: "monospace",
-            fontSize: "12px",
-            color: "#00ff00",
-        });
-
-        const clearLogs = this.add
-            .text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + 10, "[ 🗑 Clear Logs]", {
-                fontFamily: "monospace",
-                fontSize: "12px",
-                color: "#00ff00",
-            })
-            .setInteractive({ useHandCursor: true })
-            .on("pointerdown", () => {
-                logs = [];
-            });
-        const scrollUp = this.add
-            .text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + 35, "[ ↑ Scroll Up]", {
-                fontFamily: "monospace",
-                fontSize: "12px",
-                color: "#00ff00",
-            })
-            .setInteractive({ useHandCursor: true })
-            .on("pointerdown", scrollToTop);
-
-        const scrollDown = this.add
-            .text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + 50, "[ ↓ Scroll Down]", {
-                fontFamily: "monospace",
-                fontSize: "12px",
-                color: "#00ff00",
-            })
-            .setInteractive({ useHandCursor: true })
-            .on("pointerdown", scrollToBottom);
-
-        this.input.on("wheel", (pointer: any, gameObjects: any, deltaX: number, deltaY: number) => {
-            const scrollSpeed = 1; // Scroll x lines at a time
-
-            scrollOffset += Math.sign(deltaY) * scrollSpeed;
-
-            const maxScroll = getMaxScroll();
-            scrollOffset = Phaser.Math.Clamp(scrollOffset, 0, maxScroll);
-        });
-
-        this.updateDebug = () => {
-            const whiteBall = this.balls[this.balls.length - 1]!;
-            const angleDeg = Phaser.Math.RadToDeg(this.cue.rotation).toFixed(1);
-
-            const configLines = [
-                "=== CONFIG ===",
-                `BALL_RADIUS: ${BALL_RADIUS}`,
-                `POWER: ${this.powerMeter.power.toFixed(2)}`,
-                `CUE ANGLE: ${angleDeg}°`,
-                `WHITE BALL: (${whiteBall.phaserSprite.x.toFixed(1)}, ${whiteBall.phaserSprite.y.toFixed(1)})`,
-                `MOVING THEM BALLZ: ${this.ballsMoving()}`,
-            ];
-
-            const startIndex = Math.max(0, logs.length - VISIBLE_LOGS - scrollOffset);
-            const endIndex = logs.length - scrollOffset;
-
-            const visibleLogs = logs.slice(startIndex, endIndex).reverse();
-
-            let logLines = ["=== LOGS ===", ...visibleLogs];
-
-            // Update scroll indicator
-            const maxScroll = Math.max(0, logs.length - VISIBLE_LOGS);
-            if (scrollOffset > 0 && maxScroll > 0) {
-                scrollIndicator.setText(`↑ ${scrollOffset}/${maxScroll} ↓`);
-                const log = `--- ↑ ${scrollOffset} more above ---`;
-                const newLogs = [logLines[0]!, log, ...logLines.slice(1)];
-                logLines = newLogs;
-            } else {
-                scrollIndicator.setText(logs.length > VISIBLE_LOGS ? `Scroll ↑ (${maxScroll})` : "");
-            }
-
-            const columnWidth = 40;
-            const maxLines = Math.max(configLines.length, logLines.length);
-            const lines: string[] = [];
-
-            for (let i = 0; i < maxLines; i++) {
-                const left = (configLines[i] ?? "").padEnd(columnWidth, " ");
-                const right = logLines[i] ?? "";
-                lines.push(left + right);
-            }
-
-            text.setText(lines.join("\n"));
-        };
+        this.debugPanel = new DebugPanel(
+            this,
+            {
+                BALL_RADIUS: () => BALL_RADIUS,
+                POWER: () => this.powerMeter.power.toFixed(2),
+                "CUE ANGLE": () => Phaser.Math.RadToDeg(this.cue.rotation).toFixed(1) + "°",
+                "WHITE BALL": () => {
+                    const b = this.balls[this.balls.length - 1]!;
+                    return `(${b.phaserSprite.x.toFixed(1)}, ${b.phaserSprite.y.toFixed(1)})`;
+                },
+                "MOVING BALLS": () => this.ballsMoving(),
+            },
+            { width: POOL_TABLE_WIDTH, height: 180 },
+            { x: 0, y: POOL_TABLE_HEIGHT }
+        );
     }
 }
