@@ -46,6 +46,7 @@ export class PoolGameScene extends Phaser.Scene {
     private dragStartPosition = new Phaser.Math.Vector2();
     private lockedAimAngle = 0;
     private dragVector = new Phaser.Math.Vector2();
+    private aimLine!: Phaser.GameObjects.Graphics;
 
     constructor() {
         super({ key: POOL_SCENE_KEYS.POOL_GAME });
@@ -150,9 +151,10 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createCue(): void {
+        this.aimLine = this.add.graphics();
+
         const whiteBall = this.balls[this.balls.length - 1]!;
         const { x, y } = whiteBall.sprite.position;
-
         const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUE_STICK);
         cueSprite.setOrigin(1, 0.5);
 
@@ -556,12 +558,38 @@ export class PoolGameScene extends Phaser.Scene {
             );
         }
 
+        const power = this.powerMeter.power;
+
         // Pullback cue based on power
         const maxPullback = 150;
-        const pullbackDistance = this.powerMeter.power * maxPullback;
+        const pullbackDistance = BALL_RADIUS + power * maxPullback;
 
         const offsetX = x - Math.cos(angle) * pullbackDistance;
         const offsetY = y - Math.sin(angle) * pullbackDistance;
+
+        // Aim line
+        this.aimLine.clear();
+
+        const aimDir = new Phaser.Math.Vector2(
+            Math.cos(angle),
+            Math.sin(angle)
+        );
+
+        // TODO: change to ray casting until we hit a ball/wall (Implement after doing the collision stuff)
+        const aimLineLength = 1000;
+        const aimLineStartOffset = BALL_RADIUS + 2;
+
+        const aimStartX = x + aimDir.x * aimLineStartOffset;
+        const aimStartY = y + aimDir.y * aimLineStartOffset;
+
+        this.aimLine.lineStyle(2, 0xffffff, 1.5);
+        this.aimLine.beginPath();
+        this.aimLine.moveTo(aimStartX, aimStartY);
+        this.aimLine.lineTo(
+            aimStartX + aimDir.x * aimLineLength,
+            aimStartY + aimDir.y * aimLineLength
+        );
+        this.aimLine.strokePath();
 
         // Apply transform
         this.cue.sprite.position.set(offsetX, offsetY);
