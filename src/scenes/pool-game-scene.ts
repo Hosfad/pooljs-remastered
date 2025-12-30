@@ -18,6 +18,7 @@ import {
     type Collider,
     type Cue,
     type Hole,
+    type KeyPositions,
 } from "../common/pool-types";
 import { PoolService } from "../services/pool-service";
 
@@ -25,7 +26,7 @@ const Vector2 = Phaser.Math.Vector2;
 
 export class PoolGameScene extends Phaser.Scene {
     private service = new PoolService();
-    private keyPositions: Phaser.Math.Vector2[][] = [];
+    private keyPositions: KeyPositions = [];
 
     // Game state
     private balls: Ball[] = [];
@@ -94,10 +95,7 @@ export class PoolGameScene extends Phaser.Scene {
         const ROW_SPACING = DIAMETER * 0.8;
         const COL_SPACING = DIAMETER * 0.8;
 
-        const rackOrigin = {
-            x: POOL_TABLE_WIDTH / 4,
-            y: POOL_TABLE_HEIGHT / 2,
-        };
+        const rackOrigin = { x: POOL_TABLE_WIDTH / 4, y: POOL_TABLE_HEIGHT / 2 };
 
         // --- Create racked balls (triangle) ---
         for (let row = 0; row < ROWS; row++) {
@@ -108,9 +106,7 @@ export class PoolGameScene extends Phaser.Scene {
             for (let i = 0; i < ballsInRow; i++) {
                 const isSolid = i % 2 === 0;
                 const ballType = isSolid ? "solid" : "striped";
-                const texture = isSolid
-                    ? POOL_ASSETS.SOLID_BALL
-                    : POOL_ASSETS.STRIPED_BALL;
+                const texture = isSolid ? POOL_ASSETS.SOLID_BALL : POOL_ASSETS.STRIPED_BALL;
 
                 const y = startY + i * ROW_SPACING;
                 this.createBall(x, y, ballType, texture);
@@ -120,7 +116,7 @@ export class PoolGameScene extends Phaser.Scene {
         const eightBall = this.balls[this.balls.length - 1]!;
 
         eightBall.ballType = "black";
-        eightBall.phaserSprite?.setTexture(POOL_ASSETS.BLACK_BALL);
+        eightBall.phaserSprite.setTexture(POOL_ASSETS.BLACK_BALL);
 
         //  whiteball ball ---
         const cueX = POOL_TABLE_WIDTH * 0.75;
@@ -139,11 +135,7 @@ export class PoolGameScene extends Phaser.Scene {
         const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUE_STICK);
         cueSprite.setOrigin(1, 0.5);
 
-        this.cue = {
-            phaserSprite: cueSprite,
-            rotation: 0,
-            power: 0,
-        };
+        this.cue = { phaserSprite: cueSprite, rotation: 0, power: 0 };
     }
 
     private createColliders(): void {
@@ -176,26 +168,16 @@ export class PoolGameScene extends Phaser.Scene {
                         y: yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y,
                     },
                     {
-                        x:
-                            xRatio *
-                            (CUSHION_CONSTANTS.SIDE_OUTER_X -
-                                CUSHION_CONSTANTS.SIDE_THICKNESS_X),
+                        x: xRatio * (CUSHION_CONSTANTS.SIDE_OUTER_X - CUSHION_CONSTANTS.SIDE_THICKNESS_X),
                         y: yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
                     },
                     {
-                        x:
-                            xRatio *
-                            (CUSHION_CONSTANTS.SIDE_OUTER_X -
-                                CUSHION_CONSTANTS.SIDE_THICKNESS_X),
-                        y:
-                            POOL_TABLE_HEIGHT -
-                            yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
+                        x: xRatio * (CUSHION_CONSTANTS.SIDE_OUTER_X - CUSHION_CONSTANTS.SIDE_THICKNESS_X),
+                        y: POOL_TABLE_HEIGHT - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
                     },
                     {
                         x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X,
-                        y:
-                            POOL_TABLE_HEIGHT -
-                            yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y,
+                        y: POOL_TABLE_HEIGHT - yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y,
                     },
                 ],
                 normal: new Phaser.Math.Vector2(1, 0),
@@ -217,24 +199,14 @@ export class PoolGameScene extends Phaser.Scene {
                     },
                     {
                         x: xRatio * CUSHION_CONSTANTS.RAIL_CORNER_X,
-                        y:
-                            yRatio *
-                            (CUSHION_CONSTANTS.RAIL_OUTER_Y +
-                                CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
+                        y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
                     },
                     {
-                        x:
-                            POOL_TABLE_WIDTH /
-                            CUSHION_CONSTANTS.RAIL_POCKET_OUTER,
-                        y:
-                            yRatio *
-                            (CUSHION_CONSTANTS.RAIL_OUTER_Y +
-                                CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
+                        x: POOL_TABLE_WIDTH / CUSHION_CONSTANTS.RAIL_POCKET_OUTER,
+                        y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
                     },
                     {
-                        x:
-                            POOL_TABLE_WIDTH /
-                            CUSHION_CONSTANTS.RAIL_POCKET_INNER,
+                        x: POOL_TABLE_WIDTH / CUSHION_CONSTANTS.RAIL_POCKET_INNER,
                         y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y,
                     },
                 ],
@@ -292,15 +264,8 @@ export class PoolGameScene extends Phaser.Scene {
 
             const collider: Collider = {
                 sprite: {
-                    position: new Phaser.Math.Vector2(
-                        def.points[0]!.x,
-                        def.points[0]!.y
-                    ),
-                    size: {
-                        points: def.points.map(
-                            (p) => new Phaser.Math.Vector2(p.x, p.y)
-                        ),
-                    },
+                    position: new Phaser.Math.Vector2(def.points[0]!.x, def.points[0]!.y),
+                    size: { points: def.points.map((p) => new Phaser.Math.Vector2(p.x, p.y)) },
                     color: "brown",
                     visible: true,
                 },
@@ -324,11 +289,7 @@ export class PoolGameScene extends Phaser.Scene {
         background.strokeRoundedRect(X - WIDTH / 2, Y, WIDTH, HEIGHT, 10);
 
         const fill = this.add.graphics();
-        const handle = this.add.sprite(
-            X,
-            MIN_Y + HANDLE_HEIGHT / 2,
-            POOL_ASSETS.DRAG_ICON
-        );
+        const handle = this.add.sprite(X, MIN_Y + HANDLE_HEIGHT / 2, POOL_ASSETS.DRAG_ICON);
         handle.setScale(0.05);
         handle.setRotation(Math.PI / 2);
         handle.setInteractive({ draggable: true, useHandCursor: true });
@@ -377,8 +338,7 @@ export class PoolGameScene extends Phaser.Scene {
                     MAX_Y - HANDLE_HEIGHT / 2
                 );
 
-                const power =
-                    (clampedY - (MIN_Y + HANDLE_HEIGHT / 2)) / usableHeight;
+                const power = (clampedY - (MIN_Y + HANDLE_HEIGHT / 2)) / usableHeight;
                 this.setPower(power);
             }
         );
@@ -407,13 +367,7 @@ export class PoolGameScene extends Phaser.Scene {
         const fillHeight = usableHeight * power;
 
         fill.fillStyle(color, 0.7);
-        fill.fillRoundedRect(
-            X - WIDTH / 2 + 5,
-            MIN_Y + 5,
-            WIDTH - 10,
-            fillHeight,
-            5
-        );
+        fill.fillRoundedRect(X - WIDTH / 2 + 5, MIN_Y + 5, WIDTH - 10, fillHeight, 5);
     }
 
     private setPower(power: number): void {
@@ -447,10 +401,7 @@ export class PoolGameScene extends Phaser.Scene {
         const sprite = this.add.sprite(x, y, texture);
         sprite.setScale((r * 2) / sprite.width);
 
-        const ball: Ball = {
-            ballType,
-            phaserSprite: sprite,
-        };
+        const ball: Ball = { ballType, phaserSprite: sprite };
 
         this.balls.push(ball);
     }
@@ -581,8 +532,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         // Pullback cue based on power
         const maxPullback = 150;
-        const pullbackDistance =
-            BALL_RADIUS + this.powerMeter.power * maxPullback;
+        const pullbackDistance = BALL_RADIUS + this.powerMeter.power * maxPullback;
 
         const offsetX = x - Math.cos(angle) * pullbackDistance;
         const offsetY = y - Math.sin(angle) * pullbackDistance;
@@ -616,11 +566,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.cue.phaserSprite.setPosition(offsetX, offsetY);
         this.cue.phaserSprite.setRotation(angle);
         this.cue.rotation = angle;
-        this.lastCuePosition = {
-            x: offsetX,
-            y: offsetY,
-            rotation: angle,
-        };
+        this.lastCuePosition = { x: offsetX, y: offsetY, rotation: angle };
     }
 
     private setupDebugPanel() {
@@ -630,17 +576,12 @@ export class PoolGameScene extends Phaser.Scene {
         const originalLog = console.log;
         console.log = (...args: any[]) => {
             originalLog(...args);
-
-            const msg = args
-                .map((a) =>
-                    typeof a === "object" ? JSON.stringify(a) : String(a)
-                )
-                .join(" ");
-
+            const msg = args.map((a) => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ");
             logs.push(msg);
             if (logs.length > MAX_LOGS) logs.shift();
         };
         console.log("Debug panel initialized");
+
         // --- UI ---
         const BOX_HEIGHT = 180;
         const bg = this.add.graphics();
@@ -665,9 +606,7 @@ export class PoolGameScene extends Phaser.Scene {
                 `BALL_RADIUS: ${BALL_RADIUS}`,
                 `POWER: ${this.powerMeter.power.toFixed(2)}`,
                 `CUE ANGLE: ${angleDeg}°`,
-                `WHITE BALL: (${whiteBall.phaserSprite.x.toFixed(
-                    1
-                )}, ${whiteBall.phaserSprite.y.toFixed(1)})`,
+                `WHITE BALL: (${whiteBall.phaserSprite.x.toFixed(1)}, ${whiteBall.phaserSprite.y.toFixed(1)})`,
 
                 `MOVING THEM BALLZ: ${this.ballsMoving()}`,
             ];

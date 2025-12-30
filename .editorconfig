@@ -1,0 +1,7 @@
+[*]
+indent_style = space
+indent_size = 4
+semicolons = insert
+end_of_line = lf
+insert_final_newline = true
+max_line_length = 125
