@@ -548,11 +548,11 @@ export class PoolGameScene extends Phaser.Scene {
         const getMaxScroll = () => Math.max(0, logs.length - VISIBLE_LOGS);
 
         const scrollToTop = () => {
-            scrollOffset = getMaxScroll();
+            scrollOffset = 0;
         };
 
         const scrollToBottom = () => {
-            scrollOffset = 0;
+            scrollOffset = getMaxScroll();
         };
 
         const bg = this.add.graphics();
@@ -595,7 +595,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.input.on("wheel", (pointer: any, gameObjects: any, deltaX: number, deltaY: number) => {
             const scrollSpeed = 1; // Scroll x lines at a time
 
-            scrollOffset -= Math.sign(deltaY) * scrollSpeed;
+            scrollOffset += Math.sign(deltaY) * scrollSpeed;
 
             const maxScroll = getMaxScroll();
             scrollOffset = Phaser.Math.Clamp(scrollOffset, 0, maxScroll);
@@ -616,15 +616,18 @@ export class PoolGameScene extends Phaser.Scene {
 
             const startIndex = Math.max(0, logs.length - VISIBLE_LOGS - scrollOffset);
             const endIndex = logs.length - scrollOffset;
-            const visibleLogs = logs.slice(startIndex, endIndex);
 
-            const logLines = ["=== LOGS ===", ...visibleLogs];
+            const visibleLogs = logs.slice(startIndex, endIndex).reverse();
+
+            let logLines = ["=== LOGS ===", ...visibleLogs];
 
             // Update scroll indicator
             const maxScroll = Math.max(0, logs.length - VISIBLE_LOGS);
             if (scrollOffset > 0 && maxScroll > 0) {
                 scrollIndicator.setText(`↑ ${scrollOffset}/${maxScroll} ↓`);
-                logLines.push(`--- ↓ ${scrollOffset} more below ---`);
+                const log = `--- ↑ ${scrollOffset} more above ---`;
+                const newLogs = [logLines[0]!, log, ...logLines.slice(1)];
+                logLines = newLogs;
             } else {
                 scrollIndicator.setText(logs.length > VISIBLE_LOGS ? `Scroll ↑ (${maxScroll})` : "");
             }
