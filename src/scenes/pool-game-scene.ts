@@ -55,7 +55,7 @@ export class PoolGameScene extends Phaser.Scene {
         super({ key: POOL_SCENE_KEYS.POOL_GAME });
     }
 
-    public ballsMoving(): boolean {
+    public isBallsMoving(): boolean {
         return this.keyPositions.length > 0;
     }
 
@@ -298,7 +298,10 @@ export class PoolGameScene extends Phaser.Scene {
         this.powerMeter = { background, fill, handle, isDragging: false, power: 0 };
 
         // Setup drag events
-        handle.on("dragstart", () => { this.powerMeter.isDragging = true; });
+        handle.on("dragstart", () => {
+            if (this.isBallsMoving()) return;
+            this.powerMeter.isDragging = true;
+        });
 
         handle.on("dragend", () => {
             this.powerMeter.isDragging = false;
@@ -448,7 +451,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         let angle: number;
 
-        if (this.ballsMoving()) {
+        if (this.isBallsMoving()) {
             // Keep cue in last recorded position
             this.cue.phaserSprite.setPosition(this.lastCuePosition.x, this.lastCuePosition.y);
             this.cue.phaserSprite.setRotation(this.lastCuePosition.rotation);
@@ -492,7 +495,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         const aimDir = new Vector2(Math.cos(angle), Math.sin(angle));
 
-        if (!this.ballsMoving()) {
+        if (!this.isBallsMoving()) {
             // TODO: change to ray casting until we hit a ball/wall (Implement after doing the collision stuff)
             const aimLineLength = 1000;
             const aimLineStartOffset = BALL_RADIUS + 2;
