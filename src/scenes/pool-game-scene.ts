@@ -48,11 +48,11 @@ export class PoolGameScene extends Phaser.Scene {
     private readonly MAX_DEBUG_LOGS = 10;
 
     // Input state
-    private mousePosition: Phaser.Math.Vector2 = new Phaser.Math.Vector2();
+    private mousePosition = new Vector2();
     private isDraggingShot = false;
-    private dragStartPosition = new Phaser.Math.Vector2();
+    private dragStartPosition = new Vector2();
     private lockedAimAngle = 0;
-    private dragVector = new Phaser.Math.Vector2();
+    private dragVector = new Vector2();
     private aimLine!: Phaser.GameObjects.Graphics;
 
     private lastCuePosition = { x: 0, y: 0, rotation: 0 };
@@ -180,7 +180,7 @@ export class PoolGameScene extends Phaser.Scene {
                         y: POOL_TABLE_HEIGHT - yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y,
                     },
                 ],
-                normal: new Phaser.Math.Vector2(1, 0),
+                normal: new Vector2(1, 0),
             };
 
             const rightCushion = {
@@ -188,7 +188,7 @@ export class PoolGameScene extends Phaser.Scene {
                     x: POOL_TABLE_WIDTH - p.x,
                     y: p.y,
                 })),
-                normal: new Phaser.Math.Vector2(-1, 0),
+                normal: new Vector2(-1, 0),
             };
 
             const topLeftCushion = {
@@ -210,7 +210,7 @@ export class PoolGameScene extends Phaser.Scene {
                         y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y,
                     },
                 ],
-                normal: new Phaser.Math.Vector2(0, 1),
+                normal: new Vector2(0, 1),
             };
 
             const bottomLeftCushion = {
@@ -218,7 +218,7 @@ export class PoolGameScene extends Phaser.Scene {
                     x: p.x,
                     y: POOL_TABLE_HEIGHT - p.y,
                 })),
-                normal: new Phaser.Math.Vector2(0, -1),
+                normal: new Vector2(0, -1),
             };
 
             const topRightCushion = {
@@ -226,7 +226,7 @@ export class PoolGameScene extends Phaser.Scene {
                     x: POOL_TABLE_WIDTH - p.x,
                     y: p.y,
                 })),
-                normal: new Phaser.Math.Vector2(0, 1),
+                normal: new Vector2(0, 1),
             };
 
             const bottomRightCushion = {
@@ -234,7 +234,7 @@ export class PoolGameScene extends Phaser.Scene {
                     x: POOL_TABLE_WIDTH - p.x,
                     y: POOL_TABLE_HEIGHT - p.y,
                 })),
-                normal: new Phaser.Math.Vector2(0, -1),
+                normal: new Vector2(0, -1),
             };
 
             return [
@@ -264,8 +264,8 @@ export class PoolGameScene extends Phaser.Scene {
 
             const collider: Collider = {
                 sprite: {
-                    position: new Phaser.Math.Vector2(def.points[0]!.x, def.points[0]!.y),
-                    size: { points: def.points.map((p) => new Phaser.Math.Vector2(p.x, p.y)) },
+                    position: new Vector2(def.points[0]!.x, def.points[0]!.y),
+                    size: { points: def.points.map((p) => new Vector2(p.x, p.y)) },
                     color: "brown",
                     visible: true,
                 },
@@ -540,10 +540,8 @@ export class PoolGameScene extends Phaser.Scene {
         // Aim line
         this.aimLine.clear();
 
-        const aimDir = new Phaser.Math.Vector2(
-            Math.cos(angle),
-            Math.sin(angle)
-        );
+        const aimDir = new Vector2(Math.cos(angle), Math.sin(angle));
+
         if (!this.ballsMoving()) {
             // TODO: change to ray casting until we hit a ball/wall (Implement after doing the collision stuff)
             const aimLineLength = 1000;
