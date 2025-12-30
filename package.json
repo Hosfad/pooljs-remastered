@@ -1,0 +1,25 @@
+{
+    "name": "gogoland",
+    "version": "0.0.1",
+    "description": "A game of Go but for the land",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "serve": "vite --host"
+    },
+    "devDependencies": {
+        "@tweakpane/core": "2.0.3",
+        "@types/webfontloader": "1.6.38",
+        "@types/bun": "latest",
+        "prettier": "2.6.2",
+        "typescript": "5.6.3",
+        "vite": "2.9.13"
+    },
+    "dependencies": {
+        "phaser": "3.87.0",
+        "playroomkit": "0.0.81",
+        "react": "18.3.1",
+        "react-dom": "18.3.1",
+        "webfontloader": "1.6.28"
+    }
+}
