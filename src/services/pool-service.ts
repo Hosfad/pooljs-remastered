@@ -3,12 +3,12 @@ import type { Ball } from "../common/pool-types";
 import * as Phaser from "phaser";
 
 const MAX_POWER = 10;
-const MAX_STEPS = 200; // Maximum steps to simulate
+const MAX_STEPS = 200;
 
 const Vector2 = Phaser.Math.Vector2;
 
 export class PoolService {
-	public hitBalls(balls: Ball[], powerPercent: number, angle: number): void {
+	public hitBalls(balls: Ball[], powerPercent: number, angle: number): Phaser.Math.Vector2[][] {
 		const whiteball = balls.length - 1;
 		const velocities = Array.from({ length: balls.length }, () => new Vector2());
 
@@ -17,13 +17,15 @@ export class PoolService {
 			Math.sin(angle) * powerPercent * MAX_POWER
 		);
 
-		this.simulate(balls, velocities);
+		return this.simulate(balls, velocities);
 	}
 
-	private simulate(balls: Ball[], velocities: Phaser.Math.Vector2[]): void {
+	private simulate(balls: Ball[], velocities: Phaser.Math.Vector2[]): Phaser.Math.Vector2[][] {
 		const friction = 0.98;
 		const minVelocity = 0.1;
 		const collisionDamping = 0.95;
+
+		const keyPositions: Phaser.Math.Vector2[][] = [balls.map((b) => new Vector2(b.phaserSprite.x, b.phaserSprite.y))];
 
 		for (let step = 0; step < MAX_STEPS; step++) {
 			let anyMoving = false;
@@ -40,6 +42,8 @@ export class PoolService {
 				vel.multiply({ x: friction, y: friction });
 			}
 
+			keyPositions.push(balls.map((b) => new Vector2(b.phaserSprite.x, b.phaserSprite.y)));
+
 			// Multiple times just in case
 			for (let iteration = 0; iteration < 3; iteration++) {
 				for (let i = 0; i < balls.length; i++) {
@@ -55,7 +59,7 @@ export class PoolService {
 
 						const distSq = dx * dx + dy * dy;
 
-						const minDist = BALL_RADIUS * 2;
+						const minDist = BALL_RADIUS * 1.25;
 						const minDistSq = minDist * minDist;
 
 						if (distSq < minDistSq && distSq > 0) {
@@ -103,7 +107,9 @@ export class PoolService {
 				}
 			}
 
-			if (!anyMoving) break;
+			if (!anyMoving) return keyPositions;
 		}
+
+		return keyPositions;
 	}
 }

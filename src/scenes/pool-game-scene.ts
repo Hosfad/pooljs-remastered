@@ -25,6 +25,7 @@ const Vector2 = Phaser.Math.Vector2;
 
 export class PoolGameScene extends Phaser.Scene {
 	private service = new PoolService();
+	private keyPositions: Phaser.Math.Vector2[][] = [];
 
 	// Game state
 	private balls: Ball[] = [];
@@ -330,7 +331,7 @@ export class PoolGameScene extends Phaser.Scene {
 
 		handle.on("dragend", () => {
 			this.powerMeter.isDragging = false;
-			this.service.hitBalls(this.balls, this.powerMeter.power, this.cue.rotation);
+			this.keyPositions = this.service.hitBalls(this.balls, this.powerMeter.power, this.cue.rotation);
 			this.setPower(0);
 		});
 
@@ -386,7 +387,17 @@ export class PoolGameScene extends Phaser.Scene {
 
 	public override update(): void {
 		this.updateCue();
+		this.updateKeyPositions();
 		this.updateDebug?.();
+	}
+
+	private updateKeyPositions(): void {
+		if (!this.keyPositions.length) return;
+
+		const frame = this.keyPositions.shift()!;
+		frame.forEach((pos, i) => {
+			this.balls[i]!.phaserSprite.setPosition(pos.x, pos.y);
+		});
 	}
 
 	private createBall(
@@ -474,7 +485,7 @@ export class PoolGameScene extends Phaser.Scene {
 
 		this.input.on("pointerup", () => {
 			this.isDraggingShot = false;
-			this.service.hitBalls(this.balls, this.powerMeter.power, this.cue.rotation);
+			this.keyPositions = this.service.hitBalls(this.balls, this.powerMeter.power, this.cue.rotation);
 			this.setPower(0);
 		});
 	}
