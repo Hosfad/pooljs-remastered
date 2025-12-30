@@ -562,9 +562,7 @@ export class PoolGameScene extends Phaser.Scene {
 			originalLog(...args);
 
 			const msg = args
-				.map((a) =>
-					typeof a === "object" ? JSON.stringify(a) : String(a)
-				)
+				.map((a) => typeof a === "object" ? JSON.stringify(a) : String(a))
 				.join(" ");
 
 			logs.push(msg);
@@ -595,9 +593,7 @@ export class PoolGameScene extends Phaser.Scene {
 				`BALL_RADIUS: ${BALL_RADIUS}`,
 				`POWER: ${this.powerMeter.power.toFixed(2)}`,
 				`CUE ANGLE: ${angleDeg}°`,
-				`WHITE BALL: (${whiteBall.phaserSprite.x.toFixed(
-					1
-				)}, ${whiteBall.phaserSprite.y.toFixed(1)})`,
+				`WHITE BALL: (${whiteBall.phaserSprite.x.toFixed(1)}, ${whiteBall.phaserSprite.y.toFixed(1)})`,
 			];
 
 			const logLines = ["=== LOGS ===", ...logs];
