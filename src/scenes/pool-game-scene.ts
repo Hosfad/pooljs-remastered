@@ -21,7 +21,7 @@ const Vector2 = Phaser.Math.Vector2;
 
 export class PoolGameScene extends Phaser.Scene {
     private service = new PoolService();
-    private debugPanel: DebugPanel | undefined;
+    private debugPanel?: DebugPanel;
     private keyPositions: KeyPositions = [];
 
     // Game state
@@ -55,10 +55,6 @@ export class PoolGameScene extends Phaser.Scene {
         super({ key: POOL_SCENE_KEYS.POOL_GAME });
     }
 
-    public isBallsMoving(): boolean {
-        return this.keyPositions.length > 0;
-    }
-
     public create(): void {
         if (DEBUG_GRAPHICS) this.setupDebugPanel();
         this.background = this.add.image(POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 2, POOL_ASSETS.BACKGROUND);
@@ -79,12 +75,6 @@ export class PoolGameScene extends Phaser.Scene {
         }
 
         console.log("Pool game initialized with", this.balls.length, "balls");
-    }
-
-    public override update(): void {
-        this.updateCue();
-        this.updateKeyPositions();
-        this.debugPanel?.update();
     }
 
     private createBalls() {
@@ -299,7 +289,6 @@ export class PoolGameScene extends Phaser.Scene {
 
         // Setup drag events
         handle.on("dragstart", () => {
-            if (this.isBallsMoving()) return;
             this.powerMeter.isDragging = true;
         });
 
@@ -350,6 +339,12 @@ export class PoolGameScene extends Phaser.Scene {
     private setPower(power: number): void {
         this.powerMeter.power = power;
         this.updatePowerMeterFromPower();
+    }
+
+    public override update(): void {
+        this.input.enabled = !this.keyPositions.length;
+        this.updateCue();
+        this.updateKeyPositions();
     }
 
     private updateKeyPositions(): void {
@@ -451,7 +446,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         let angle: number;
 
-        if (this.isBallsMoving()) {
+        if (!this.input.enabled) {
             // Keep cue in last recorded position
             this.cue.phaserSprite.setPosition(this.lastCuePosition.x, this.lastCuePosition.y);
             this.cue.phaserSprite.setRotation(this.lastCuePosition.rotation);
@@ -495,20 +490,18 @@ export class PoolGameScene extends Phaser.Scene {
 
         const aimDir = new Vector2(Math.cos(angle), Math.sin(angle));
 
-        if (!this.isBallsMoving()) {
-            // TODO: change to ray casting until we hit a ball/wall (Implement after doing the collision stuff)
-            const aimLineLength = 1000;
-            const aimLineStartOffset = BALL_RADIUS + 2;
+        // TODO: change to ray casting until we hit a ball/wall (Implement after doing the collision stuff)
+        const aimLineLength = 1000;
+        const aimLineStartOffset = BALL_RADIUS + 2;
 
-            const aimStartX = x + aimDir.x * aimLineStartOffset;
-            const aimStartY = y + aimDir.y * aimLineStartOffset;
+        const aimStartX = x + aimDir.x * aimLineStartOffset;
+        const aimStartY = y + aimDir.y * aimLineStartOffset;
 
-            this.aimLine.lineStyle(2, 0xffffff, 1.5);
-            this.aimLine.beginPath();
-            this.aimLine.moveTo(aimStartX, aimStartY);
-            this.aimLine.lineTo(aimStartX + aimDir.x * aimLineLength, aimStartY + aimDir.y * aimLineLength);
-            this.aimLine.strokePath();
-        }
+        this.aimLine.lineStyle(2, 0xffffff, 1.5);
+        this.aimLine.beginPath();
+        this.aimLine.moveTo(aimStartX, aimStartY);
+        this.aimLine.lineTo(aimStartX + aimDir.x * aimLineLength, aimStartY + aimDir.y * aimLineLength);
+        this.aimLine.strokePath();
 
         // Apply transform
         this.cue.phaserSprite.setPosition(offsetX, offsetY);
@@ -528,7 +521,6 @@ export class PoolGameScene extends Phaser.Scene {
                     const b = this.balls[this.balls.length - 1]!;
                     return `(${b.phaserSprite.x.toFixed(1)}, ${b.phaserSprite.y.toFixed(1)})`;
                 },
-                "MOVING BALLS": () => this.ballsMoving(),
             },
             { width: POOL_TABLE_WIDTH, height: 180 },
             { x: 0, y: POOL_TABLE_HEIGHT }
