@@ -151,8 +151,7 @@ export class PoolService {
                     }
 
                     for (const hole of this.holes) {
-                        const pos = hole.sprite.position;
-                        if (b1.distance(pos) < BALL_RADIUS * 0.5) {
+                        if (b1.distance(hole.sprite.position) < BALL_RADIUS * 0.85) {
                             this.inHole[i] = true;
                             break;
                         }
