@@ -266,6 +266,7 @@ export class PoolGameScene extends Phaser.Scene {
                 sprite: {
                     position: new Vector2(def.points[0]!.x, def.points[0]!.y),
                     size: { points: def.points.map((p) => new Vector2(p.x, p.y)) },
+                    normal: def.normal,
                     color: "brown",
                     visible: true,
                 },
@@ -312,7 +313,8 @@ export class PoolGameScene extends Phaser.Scene {
             this.keyPositions = this.service.hitBalls(
                 this.balls,
                 this.powerMeter.power,
-                this.cue.rotation
+                this.cue.rotation,
+                this.colliders,
             );
             this.setPower(0);
         });
@@ -467,7 +469,8 @@ export class PoolGameScene extends Phaser.Scene {
             this.keyPositions = this.service.hitBalls(
                 this.balls,
                 this.powerMeter.power,
-                this.cue.rotation
+                this.cue.rotation,
+                this.colliders,
             );
             this.setPower(0);
         });
