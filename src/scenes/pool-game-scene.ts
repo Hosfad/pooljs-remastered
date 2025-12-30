@@ -342,6 +342,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.input.enabled = !this.keyPositions.length;
         this.updateCue();
         this.updateKeyPositions();
+        this.debugPanel?.update();
     }
 
     private updateKeyPositions(): void {
@@ -433,7 +434,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         this.input.on("pointerup", () => {
             this.isDraggingShot = false;
-            this.keyPositions = this.service.hitBalls(this.balls, this.powerMeter.power, this.cue.rotation);
+            this.keyPositions = this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
             this.setPower(0);
         });
     }
