@@ -8,174 +8,181 @@ const MAX_STEPS = 200;
 const Vector2 = Phaser.Math.Vector2;
 
 export class PoolService {
+    private balls: Ball[];
+    private colliders: Collider[];
 
-	public hitBalls(balls: Ball[], powerPercent: number, angle: number, colliders: Collider[]): KeyPositions {
-		const whiteball = balls.length - 1;
-		const velocities = Array.from({ length: balls.length }, () => new Vector2());
+    constructor(balls: Ball[], colliders: Collider[]) {
+        this.balls = balls;
+        this.colliders = colliders;
+    }
 
-		velocities[whiteball]!.set(
-			Math.cos(angle) * powerPercent * MAX_POWER,
-			Math.sin(angle) * powerPercent * MAX_POWER
-		);
+    public hitBalls(powerPercent: number, angle: number): KeyPositions {
+        const whiteball = this.balls.length - 1;
+        const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
 
-		return this.simulate(balls, velocities, colliders);
-	}
+        velocities[whiteball]!.set(
+            Math.cos(angle) * powerPercent * MAX_POWER,
+            Math.sin(angle) * powerPercent * MAX_POWER
+        );
 
-	private simulate(balls: Ball[], velocities: Phaser.Math.Vector2[], colliders: Collider[]): KeyPositions {
-		const friction = 0.98;
-		const minVelocity = 0.1;
-		const collisionDamping = 0.95;
+        return this.simulate(velocities);
+    }
 
-		const keyPositions: KeyPositions = [balls.map((b) => new Vector2(b.phaserSprite.x, b.phaserSprite.y))];
+    private simulate(velocities: Phaser.Math.Vector2[]): KeyPositions {
+        const friction = 0.98;
+        const minVelocity = 0.1;
+        const collisionDamping = 0.95;
 
-		for (let step = 0; step < MAX_STEPS; step++) {
-			let anyMoving = false;
+        const keyPositions: KeyPositions = [this.balls.map((b) => new Vector2(b.phaserSprite.x, b.phaserSprite.y))];
 
-			for (let i = 0; i < balls.length; i++) {
-				const vel = velocities[i]!;
-				if (vel.length() < minVelocity) continue;
+        for (let step = 0; step < MAX_STEPS; step++) {
+            let anyMoving = false;
 
-				anyMoving = true;
-				const ball = balls[i]!;
-				const sprite = ball.phaserSprite;
+            for (let i = 0; i < this.balls.length; i++) {
+                const vel = velocities[i]!;
+                if (vel.length() < minVelocity) continue;
 
-				sprite.setPosition(sprite.x + vel.x, sprite.y + vel.y);
-				vel.multiply({ x: friction, y: friction });
-			}
+                anyMoving = true;
+                const ball = this.balls[i]!;
+                const sprite = ball.phaserSprite;
 
-			keyPositions.push(balls.map((b) => new Vector2(b.phaserSprite.x, b.phaserSprite.y)));
+                sprite.setPosition(sprite.x + vel.x, sprite.y + vel.y);
+                vel.multiply({ x: friction, y: friction });
+            }
 
-			// Multiple times just in case
-			for (let iteration = 0; iteration < 3; iteration++) {
-				for (let i = 0; i < balls.length; i++) {
-					const ball1 = balls[i]!;
-					const sprite1 = ball1.phaserSprite;
+            keyPositions.push(this.balls.map((b) => new Vector2(b.phaserSprite.x, b.phaserSprite.y)));
 
-					for (let j = i + 1; j < balls.length; j++) {
-						const ball2 = balls[j]!;
-						const sprite2 = ball2.phaserSprite;
+            // Multiple times just in case
+            for (let iteration = 0; iteration < 3; iteration++) {
+                for (let i = 0; i < this.balls.length; i++) {
+                    const ball1 = this.balls[i]!;
+                    const sprite1 = ball1.phaserSprite;
 
-						const dx = sprite2.x - sprite1.x;
-						const dy = sprite2.y - sprite1.y;
+                    for (let j = i + 1; j < this.balls.length; j++) {
+                        const ball2 = this.balls[j]!;
+                        const sprite2 = ball2.phaserSprite;
 
-						const distSq = dx * dx + dy * dy;
+                        const dx = sprite2.x - sprite1.x;
+                        const dy = sprite2.y - sprite1.y;
 
-						const minDist = BALL_RADIUS * 1.25;
-						const minDistSq = minDist * minDist;
+                        const distSq = dx * dx + dy * dy;
 
-						if (distSq < minDistSq && distSq > 0) {
-							const distance = Math.sqrt(distSq);
-							const overlap = minDist - distance;
+                        const minDist = BALL_RADIUS * 1.25;
+                        const minDistSq = minDist * minDist;
 
-							const nx = dx / distance;
-							const ny = dy / distance;
+                        if (distSq < minDistSq && distSq > 0) {
+                            const distance = Math.sqrt(distSq);
+                            const overlap = minDist - distance;
 
-							// push each ball half the overlap distance
-							const overlapOffsetX = overlap * 0.5 * nx;
-							const overlapOffsetY = overlap * 0.5 * ny;
+                            const nx = dx / distance;
+                            const ny = dy / distance;
 
-							sprite1.setPosition(
-								sprite1.x - overlapOffsetX,
-								sprite1.y - overlapOffsetY
-							);
-							sprite2.setPosition(
-								sprite2.x + overlapOffsetX,
-								sprite2.y + overlapOffsetY
-							);
+                            // push each ball half the overlap distance
+                            const overlapOffsetX = overlap * 0.5 * nx;
+                            const overlapOffsetY = overlap * 0.5 * ny;
 
-							// only apply velocity changes on first iteration
-							if (iteration === 0) {
-								const vel1 = velocities[i]!;
-								const vel2 = velocities[j]!;
+                            sprite1.setPosition(
+                                sprite1.x - overlapOffsetX,
+                                sprite1.y - overlapOffsetY
+                            );
+                            sprite2.setPosition(
+                                sprite2.x + overlapOffsetX,
+                                sprite2.y + overlapOffsetY
+                            );
 
-								const dvx = vel1.x - vel2.x;
-								const dvy = vel1.y - vel2.y;
+                            // only apply velocity changes on first iteration
+                            if (iteration === 0) {
+                                const vel1 = velocities[i]!;
+                                const vel2 = velocities[j]!;
 
-								const dvn = dvx * nx + dvy * ny;
+                                const dvx = vel1.x - vel2.x;
+                                const dvy = vel1.y - vel2.y;
 
-								if (dvn > 0) {
-									// only if balls are moving to each other
-									const impulse = dvn * collisionDamping;
+                                const dvn = dvx * nx + dvy * ny;
 
-									const impulseX = impulse * nx;
-									const impulseY = impulse * ny;
+                                if (dvn > 0) {
+                                    // only if balls are moving to each other
+                                    const impulse = dvn * collisionDamping;
 
-									vel1.subtract({ x: impulseX, y: impulseY });
-									vel2.add({ x: impulseX, y: impulseY });
-								}
-							}
-						}
-					}
+                                    const impulseX = impulse * nx;
+                                    const impulseY = impulse * ny;
 
-					for (const collider of colliders) {
-						if (!this.isPointInPolygon(ball1, collider)) continue;
+                                    vel1.subtract({ x: impulseX, y: impulseY });
+                                    vel2.add({ x: impulseX, y: impulseY });
+                                }
+                            }
+                        }
+                    }
 
-						if (iteration === 0) {
-							const vel1 = velocities[i]!;
-							const normal = this.getNormal(ball1, collider);
+                    for (const collider of this.colliders) {
+                        if (!this.isPointInPolygon(ball1, collider)) continue;
 
-							// velocity component along normal
-							const velDotNormal = vel1.x * normal.x + vel1.y * normal.y;
+                        if (iteration === 0) {
+                            const vel1 = velocities[i]!;
+                            const normal = this.getNormal(ball1, collider);
 
-							// moving into the wall
-							if (velDotNormal > 0) {
-								// v' = v - 2*(v*n)*n
-								const reflectionFactor = 2 * velDotNormal * collisionDamping;
-								vel1.subtract({ x: reflectionFactor * normal.x, y: reflectionFactor * normal.y });
-							}
-						}
-					}
-				}
-			}
+                            // velocity component along normal
+                            const velDotNormal = vel1.dot(normal);
 
-			if (!anyMoving) return keyPositions;
-		}
+                            // moving into the wall
+                            if (velDotNormal > 0) {
+                                // v' = v - 2*(v*n)*n
+                                const reflectionFactor = 2 * velDotNormal * collisionDamping;
+                                vel1.subtract({ x: reflectionFactor * normal.x, y: reflectionFactor * normal.y });
+                            }
+                        }
+                    }
+                }
+            }
 
-		return keyPositions;
-	}
+            if (!anyMoving) return keyPositions;
+        }
 
-	private getNormal(ball: Ball, { sprite: { size: { points } } }: Collider): { x: number, y: number } {
-		let minDistance = Infinity;
-		let closestNormal = { x: 0, y: 1 };
-		const b = new Vector2(ball.phaserSprite.x, ball.phaserSprite.y);
+        return keyPositions;
+    }
 
-		for (let i = 0; i < points.length; i++) {
-			const p1 = points[i]!;
-			const p2 = points[(i + 1) % points.length]!;
+    private getNormal(ball: Ball, { sprite: { size: { points } } }: Collider): { x: number, y: number } {
+        let minDistance = Infinity;
+        let closestNormal = { x: 0, y: 1 };
+        const b = new Vector2(ball.phaserSprite.x, ball.phaserSprite.y);
 
-			const edge = p2.clone().subtract(p1);
-			const toball = b.clone().subtract(p1);
-			const t = Phaser.Math.Clamp(toball.dot(edge) / edge.lengthSq(), 0, 1);
+        for (let i = 0; i < points.length; i++) {
+            const p1 = points[i]!;
+            const p2 = points[(i + 1) % points.length]!;
 
-			const closest = edge.multiply({ x: t, y: t }).add(p1);
-			const delta = b.clone().subtract(closest);
-			const distance = delta.length();
+            const edge = p2.clone().subtract(p1);
+            const toball = b.clone().subtract(p1);
+            const t = Phaser.Math.Clamp(toball.dot(edge) / edge.lengthSq(), 0, 1);
 
-			if (distance < minDistance) {
-				minDistance = distance;
-				if (distance > 0) closestNormal = delta.normalize();
-			}
-		}
+            const closest = edge.multiply({ x: t, y: t }).add(p1);
+            const delta = b.clone().subtract(closest);
+            const distance = delta.length();
 
-		return closestNormal
-	}
+            if (distance < minDistance) {
+                minDistance = distance;
+                if (distance > 0) closestNormal = delta.normalize();
+            }
+        }
 
-	private isPointInPolygon(ball: Ball, { sprite: { size: { points } } }: Collider): boolean {
-		const { x, y } = ball.phaserSprite;
+        return closestNormal
+    }
 
-		let inside = false;
-		for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
-			const p1 = points[i]!;
-			const p2 = points[j]!;
+    private isPointInPolygon(ball: Ball, { sprite: { size: { points } } }: Collider): boolean {
+        const { x, y } = ball.phaserSprite;
 
-			const xi = p1.x;
-			const yi = p1.y;
-			const xj = p2.x;
-			const yj = p2.y;
+        let inside = false;
+        for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+            const p1 = points[i]!;
+            const p2 = points[j]!;
 
-			const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-			if (intersect) inside = !inside;
-		}
-		return inside;
-	}
+            const xi = p1.x;
+            const yi = p1.y;
+            const xj = p2.x;
+            const yj = p2.y;
+
+            const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
 }

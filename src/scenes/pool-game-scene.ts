@@ -20,8 +20,8 @@ import { PoolService } from "../services/pool-service";
 const Vector2 = Phaser.Math.Vector2;
 
 export class PoolGameScene extends Phaser.Scene {
-    private service = new PoolService();
     private debugPanel?: DebugPanel;
+    private service!: PoolService;
     private keyPositions: KeyPositions = [];
 
     // Game state
@@ -70,10 +70,7 @@ export class PoolGameScene extends Phaser.Scene {
         // Setup input
         this.setupInput();
 
-        for (let i = 0; i < 100; i++) {
-            console.log(`This is a log line ${i}`);
-        }
-
+        this.service = new PoolService(this.balls, this.colliders);
         console.log("Pool game initialized with", this.balls.length, "balls");
     }
 
@@ -294,7 +291,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         handle.on("dragend", () => {
             this.powerMeter.isDragging = false;
-            this.keyPositions = this.service.hitBalls(this.balls, this.powerMeter.power, this.cue.rotation);
+            this.keyPositions = this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
             this.setPower(0);
         });
 
