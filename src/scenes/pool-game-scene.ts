@@ -81,7 +81,7 @@ export class PoolGameScene extends Phaser.Scene {
 	}
 
 	private createBalls() {
-		const ROWS = 2;
+		const ROWS = 5;
 		const r = BALL_RADIUS;
 		const DIAMETER = r * 2;
 		const ROW_SPACING = DIAMETER * 0.8;
