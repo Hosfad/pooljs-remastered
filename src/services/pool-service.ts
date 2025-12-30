@@ -137,33 +137,23 @@ export class PoolService {
 	private getNormal(ball: Ball, { sprite: { size: { points } } }: Collider): { x: number, y: number } {
 		let minDistance = Infinity;
 		let closestNormal = { x: 0, y: 1 };
-		const { x: ballX, y: ballY } = ball.phaserSprite;
+		const b = new Vector2(ball.phaserSprite.x, ball.phaserSprite.y);
 
 		for (let i = 0; i < points.length; i++) {
 			const p1 = points[i]!;
 			const p2 = points[(i + 1) % points.length]!;
 
-			const edgeX = p2.x - p1.x;
-			const edgeY = p2.y - p1.y;
+			const edge = p2.clone().subtract(p1);
+			const toball = b.clone().subtract(p1);
+			const t = Phaser.Math.Clamp(toball.dot(edge) / edge.lengthSq(), 0, 1);
 
-			const toBallX = ballX - p1.x;
-			const toBallY = ballY - p1.y;
-
-			const edgeLengthSq = edgeX * edgeX + edgeY * edgeY;
-			let t = (toBallX * edgeX + toBallY * edgeY) / edgeLengthSq;
-			t = Phaser.Math.Clamp(t, 0, 1);
-
-			const closestX = p1.x + edgeX * t;
-			const closestY = p1.y + edgeY * t;
-
-			const dx = ballX - closestX;
-			const dy = ballY - closestY;
-			const distance = Math.sqrt(dx * dx + dy * dy);
+			const closest = edge.multiply({ x: t, y: t }).add(p1);
+			const delta = b.clone().subtract(closest);
+			const distance = delta.length();
 
 			if (distance < minDistance) {
 				minDistance = distance;
-				// normalize the vector from closest point to ball center
-				if (distance > 0) { closestNormal = { x: dx / distance, y: dy / distance }; }
+				if (distance > 0) closestNormal = delta.normalize();
 			}
 		}
 
