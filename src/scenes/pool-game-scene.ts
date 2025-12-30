@@ -13,13 +13,7 @@ import {
     POOL_TABLE_WIDTH,
     POWER_METER,
 } from "../common/pool-constants";
-import {
-    type Ball,
-    type Collider,
-    type Cue,
-    type Hole,
-    type KeyPositions,
-} from "../common/pool-types";
+import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
 import { PoolService } from "../services/pool-service";
 
 const Vector2 = Phaser.Math.Vector2;
@@ -68,11 +62,7 @@ export class PoolGameScene extends Phaser.Scene {
     public create(): void {
         if (DEBUG_GRAPHICS) this.setupDebugPanel();
 
-        this.background = this.add.image(
-            POOL_TABLE_WIDTH / 2,
-            POOL_TABLE_HEIGHT / 2,
-            POOL_ASSETS.BACKGROUND
-        );
+        this.background = this.add.image(POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 2, POOL_ASSETS.BACKGROUND);
         this.background.setDisplaySize(POOL_TABLE_WIDTH, POOL_TABLE_HEIGHT);
 
         // Initialize game objects
@@ -84,6 +74,10 @@ export class PoolGameScene extends Phaser.Scene {
 
         // Setup input
         this.setupInput();
+
+        for (let i = 0; i < 100; i++) {
+            console.log("This is a test log");
+        }
 
         console.log("Pool game initialized with", this.balls.length, "balls");
     }
@@ -237,14 +231,7 @@ export class PoolGameScene extends Phaser.Scene {
                 normal: new Vector2(0, -1),
             };
 
-            return [
-                leftCushion,
-                rightCushion,
-                topLeftCushion,
-                bottomLeftCushion,
-                topRightCushion,
-                bottomRightCushion,
-            ];
+            return [leftCushion, rightCushion, topLeftCushion, bottomLeftCushion, topRightCushion, bottomRightCushion];
         };
 
         const colliderDefinitions = createMirroredColliders();
@@ -317,31 +304,20 @@ export class PoolGameScene extends Phaser.Scene {
 
         handle.on("dragend", () => {
             this.powerMeter.isDragging = false;
-            this.keyPositions = this.service.hitBalls(
-                this.balls,
-                this.powerMeter.power,
-                this.cue.rotation
-            );
+            this.keyPositions = this.service.hitBalls(this.balls, this.powerMeter.power, this.cue.rotation);
             this.setPower(0);
         });
 
-        handle.on(
-            "drag",
-            (_pointer: Phaser.Input.Pointer, _dragX: number, dragY: number) => {
-                const { MIN_Y, MAX_Y, HANDLE_HEIGHT } = POWER_METER;
+        handle.on("drag", (_pointer: Phaser.Input.Pointer, _dragX: number, dragY: number) => {
+            const { MIN_Y, MAX_Y, HANDLE_HEIGHT } = POWER_METER;
 
-                const usableHeight = MAX_Y - MIN_Y - HANDLE_HEIGHT;
+            const usableHeight = MAX_Y - MIN_Y - HANDLE_HEIGHT;
 
-                const clampedY = Phaser.Math.Clamp(
-                    dragY,
-                    MIN_Y + HANDLE_HEIGHT / 2,
-                    MAX_Y - HANDLE_HEIGHT / 2
-                );
+            const clampedY = Phaser.Math.Clamp(dragY, MIN_Y + HANDLE_HEIGHT / 2, MAX_Y - HANDLE_HEIGHT / 2);
 
-                const power = (clampedY - (MIN_Y + HANDLE_HEIGHT / 2)) / usableHeight;
-                this.setPower(power);
-            }
-        );
+            const power = (clampedY - (MIN_Y + HANDLE_HEIGHT / 2)) / usableHeight;
+            this.setPower(power);
+        });
         this.updatePowerMeterFromPower();
     }
 
@@ -390,12 +366,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
 
-    private createBall(
-        x: number,
-        y: number,
-        ballType: Ball["ballType"],
-        texture: string
-    ) {
+    private createBall(x: number, y: number, ballType: Ball["ballType"], texture: string) {
         const r = BALL_RADIUS;
 
         const sprite = this.add.sprite(x, y, texture);
@@ -472,11 +443,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         this.input.on("pointerup", () => {
             this.isDraggingShot = false;
-            this.keyPositions = this.service.hitBalls(
-                this.balls,
-                this.powerMeter.power,
-                this.cue.rotation
-            );
+            this.keyPositions = this.service.hitBalls(this.balls, this.powerMeter.power, this.cue.rotation);
             this.setPower(0);
         });
     }
@@ -491,10 +458,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         if (this.ballsMoving()) {
             // Keep cue in last recorded position
-            this.cue.phaserSprite.setPosition(
-                this.lastCuePosition.x,
-                this.lastCuePosition.y
-            );
+            this.cue.phaserSprite.setPosition(this.lastCuePosition.x, this.lastCuePosition.y);
             this.cue.phaserSprite.setRotation(this.lastCuePosition.rotation);
             this.cue.rotation = this.lastCuePosition.rotation;
 
@@ -505,10 +469,7 @@ export class PoolGameScene extends Phaser.Scene {
         if (this.isDraggingShot) {
             angle = this.lockedAimAngle;
 
-            const aimDir = new Vector2(
-                Math.cos(this.lockedAimAngle),
-                Math.sin(this.lockedAimAngle)
-            );
+            const aimDir = new Vector2(Math.cos(this.lockedAimAngle), Math.sin(this.lockedAimAngle));
 
             this.dragVector.set(
                 this.mousePosition.x - this.dragStartPosition.x,
@@ -524,10 +485,7 @@ export class PoolGameScene extends Phaser.Scene {
             this.setPower(power);
         } else {
             // Free aiming when not dragging
-            angle = Math.atan2(
-                this.mousePosition.y - y,
-                this.mousePosition.x - x
-            );
+            angle = Math.atan2(this.mousePosition.y - y, this.mousePosition.x - x);
         }
 
         // Pullback cue based on power
@@ -553,10 +511,7 @@ export class PoolGameScene extends Phaser.Scene {
             this.aimLine.lineStyle(2, 0xffffff, 1.5);
             this.aimLine.beginPath();
             this.aimLine.moveTo(aimStartX, aimStartY);
-            this.aimLine.lineTo(
-                aimStartX + aimDir.x * aimLineLength,
-                aimStartY + aimDir.y * aimLineLength
-            );
+            this.aimLine.lineTo(aimStartX + aimDir.x * aimLineLength, aimStartY + aimDir.y * aimLineLength);
             this.aimLine.strokePath();
         }
 
@@ -569,19 +524,37 @@ export class PoolGameScene extends Phaser.Scene {
 
     private setupDebugPanel() {
         const logs: string[] = [];
-        const MAX_LOGS = 10;
+        const MAX_LOGS = 100;
+        let scrollOffset = 0;
 
         const originalLog = console.log;
         console.log = (...args: any[]) => {
             originalLog(...args);
-            const msg = args.map((a) => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ");
+            const msg = args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" ");
             logs.push(msg);
             if (logs.length > MAX_LOGS) logs.shift();
+
+            if (scrollOffset === 0) {
+                scrollOffset = 0;
+            }
         };
+
         console.log("Debug panel initialized");
 
         // --- UI ---
-        const BOX_HEIGHT = 180;
+        const BOX_HEIGHT = 190;
+        const VISIBLE_LOGS = 8;
+
+        const getMaxScroll = () => Math.max(0, logs.length - VISIBLE_LOGS);
+
+        const scrollToTop = () => {
+            scrollOffset = getMaxScroll();
+        };
+
+        const scrollToBottom = () => {
+            scrollOffset = 0;
+        };
+
         const bg = this.add.graphics();
         bg.fillStyle(0x000000, 0.85);
         bg.fillRect(0, POOL_TABLE_HEIGHT, POOL_TABLE_WIDTH, BOX_HEIGHT);
@@ -595,6 +568,39 @@ export class PoolGameScene extends Phaser.Scene {
             wordWrap: { width: POOL_TABLE_WIDTH - 20 },
         });
 
+        const scrollIndicator = this.add.text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + BOX_HEIGHT - 25, "", {
+            fontFamily: "monospace",
+            fontSize: "12px",
+            color: "#00ff00",
+        });
+
+        const scrollUp = this.add
+            .text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + 10, "[Scroll Up]", {
+                fontFamily: "monospace",
+                fontSize: "12px",
+                color: "#00ff00",
+            })
+            .setInteractive({ useHandCursor: true })
+            .on("pointerdown", scrollToTop);
+
+        const scrollDown = this.add
+            .text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + 28, "[Scroll Down]", {
+                fontFamily: "monospace",
+                fontSize: "12px",
+                color: "#00ff00",
+            })
+            .setInteractive({ useHandCursor: true })
+            .on("pointerdown", scrollToBottom);
+
+        this.input.on("wheel", (pointer: any, gameObjects: any, deltaX: number, deltaY: number) => {
+            const scrollSpeed = 1; // Scroll x lines at a time
+
+            scrollOffset -= Math.sign(deltaY) * scrollSpeed;
+
+            const maxScroll = getMaxScroll();
+            scrollOffset = Phaser.Math.Clamp(scrollOffset, 0, maxScroll);
+        });
+
         this.updateDebug = () => {
             const whiteBall = this.balls[this.balls.length - 1]!;
             const angleDeg = Phaser.Math.RadToDeg(this.cue.rotation).toFixed(1);
@@ -605,15 +611,26 @@ export class PoolGameScene extends Phaser.Scene {
                 `POWER: ${this.powerMeter.power.toFixed(2)}`,
                 `CUE ANGLE: ${angleDeg}°`,
                 `WHITE BALL: (${whiteBall.phaserSprite.x.toFixed(1)}, ${whiteBall.phaserSprite.y.toFixed(1)})`,
-
                 `MOVING THEM BALLZ: ${this.ballsMoving()}`,
             ];
 
-            const logLines = ["=== LOGS ===", ...logs];
+            const startIndex = Math.max(0, logs.length - VISIBLE_LOGS - scrollOffset);
+            const endIndex = logs.length - scrollOffset;
+            const visibleLogs = logs.slice(startIndex, endIndex);
 
-            const columnWidth = 40; // adjust to taste
+            const logLines = ["=== LOGS ===", ...visibleLogs];
+
+            // Update scroll indicator
+            const maxScroll = Math.max(0, logs.length - VISIBLE_LOGS);
+            if (scrollOffset > 0 && maxScroll > 0) {
+                scrollIndicator.setText(`↑ ${scrollOffset}/${maxScroll} ↓`);
+                logLines.push(`--- ↓ ${scrollOffset} more below ---`);
+            } else {
+                scrollIndicator.setText(logs.length > VISIBLE_LOGS ? `Scroll ↑ (${maxScroll})` : "");
+            }
+
+            const columnWidth = 40;
             const maxLines = Math.max(configLines.length, logLines.length);
-
             const lines: string[] = [];
 
             for (let i = 0; i < maxLines; i++) {
