@@ -302,18 +302,10 @@ export class PoolGameScene extends Phaser.Scene {
             fontStyle: "bold",
         });
 
-        this.powerMeter = {
-            background,
-            fill,
-            handle,
-            isDragging: false,
-            power: 0,
-        };
+        this.powerMeter = { background, fill, handle, isDragging: false, power: 0 };
 
         // Setup drag events
-        handle.on("dragstart", () => {
-            this.powerMeter.isDragging = true;
-        });
+        handle.on("dragstart", () => { this.powerMeter.isDragging = true; });
 
         handle.on("dragend", () => {
             this.powerMeter.isDragging = false;
