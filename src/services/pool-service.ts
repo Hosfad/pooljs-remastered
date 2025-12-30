@@ -36,12 +36,18 @@ export class PoolService {
         return this.simulate(velocities);
     }
 
+    private getKeyPosition() {
+        return this.balls.map((b, i) => ({
+            position: new Vector2(b.phaserSprite.x, b.phaserSprite.y), hidden: this.inHole[i] === true
+        }));
+    }
+
     private simulate(velocities: Phaser.Math.Vector2[]): KeyPositions {
         const friction = 0.98;
         const minVelocity = 0.1;
         const collisionDamping = 0.95;
 
-        const keyPositions: KeyPositions = [this.balls.map((b) => new Vector2(b.phaserSprite.x, b.phaserSprite.y))];
+        const keyPositions: KeyPositions = [this.getKeyPosition()];
 
         for (let step = 0; step < MAX_STEPS; step++) {
             let anyMoving = false;
@@ -57,8 +63,6 @@ export class PoolService {
                 sprite.setPosition(sprite.x + vel.x, sprite.y + vel.y);
                 vel.multiply({ x: friction, y: friction });
             }
-
-            keyPositions.push(this.balls.map((b) => new Vector2(b.phaserSprite.x, b.phaserSprite.y)));
 
             // Multiple times just in case
             for (let iteration = 0; iteration < 3; iteration++) {
@@ -148,13 +152,15 @@ export class PoolService {
 
                     for (const hole of this.holes) {
                         const pos = hole.sprite.position;
-                        if (b1.distance(pos) < BALL_RADIUS) {
+                        if (b1.distance(pos) < BALL_RADIUS * 0.5) {
                             this.inHole[i] = true;
                             break;
                         }
                     }
                 }
             }
+
+            keyPositions.push(this.getKeyPosition());
 
             if (!anyMoving) return keyPositions;
         }

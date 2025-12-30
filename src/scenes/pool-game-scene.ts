@@ -348,8 +348,11 @@ export class PoolGameScene extends Phaser.Scene {
         if (!this.keyPositions.length) return;
 
         const frame = this.keyPositions.shift()!;
-        frame.forEach((pos, i) => {
-            this.balls[i]!.phaserSprite.setPosition(pos.x, pos.y);
+        frame.forEach((key, i) => {
+            const pos = key.position;
+            const sprite = this.balls[i]!.phaserSprite;
+            sprite.setPosition(pos.x, pos.y);
+            sprite.visible = !key.hidden;
         });
     }
 
