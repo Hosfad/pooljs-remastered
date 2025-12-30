@@ -76,7 +76,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.setupInput();
 
         for (let i = 0; i < 100; i++) {
-            console.log("This is a test log");
+            console.log("This is a test log " + i);
         }
 
         console.log("Pool game initialized with", this.balls.length, "balls");
@@ -523,7 +523,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private setupDebugPanel() {
-        const logs: string[] = [];
+        let logs: string[] = [];
         const MAX_LOGS = 100;
         let scrollOffset = 0;
 
@@ -574,8 +574,18 @@ export class PoolGameScene extends Phaser.Scene {
             color: "#00ff00",
         });
 
+        const clearLogs = this.add
+            .text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + 10, "[ 🗑 Clear Logs]", {
+                fontFamily: "monospace",
+                fontSize: "12px",
+                color: "#00ff00",
+            })
+            .setInteractive({ useHandCursor: true })
+            .on("pointerdown", () => {
+                logs = [];
+            });
         const scrollUp = this.add
-            .text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + 10, "[Scroll Up]", {
+            .text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + 35, "[ ↑ Scroll Up]", {
                 fontFamily: "monospace",
                 fontSize: "12px",
                 color: "#00ff00",
@@ -584,7 +594,7 @@ export class PoolGameScene extends Phaser.Scene {
             .on("pointerdown", scrollToTop);
 
         const scrollDown = this.add
-            .text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + 28, "[Scroll Down]", {
+            .text(POOL_TABLE_WIDTH - 120, POOL_TABLE_HEIGHT + 50, "[ ↓ Scroll Down]", {
                 fontFamily: "monospace",
                 fontSize: "12px",
                 color: "#00ff00",
