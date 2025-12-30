@@ -16,14 +16,16 @@ import {
 import {
 	type Ball,
 	type Collider,
-	type Color,
 	type Cue,
 	type Hole,
 } from "../common/pool-types";
+import { PoolService } from "../services/pool-service";
 
 const Vector2 = Phaser.Math.Vector2;
 
 export class PoolGameScene extends Phaser.Scene {
+	private service = new PoolService();
+
 	// Game state
 	private balls: Ball[] = [];
 	private holes: Hole[] = [];
@@ -74,7 +76,7 @@ export class PoolGameScene extends Phaser.Scene {
 	}
 
 	private createBalls() {
-		const ROWS = 5;
+		const ROWS = 2;
 		const r = BALL_RADIUS;
 		const DIAMETER = r * 2;
 		const ROW_SPACING = DIAMETER * 0.8;
@@ -94,27 +96,25 @@ export class PoolGameScene extends Phaser.Scene {
 			for (let i = 0; i < ballsInRow; i++) {
 				const isSolid = i % 2 === 0;
 				const ballType = isSolid ? "solid" : "striped";
-				const color = isSolid ? "yellow" : "red";
 				const texture = isSolid
 					? POOL_ASSETS.SOLID_BALL
 					: POOL_ASSETS.STRIPED_BALL;
 
 				const y = startY + i * ROW_SPACING;
-				this.createBall(x, y, ballType, color, texture);
+				this.createBall(x, y, ballType, texture);
 			}
 		}
 
 		const eightBall = this.balls[this.balls.length - 1]!;
 
 		eightBall.ballType = "black";
-		eightBall.sprite.color = "black";
-		eightBall.phaserSprite?.setTexture(POOL_ASSETS.BLACK_BALL);
+		eightBall.phaserSprite.setTexture(POOL_ASSETS.BLACK_BALL);
 
 		//  whiteball ball ---
 		const cueX = POOL_TABLE_WIDTH * 0.75;
 		const cueY = rackOrigin.y;
 
-		this.createBall(cueX, cueY, "white", "white", POOL_ASSETS.WHITE_BALL);
+		this.createBall(cueX, cueY, "white", POOL_ASSETS.WHITE_BALL);
 
 		console.log("Created", this.balls.length, "balls");
 	}
@@ -123,7 +123,6 @@ export class PoolGameScene extends Phaser.Scene {
 		x: number,
 		y: number,
 		ballType: Ball["ballType"],
-		color: Color,
 		texture: string
 	) {
 		const r = BALL_RADIUS;
@@ -132,15 +131,6 @@ export class PoolGameScene extends Phaser.Scene {
 		sprite.setScale((r * 2) / sprite.width);
 
 		const ball: Ball = {
-			sprite: {
-				position: new Vector2(x, y),
-				color,
-				size: { r },
-				visible: true,
-			},
-			rigidbody: {
-				velocity: new Vector2(0, 0),
-			},
 			ballType,
 			phaserSprite: sprite,
 		};
@@ -150,18 +140,12 @@ export class PoolGameScene extends Phaser.Scene {
 
 	private createCue(): void {
 		const whiteBall = this.balls[this.balls.length - 1]!;
-		const { x, y } = whiteBall.sprite.position;
+		const { x, y } = whiteBall.phaserSprite!;
 
 		const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUE_STICK);
 		cueSprite.setOrigin(1, 0.5);
 
 		this.cue = {
-			sprite: {
-				position: new Vector2(x, y),
-				color: "brown",
-				size: { w: 400, h: 15 },
-				visible: true,
-			},
 			phaserSprite: cueSprite,
 			rotation: 0,
 			power: 0,
@@ -354,10 +338,6 @@ export class PoolGameScene extends Phaser.Scene {
 					color: "brown",
 					visible: true,
 				},
-				rigidbody: {
-					velocity: new Vector2(0, 0),
-					normal: def.normal,
-				},
 				phaserGraphics: graphics,
 			};
 
@@ -373,7 +353,7 @@ export class PoolGameScene extends Phaser.Scene {
 
 		this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
 			const whiteBall = this.balls[this.balls.length - 1]!;
-			const { x, y } = whiteBall.sprite.position;
+			const { x, y } = whiteBall.phaserSprite!;
 
 			// Lock aim direction ON CLICK
 			this.lockedAimAngle = Math.atan2(pointer.y - y, pointer.x - x);
@@ -384,6 +364,7 @@ export class PoolGameScene extends Phaser.Scene {
 
 		this.input.on("pointerup", () => {
 			this.isDraggingShot = false;
+			this.service.hitBalls(this.balls, this.powerMeter.power, this.cue.rotation);
 			this.setPower(0);
 		});
 	}
@@ -431,6 +412,7 @@ export class PoolGameScene extends Phaser.Scene {
 
 		handle.on("dragend", () => {
 			this.powerMeter.isDragging = false;
+			this.service.hitBalls(this.balls, this.powerMeter.power, this.cue.rotation);
 			this.setPower(0);
 		});
 
@@ -501,7 +483,7 @@ export class PoolGameScene extends Phaser.Scene {
 		if (!this.cue.phaserSprite) return;
 
 		const whiteBall = this.balls[this.balls.length - 1]!;
-		const { x, y } = whiteBall.sprite.position;
+		const { x, y } = whiteBall.phaserSprite!;
 
 		let angle: number;
 
@@ -541,7 +523,6 @@ export class PoolGameScene extends Phaser.Scene {
 		const offsetY = y - Math.sin(angle) * pullbackDistance;
 
 		// Apply transform
-		this.cue.sprite.position.set(offsetX, offsetY);
 		this.cue.phaserSprite.setPosition(offsetX, offsetY);
 		this.cue.phaserSprite.setRotation(angle);
 		this.cue.rotation = angle;
