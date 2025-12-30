@@ -668,6 +668,8 @@ export class PoolGameScene extends Phaser.Scene {
                 `WHITE BALL: (${whiteBall.phaserSprite.x.toFixed(
                     1
                 )}, ${whiteBall.phaserSprite.y.toFixed(1)})`,
+
+                `MOVING THEM BALLZ: ${this.ballsMoving()}`,
             ];
 
             const logLines = ["=== LOGS ===", ...logs];
