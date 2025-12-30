@@ -401,9 +401,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         this.input.on("pointerup", () => {
             this.isDraggingShot = false;
-
-            // Optional: reset power after shot
-            this.powerMeter.power = 0;
+            this.setPower(0);
         });
     }
 
@@ -509,7 +507,6 @@ export class PoolGameScene extends Phaser.Scene {
     private setPower(power: number): void {
         const clamped = Phaser.Math.Clamp(power, 0, 1);
         this.powerMeter.power = clamped;
-
         this.updatePowerMeterFromPower();
     }
 
