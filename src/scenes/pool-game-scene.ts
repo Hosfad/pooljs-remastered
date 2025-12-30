@@ -70,7 +70,7 @@ export class PoolGameScene extends Phaser.Scene {
         // Setup input
         this.setupInput();
 
-        this.service = new PoolService(this.balls, this.colliders);
+        this.service = new PoolService(this.balls, this.colliders, this.holes);
         console.log("Pool game initialized with", this.balls.length, "balls");
     }
 
