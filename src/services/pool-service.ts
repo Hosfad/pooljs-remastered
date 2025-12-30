@@ -114,22 +114,21 @@ export class PoolService {
                         const overlap = BALL_RADIUS - distance;
 
                         if (overlap > 0) {
-                            // Push ball out of wall along the direction from closest point to ball
+                            // push ball out of wall
                             sprite1.setPosition(
                                 sprite1.x - normal.x * overlap * 0.5,
                                 sprite1.y - normal.y * overlap * 0.5,
                             );
 
-                            // Apply velocity reflection only on first iteration
                             if (iteration === 0) {
                                 const vel1 = velocities[i]!;
 
-                                // Calculate velocity component along the normal
+                                // velocity component along the normal
                                 const velDotNormal = vel1.x * normal.x + vel1.y * normal.y;
 
-                                // Only reflect if ball is moving into the wall
-                                if (velDotNormal < 0) {
-                                    // Reflect velocity: v' = v - 2(v·n)n
+                                // reflect if ball is moving into the wall
+                                if (velDotNormal > 0) {
+                                    // v' = v - 2*(v*n)*n
                                     const reflectionFactor = 2 * velDotNormal * collisionDamping;
                                     vel1.x -= reflectionFactor * normal.x;
                                     vel1.y -= reflectionFactor * normal.y;
