@@ -258,6 +258,7 @@ export class PoolGameScene extends Phaser.Scene {
                 sprite: {
                     position: new Vector2(def.points[0]!.x, def.points[0]!.y),
                     size: { points: def.points.map((p) => new Vector2(p.x, p.y)) },
+                    normal: def.normal,
                     color: "brown",
                     visible: true,
                 },

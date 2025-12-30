@@ -9,7 +9,7 @@ const Vector2 = Phaser.Math.Vector2;
 
 export class PoolService {
 
-    public hitBalls(balls: Ball[], powerPercent: number, angle: number): KeyPositions {
+    public hitBalls(balls: Ball[], powerPercent: number, angle: number, colliders: Collider[]): KeyPositions {
         const whiteball = balls.length - 1;
         const velocities = Array.from({ length: balls.length }, () => new Vector2());
 
@@ -18,10 +18,10 @@ export class PoolService {
             Math.sin(angle) * powerPercent * MAX_POWER
         );
 
-        return this.simulate(balls, velocities);
+        return this.simulate(balls, velocities, colliders);
     }
 
-    private simulate(balls: Ball[], velocities: Phaser.Math.Vector2[]): KeyPositions {
+    private simulate(balls: Ball[], velocities: Phaser.Math.Vector2[], colliders: Collider[]): KeyPositions {
         const friction = 0.98;
         const minVelocity = 0.1;
         const collisionDamping = 0.95;
@@ -106,6 +106,37 @@ export class PoolService {
                             }
                         }
                     }
+
+                    for (const collider of colliders) {
+                        if (!this.isPointInPolygon(ball1, collider)) continue;
+
+                        const { normal, distance } = this.getClosestEdgeNormalAndDistance(ball1, collider);
+                        const overlap = BALL_RADIUS - distance;
+
+                        if (overlap > 0) {
+                            // Push ball out of wall along the direction from closest point to ball
+                            sprite1.setPosition(
+                                sprite1.x - normal.x * overlap * 0.5,
+                                sprite1.y - normal.y * overlap * 0.5,
+                            );
+
+                            // Apply velocity reflection only on first iteration
+                            if (iteration === 0) {
+                                const vel1 = velocities[i]!;
+
+                                // Calculate velocity component along the normal
+                                const velDotNormal = vel1.x * normal.x + vel1.y * normal.y;
+
+                                // Only reflect if ball is moving into the wall
+                                if (velDotNormal < 0) {
+                                    // Reflect velocity: v' = v - 2(v·n)n
+                                    const reflectionFactor = 2 * velDotNormal * collisionDamping;
+                                    vel1.x -= reflectionFactor * normal.x;
+                                    vel1.y -= reflectionFactor * normal.y;
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -115,47 +146,61 @@ export class PoolService {
         return keyPositions;
     }
 
-    private isPointInPolygon(ball: Ball, { sprite: { size: { points } } }: Collider): boolean {
-        let inside = false;
-        const { x, y } = ball.phaserSprite;
-        const xp = x + BALL_RADIUS, yp = y + BALL_RADIUS;
-        const xl = x - BALL_RADIUS, yl = y - BALL_RADIUS;
-
-        for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
-            const { x: xi, y: yi } = points[i]!;
-            const { x: xj, y: yj } = points[j]!;
-            const w = xj - xi;
-            const h = yj - yi;
-
-            if (
-                (yi > yp !== yj > yp && xp < (w * (yp - yi)) / h + xi) ||
-                (yi > yl !== yj > yl && xl > (w * (yl - yi)) / h + xi)
-            ) {
-                inside = !inside;
-            }
-        }
-
-        return inside;
-    }
-
-    private calculatePenetrationDistance(point: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): number {
-        let minDistanceSq = Infinity;
+    private getClosestEdgeNormalAndDistance(ball: Ball, { sprite: { size: { points } } }: Collider): { normal: { x: number, y: number }, distance: number } {
+        let minDistance = Infinity;
+        let closestNormal = { x: 0, y: 1 };
+        const ballX = ball.phaserSprite.x;
+        const ballY = ball.phaserSprite.y;
 
         for (let i = 0; i < points.length; i++) {
             const p1 = points[i]!;
             const p2 = points[(i + 1) % points.length]!;
 
-            const edge = p2.subtract(p1);
-            const pointToP1 = point.subtract(p1);
-            let t = pointToP1.dot(edge) / edge.dot(edge);
+            const edgeX = p2.x - p1.x;
+            const edgeY = p2.y - p1.y;
 
+            const toBallX = ballX - p1.x;
+            const toBallY = ballY - p1.y;
+
+            const edgeLengthSq = edgeX * edgeX + edgeY * edgeY;
+            let t = (toBallX * edgeX + toBallY * edgeY) / edgeLengthSq;
             t = Math.max(0, Math.min(1, t));
-            const closestPoint = p1.add(edge.multiply({ x: t, y: t }));
-            const distanceSq = point.subtract(closestPoint).length();
 
-            minDistanceSq = Math.min(minDistanceSq, distanceSq);
+            const closestX = p1.x + edgeX * t;
+            const closestY = p1.y + edgeY * t;
+
+            const dx = ballX - closestX;
+            const dy = ballY - closestY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                // Normalize the vector from closest point to ball center
+                if (distance > 0) {
+                    closestNormal = { x: dx / distance, y: dy / distance };
+                }
+            }
         }
 
-        return Math.sqrt(minDistanceSq) - BALL_RADIUS;
+        return { normal: closestNormal, distance: minDistance };
+    }
+
+    private isPointInPolygon(ball: Ball, { sprite: { size: { points } } }: Collider): boolean {
+        const { x, y } = ball.phaserSprite;
+
+        let inside = false;
+        for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+            const p1 = points[i]!;
+            const p2 = points[j]!;
+
+            const xi = p1.x;
+            const yi = p1.y;
+            const xj = p2.x;
+            const yj = p2.y;
+
+            const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
     }
 }
