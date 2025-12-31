@@ -3,6 +3,11 @@
  */
 export const DEBUG_GRAPHICS = true;
 
+export let MODAL_OPEN: boolean = false;
+export function setGlobalModalOpenVariable(open: boolean) {
+    MODAL_OPEN = open;
+}
+
 export const POOL_ASSETS = {
     BACKGROUND: "background",
     WHITE_BALL: "spr_ball2",

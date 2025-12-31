@@ -7,6 +7,7 @@ import {
     BALL_RADIUS,
     DEBUG_GRAPHICS,
     HOLE_RADIUS,
+    MODAL_OPEN,
     POOL_ASSETS,
     POOL_SCENE_KEYS,
     POOL_TABLE_HEIGHT,
@@ -15,6 +16,7 @@ import {
 } from "../common/pool-constants";
 import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
 import { PoolService } from "../services/pool-service";
+import { SettingsModal } from "./components/settings-modal";
 import { DebugPanel } from "./debug-panel";
 
 const Vector2 = Phaser.Math.Vector2;
@@ -43,6 +45,9 @@ export class PoolGameScene extends Phaser.Scene {
     private playerTurn!: Phaser.GameObjects.Text;
     private holeBalls: Phaser.GameObjects.Sprite[] = [];
     private holePlayedSounds: (number | undefined)[] = [];
+
+    private settingsButton: Phaser.GameObjects.Text | undefined;
+    private settingsModal!: SettingsModal;
 
     // Input state
     private mousePosition = new Vector2();
@@ -96,6 +101,8 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createUI() {
+        this.settingsModal = new SettingsModal(this, POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 2);
+
         this.playerTurn = this.add
             .text(POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 4, "PLAYER TURN", {
                 fontFamily: "Arial",
@@ -118,6 +125,25 @@ export class PoolGameScene extends Phaser.Scene {
 
             this.holeBalls.push(spr);
         }
+        const buttonStyle = {
+            fontFamily: '"Courier New", monospace',
+            fontSize: "20px",
+            color: "#ffd700",
+            backgroundColor: "#4a3520",
+            padding: { x: 15, y: 10 },
+            stroke: "#8b4513",
+            strokeThickness: 2,
+        };
+
+        this.settingsButton = this.add
+            .text(POOL_TABLE_WIDTH - 100, 30, "⚙️ SETTINGS", buttonStyle)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .setDepth(100);
+
+        this.setupButtonHover(this.settingsButton, () => {
+            this.settingsModal.show();
+        });
     }
 
     private createBalls() {
@@ -332,10 +358,12 @@ export class PoolGameScene extends Phaser.Scene {
 
         // Setup drag events
         handle.on("dragstart", () => {
+            if (MODAL_OPEN) return;
             this.powerMeter.isDragging = true;
         });
 
         handle.on("dragend", () => {
+            if (MODAL_OPEN) return;
             if (this.powerMeter.power <= 0) {
                 this.powerMeter.isDragging = false;
                 return;
@@ -347,6 +375,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         handle.on("drag", (_pointer: Phaser.Input.Pointer, _dragX: number, dragY: number) => {
+            if (MODAL_OPEN) return;
             const { MIN_Y, MAX_Y, HANDLE_HEIGHT } = POWER_METER;
 
             const usableHeight = MAX_Y - MIN_Y - HANDLE_HEIGHT;
@@ -484,6 +513,7 @@ export class PoolGameScene extends Phaser.Scene {
 
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+            if (MODAL_OPEN) return;
             this.mousePosition.set(pointer.x, pointer.y);
 
             if (this.isMobile && this.isDraggingShot && !this.powerMeter.isDragging) {
@@ -495,6 +525,8 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+            if (MODAL_OPEN) return;
+
             const isTouchingPowerMeter = this.isTouchingPowerMeter(pointer);
 
             // Handle by the power meter
@@ -512,6 +544,8 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.input.on("pointerup", () => {
+            if (MODAL_OPEN) return;
+
             if (this.powerMeter.power <= 0) {
                 this.isDraggingShot = false;
                 return;
@@ -646,5 +680,32 @@ export class PoolGameScene extends Phaser.Scene {
             { width: POOL_TABLE_WIDTH, height: 180 },
             { x: 0, y: POOL_TABLE_HEIGHT }
         );
+    }
+
+    private setupButtonHover(button: Phaser.GameObjects.Text, onClick: () => void): void {
+        button.on("pointerover", () => {
+            button.setStyle({
+                color: "#ffff00",
+                backgroundColor: "#5a4530",
+                stroke: "#deb887",
+            });
+        });
+
+        button.on("pointerout", () => {
+            button.setStyle({
+                color: "#ffd700",
+                backgroundColor: "#4a3520",
+                stroke: "#8b4513",
+            });
+        });
+
+        button.on("pointerdown", () => {
+            button.setStyle({
+                color: "#000000",
+                backgroundColor: "#ffd700",
+                stroke: "#000000",
+            });
+            onClick();
+        });
     }
 }
