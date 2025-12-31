@@ -1,7 +1,7 @@
 /**
  * Pool game specific constants
  */
-export const DEBUG_GRAPHICS = true;
+export const DEBUG_GRAPHICS = false;
 
 export let MODAL_OPEN: boolean = false;
 export function setGlobalModalOpenVariable(open: boolean) {

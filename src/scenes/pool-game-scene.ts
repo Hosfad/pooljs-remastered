@@ -189,11 +189,12 @@ export class PoolGameScene extends Phaser.Scene {
             const sprite = ball.phaserSprite;
 
             const w = BALL_RADIUS * 2;
-            const position = this.toTableCoordinates(this.tableWidth / 5 + w * i, this.tableHeight / 20);
+            const position = this.toTableCoordinates(-w * 2, this.tableHeight / 10 + w * i * 2);
             const spr = this.add.sprite(position.x, position.y, sprite.texture).setAlpha(0.5).setOrigin(0.5, 0.5);
 
             this.holeBalls.push(spr);
         }
+
         const buttonStyle = {
             fontFamily: '"Courier New", monospace',
             fontSize: "20px",
@@ -370,20 +371,24 @@ export class PoolGameScene extends Phaser.Scene {
         const colliderDefinitions = createMirroredColliders();
 
         colliderDefinitions.forEach((def) => {
-            const graphics = this.add.graphics();
-            graphics.fillStyle(0xff0000, 0.5);
-            graphics.beginPath();
+            let graphics: Phaser.GameObjects.Graphics | undefined;
 
-            const firstPoint = this.toTableCoordinates(def.points[0]!.x, def.points[0]!.y);
-            graphics.moveTo(firstPoint.x, firstPoint.y);
+            if (DEBUG_GRAPHICS) {
+                graphics = this.add.graphics();
+                graphics.fillStyle(0xff0000, 0.5);
+                graphics.beginPath();
 
-            for (let i = 1; i < def.points.length; i++) {
-                const point = this.toTableCoordinates(def.points[i]!.x, def.points[i]!.y);
-                graphics.lineTo(point.x, point.y);
+                const firstPoint = this.toTableCoordinates(def.points[0]!.x, def.points[0]!.y);
+                graphics.moveTo(firstPoint.x, firstPoint.y);
+
+                for (let i = 1; i < def.points.length; i++) {
+                    const point = this.toTableCoordinates(def.points[i]!.x, def.points[i]!.y);
+                    graphics.lineTo(point.x, point.y);
+                }
+
+                graphics.closePath();
+                graphics.fillPath();
             }
-
-            graphics.closePath();
-            graphics.fillPath();
 
             const adjustedPoints = def.points.map((p) => this.toTableCoordinates(p.x, p.y));
             const collider: Collider = {
@@ -550,7 +555,7 @@ export class PoolGameScene extends Phaser.Scene {
         const position = this.toTableCoordinates(x, y);
 
         const sprite = this.add.sprite(position.x, position.y, texture);
-        sprite.setScale((r * 2) / sprite.width);
+        sprite.setScale((r * 1.5) / sprite.width);
 
         const ball: Ball = {
             ballType,

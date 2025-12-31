@@ -39,5 +39,5 @@ export interface Collider {
         color: Color;
         visible: boolean;
     };
-    phaserGraphics: Phaser.GameObjects.Graphics;
+    phaserGraphics?: Phaser.GameObjects.Graphics;
 }
