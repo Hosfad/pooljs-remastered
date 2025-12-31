@@ -62,11 +62,13 @@ export class DebugPanel {
     private bg!: Phaser.GameObjects.Graphics;
     private buttons: Phaser.GameObjects.Text[] = [];
 
+    private panelVisible = true; // Track if the entire panel is visible
+
     constructor(
         private scene: Phaser.Scene,
         private config: DebugConfigRecord,
-        private size: { width: number; height: number; } = { width: POOL_TABLE_WIDTH, height: 200 },
-        private position: { x: number; y: number; } = { x: 0, y: 0 }
+        private size: { width: number; height: number } = { width: POOL_TABLE_WIDTH, height: 200 },
+        private position: { x: number; y: number } = { x: 0, y: 0 }
     ) {
         this.scene = scene;
         this.config = config;
@@ -121,13 +123,7 @@ export class DebugPanel {
 
         const helpCommand = {
             name: "help",
-            args: [
-                {
-                    name: "command",
-                    type: "string",
-                    autofillOptions: this.commands.map((cmd) => cmd.name),
-                },
-            ],
+            args: [],
             execute: () => {
                 console.log("============");
                 this.commands.forEach((cmd) => {
@@ -176,25 +172,30 @@ export class DebugPanel {
         const { width, height } = this.size;
         const { x, y } = this.position!;
 
-        this.bg = this.scene.add.graphics()
+        this.bg = this.scene.add
+            .graphics()
             .fillStyle(0x000000, 0.85)
             .fillRect(x, y, width, height)
             .lineStyle(2, 0x00ff00, 0.6)
             .strokeRect(x, y, width, height)
             .setDepth(100);
 
-        this.text = this.scene.add.text(10, y + 10, "", {
-            fontFamily: "monospace",
-            fontSize: "14px",
-            color: "#00ff00",
-            wordWrap: { width: width - 20 },
-        }).setDepth(100);
+        this.text = this.scene.add
+            .text(10, y + 10, "", {
+                fontFamily: "monospace",
+                fontSize: "14px",
+                color: "#00ff00",
+                wordWrap: { width: width - 20 },
+            })
+            .setDepth(100);
 
-        this.scrollIndicator = this.scene.add.text(width - 120, y + height - 25, "", {
-            fontFamily: "monospace",
-            fontSize: "12px",
-            color: "#00ff00",
-        }).setDepth(100);
+        this.scrollIndicator = this.scene.add
+            .text(width - 120, y + height - 25, "", {
+                fontFamily: "monospace",
+                fontSize: "12px",
+                color: "#00ff00",
+            })
+            .setDepth(100);
 
         this.clearButton = this.scene.add
             .text(width - 120, y + 10, "[ 🗑 Clear Logs]", {
@@ -259,7 +260,8 @@ export class DebugPanel {
 
         const INPUT_Y = y + height - 40;
 
-        this.inputBg = this.scene.add.graphics()
+        this.inputBg = this.scene.add
+            .graphics()
             .fillStyle(0x000000, 0.9)
             .fillRect(0, INPUT_Y, width, 40)
             .lineStyle(2, 0x00ff00, 1)
@@ -267,12 +269,15 @@ export class DebugPanel {
             .setVisible(false)
             .setDepth(100);
 
-        this.inputField = this.scene.add.text(10, INPUT_Y + 10, "", {
-            fontFamily: "monospace",
-            fontSize: "16px",
-            color: "#00ff00",
-            padding: { x: 5, y: 3 },
-        }).setVisible(false).setDepth(100);
+        this.inputField = this.scene.add
+            .text(10, INPUT_Y + 10, "", {
+                fontFamily: "monospace",
+                fontSize: "16px",
+                color: "#00ff00",
+                padding: { x: 5, y: 3 },
+            })
+            .setVisible(false)
+            .setDepth(100);
 
         this.inputCursor = this.scene.add
             .rectangle(this.inputField.x + 5, INPUT_Y + 10, 2, 20, 0x00ff00)
@@ -295,14 +300,14 @@ export class DebugPanel {
     }
 
     private showInput() {
+        // Only show input if panel is visible
+        if (!this.panelVisible) return;
+
         this.inputVisible = true;
         this.inputBg.setVisible(true);
         this.inputField.setVisible(true);
         this.closeButton.setVisible(true);
         this.inputCursor.setVisible(true);
-        this.bg.setVisible(true);
-        this.text.setVisible(true);
-        this.buttons.forEach((b) => b.setVisible(true));
 
         this.cursorVisible = true;
         this.cursorTimer = 0;
@@ -324,13 +329,33 @@ export class DebugPanel {
         this.inputField.setVisible(false);
         this.closeButton.setVisible(false);
         this.inputCursor.setVisible(false);
-        this.text.setVisible(false);
-        this.bg.setVisible(false);
-        this.buttons.forEach((b) => b.setVisible(false));
 
         this.inputText = "";
         this.cursorPosition = 0;
         this.scene.input.keyboard?.disableGlobalCapture();
+    }
+
+    private togglePanelVisibility() {
+        this.panelVisible = !this.panelVisible;
+
+        // Show/hide all panel elements
+        this.bg.setVisible(this.panelVisible);
+        this.text.setVisible(this.panelVisible);
+        this.scrollIndicator.setVisible(this.panelVisible);
+        this.buttons.forEach((b) => b.setVisible(this.panelVisible));
+
+        // If hiding the panel, also hide the input
+        if (!this.panelVisible && this.inputVisible) {
+            this.hideInput();
+        }
+
+        // If showing the panel and input was previously visible, restore it
+        if (this.panelVisible && this.inputVisible) {
+            this.inputBg.setVisible(true);
+            this.inputField.setVisible(true);
+            this.closeButton.setVisible(true);
+            this.inputCursor.setVisible(true);
+        }
     }
 
     private updateInputDisplay() {
@@ -397,7 +422,7 @@ export class DebugPanel {
         if (currentWordIndex === 0) {
             const matchingCommands = this.commands
                 .filter((cmd) => cmd.name.startsWith(currentWord.toLowerCase()))
-                .map(cmd => cmd.name);
+                .map((cmd) => cmd.name);
 
             const prefix = this.findHighestMatchingPrefix(matchingCommands);
 
@@ -488,7 +513,8 @@ export class DebugPanel {
         this.keyboardPlugin.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
         this.keyboardPlugin.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
         this.keyboardPlugin.addKey(Phaser.Input.Keyboard.KeyCodes.BACKSPACE);
-        this.keyboardPlugin.addKey(Phaser.Input.Keyboard.KeyCodes.F2);
+        this.keyboardPlugin.addKey(Phaser.Input.Keyboard.KeyCodes.F2); // For panel visibility
+        this.keyboardPlugin.addKey(Phaser.Input.Keyboard.KeyCodes.F1); // For input visibility
         this.keyboardPlugin.addKey(Phaser.Input.Keyboard.KeyCodes.DELETE);
         this.keyboardPlugin.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
         this.keyboardPlugin.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
@@ -499,6 +525,12 @@ export class DebugPanel {
         this.keyboardPlugin.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
 
         this.keyboardPlugin.on("keydown", (event: KeyboardEvent) => {
+            if (event.key === "F1") {
+                event.preventDefault();
+                this.togglePanelVisibility();
+                return;
+            }
+
             if (event.key === "F2") {
                 event.preventDefault();
                 if (this.inputVisible) {
@@ -654,8 +686,11 @@ export class DebugPanel {
         });
 
         this.scene.input.on("wheel", (_: any, __: any, ___: number, deltaY: number) => {
-            this.scrollOffset += Math.sign(deltaY);
-            this.scrollOffset = Phaser.Math.Clamp(this.scrollOffset, 0, this.getMaxScroll());
+            // Only process wheel events if panel is visible
+            if (this.panelVisible) {
+                this.scrollOffset += Math.sign(deltaY);
+                this.scrollOffset = Phaser.Math.Clamp(this.scrollOffset, 0, this.getMaxScroll());
+            }
         });
     }
 
@@ -664,6 +699,8 @@ export class DebugPanel {
     }
 
     update() {
+        if (!this.panelVisible) return;
+
         if (this.inputVisible) {
             const now = Date.now();
             if (now - this.cursorTimer > this.CURSOR_BLINK_INTERVAL) {
@@ -678,21 +715,40 @@ export class DebugPanel {
         const start = Math.max(0, this.logs.length - this.visibleLogs - this.scrollOffset);
         const end = this.logs.length - this.scrollOffset;
 
-        let logLines = ["=== CONSOLE ===", ...this.logs.slice(start, end).reverse()];
+        // Get raw logs
+        const rawLogs = this.logs.slice(start, end).reverse();
+
+        // Process logs with wrapping
+        const wrappedLogLines: string[] = ["=== CONSOLE ==="];
+
+        // Define your wrap width (adjust as needed)
+        const LOG_WRAP_WIDTH = this.COLUMN_WIDTH - 3; // Reserve some space for UI elements
+
+        rawLogs.forEach((log) => {
+            // Wrap each log entry
+            const wrapped = this.wrapTextSimple(log, LOG_WRAP_WIDTH);
+            wrappedLogLines.push(...wrapped);
+        });
+
+        // Alternatively, use the simple character-based wrapping:
+        // rawLogs.forEach(log => {
+        //     const wrapped = this.wrapTextSimple(log, LOG_WRAP_WIDTH);
+        //     wrappedLogLines.push(...wrapped);
+        // });
 
         const maxScroll = this.getMaxScroll();
         if (this.scrollOffset > 0 && maxScroll > 0) {
             this.scrollIndicator.setText(`↑ ${this.scrollOffset}/${maxScroll} ↓`);
-            logLines.splice(1, 0, `--- ↑ ${this.scrollOffset} more above ---`);
+            wrappedLogLines.splice(1, 0, `--- ↑ ${this.scrollOffset} more above ---`);
         } else {
             this.scrollIndicator.setText(this.logs.length > this.visibleLogs ? `Scroll ↑ (${maxScroll})` : "");
         }
 
-        const maxLines = Math.max(configLines.length, logLines.length);
+        const maxLines = Math.max(configLines.length, wrappedLogLines.length);
         const lines: string[] = [];
 
         for (let i = 0; i < maxLines; i++) {
-            const left = (logLines[i] ?? "").padEnd(this.COLUMN_WIDTH, " ");
+            const left = (wrappedLogLines[i] ?? "").padEnd(this.COLUMN_WIDTH, " ");
             const right = configLines[i] ?? "";
             lines.push(left + right);
         }
@@ -700,6 +756,15 @@ export class DebugPanel {
         this.text.setText(lines.join("\n"));
     }
 
+    private wrapTextSimple(text: string, maxWidth: number): string[] {
+        const lines: string[] = [];
+
+        for (let i = 0; i < text.length; i += maxWidth) {
+            lines.push(text.substring(i, Math.min(i + maxWidth, text.length)));
+        }
+
+        return lines;
+    }
     private updateUIPositions() {
         const { width, height } = this.size;
         const { x, y } = this.position;

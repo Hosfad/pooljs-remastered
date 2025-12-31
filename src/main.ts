@@ -2,7 +2,7 @@ import * as Phaser from "phaser";
 import { PoolGameScene } from "./scenes/pool-game-scene";
 import { PoolPreLoadScene } from "./scenes/pool-preload-scene";
 
-const BASE_WIDTH = 1500;
+const BASE_WIDTH = 1800;
 const BASE_HEIGHT = 960;
 
 const gameConfig: Phaser.Types.Core.GameConfig = {

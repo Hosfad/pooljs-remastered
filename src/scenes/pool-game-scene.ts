@@ -14,8 +14,8 @@ import {
     POWER_METER,
 } from "../common/pool-constants";
 import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
-import { DebugPanel } from "../services/debug-panel";
 import { PoolService } from "../services/pool-service";
+import { DebugPanel } from "./debug-panel";
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -42,6 +42,7 @@ export class PoolGameScene extends Phaser.Scene {
     private background!: Phaser.GameObjects.Image;
     private playerTurn!: Phaser.GameObjects.Text;
     private holeBalls: Phaser.GameObjects.Sprite[] = [];
+    private holePlayedSounds: (number | undefined)[] = [];
 
     // Input state
     private mousePosition = new Vector2();
@@ -78,14 +79,17 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createUI() {
-        this.playerTurn = this.add.text(POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 4, "PLAYER TURN", {
-            fontFamily: "Arial",
-            fontSize: "24px",
-            color: "#00ff00",
-            fontStyle: "bold",
-        }).setOrigin(0.5, 0.5);
+        this.playerTurn = this.add
+            .text(POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 4, "PLAYER TURN", {
+                fontFamily: "Arial",
+                fontSize: "24px",
+                color: "#00ff00",
+                fontStyle: "bold",
+            })
+            .setOrigin(0.5, 0.5);
 
-        for (let i = 0; i < this.balls.length - 1; i++) { // -2 white and black
+        for (let i = 0; i < this.balls.length - 1; i++) {
+            // -2 white and black
             const ball = this.balls[i]!;
             const sprite = ball.phaserSprite;
 
@@ -382,6 +386,7 @@ export class PoolGameScene extends Phaser.Scene {
         if (!this.keyPositions.length) return;
 
         const frame = this.keyPositions.shift()!;
+
         frame.forEach((key, i) => {
             const sprite = this.balls[i]!.phaserSprite;
             if (!sprite.visible && i < this.balls.length - 1) return;
@@ -391,6 +396,15 @@ export class PoolGameScene extends Phaser.Scene {
             sprite.visible = !key.hidden;
 
             if (key.hidden) this.holeBalls[i]?.setAlpha(1);
+
+            if (key.hidden && this.holePlayedSounds[i] === undefined) {
+                this.holePlayedSounds[i] = 1;
+                this.sound.play(POOL_ASSETS.SOUND_EFFECTS.BALL_FALLING_INTO_POCKET);
+                // TODO: Remove this timeout :)
+                setTimeout(() => {
+                    this.holePlayedSounds[i] = undefined;
+                }, 2000);
+            }
         });
     }
 
@@ -470,6 +484,8 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.input.on("pointerup", () => {
+            this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
+
             this.isDraggingShot = false;
             this.keyPositions = this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
             this.setPower(0);

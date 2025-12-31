@@ -13,6 +13,7 @@ export class PoolService {
     private holes: Hole[];
 
     private inHole: Record<number, boolean> = {};
+
     private totals: Record<BallType, number>;
     private players: Record<BallType, number>;
 
@@ -30,7 +31,11 @@ export class PoolService {
         for (const ball of this.balls) this.totals[ball.ballType]++;
         this.turns = Object.keys(this.totals).filter((t) => this.totals[t as BallType] > 1) as BallType[];
 
-        console.log(Object.keys(this.totals).map((t) => `${t}: ${this.totals[t as BallType]}`).join(", "));
+        console.log(
+            Object.keys(this.totals)
+                .map((t) => `${t}: ${this.totals[t as BallType]}`)
+                .join(", ")
+        );
         console.log("Players", Object.values(this.turns).join(", "));
     }
 
@@ -54,10 +59,7 @@ export class PoolService {
         const whiteball = this.balls.length - 1;
         const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
 
-        velocities[whiteball]!.set(
-            Math.cos(angle) * powerPercent * MAX_POWER,
-            Math.sin(angle) * powerPercent * MAX_POWER
-        );
+        velocities[whiteball]!.set(Math.cos(angle) * powerPercent * MAX_POWER, Math.sin(angle) * powerPercent * MAX_POWER);
 
         const turn = this.whoseTurn();
         const points = this.players[turn];
@@ -72,7 +74,8 @@ export class PoolService {
 
     private getKeyPosition() {
         return this.balls.map((b, i) => ({
-            position: new Vector2(b.phaserSprite.x, b.phaserSprite.y), hidden: this.inHole[i] === true
+            position: new Vector2(b.phaserSprite.x, b.phaserSprite.y),
+            hidden: this.inHole[i] === true,
         }));
     }
 
@@ -136,14 +139,8 @@ export class PoolService {
                             const overlapOffsetX = overlap * 0.5 * nx;
                             const overlapOffsetY = overlap * 0.5 * ny;
 
-                            sprite1.setPosition(
-                                sprite1.x - overlapOffsetX,
-                                sprite1.y - overlapOffsetY
-                            );
-                            sprite2.setPosition(
-                                sprite2.x + overlapOffsetX,
-                                sprite2.y + overlapOffsetY
-                            );
+                            sprite1.setPosition(sprite1.x - overlapOffsetX, sprite1.y - overlapOffsetY);
+                            sprite2.setPosition(sprite2.x + overlapOffsetX, sprite2.y + overlapOffsetY);
 
                             // only apply velocity changes on first iteration
                             if (iteration === 0) {
@@ -166,8 +163,10 @@ export class PoolService {
                                     vel2.add({ x: impulseX, y: impulseY });
                                 }
 
-                                if (ball1.ballType === "white" && ball2.ballType === turn ||
-                                    ball2.ballType === "white" && ball1.ballType === turn) {
+                                if (
+                                    (ball1.ballType === "white" && ball2.ballType === turn) ||
+                                    (ball2.ballType === "white" && ball1.ballType === turn)
+                                ) {
                                     hitBallType = true;
                                 }
                             }
@@ -218,11 +217,17 @@ export class PoolService {
             wb.phaserSprite.setPosition(window.innerWidth / 2, window.innerHeight / 2);
             keyPositions.push(this.getKeyPosition());
         }
-
         return keyPositions;
     }
 
-    private getNormal(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): { x: number, y: number } {
+    private getNormal(
+        b: Phaser.Math.Vector2,
+        {
+            sprite: {
+                size: { points },
+            },
+        }: Collider
+    ): { x: number; y: number } {
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -244,10 +249,17 @@ export class PoolService {
             }
         }
 
-        return closestNormal
+        return closestNormal;
     }
 
-    private isPointInPolygon(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): boolean {
+    private isPointInPolygon(
+        b: Phaser.Math.Vector2,
+        {
+            sprite: {
+                size: { points },
+            },
+        }: Collider
+    ): boolean {
         const { x, y } = b;
 
         let inside = false;
@@ -260,7 +272,7 @@ export class PoolService {
             const xj = p2.x;
             const yj = p2.y;
 
-            const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
             if (intersect) inside = !inside;
         }
         return inside;
