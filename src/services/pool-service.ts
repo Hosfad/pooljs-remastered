@@ -1,6 +1,6 @@
 import * as Phaser from "phaser";
 import { BALL_RADIUS } from "../common/pool-constants";
-import type { Ball, BallType, Collider, Hole, KeyPositions } from "../common/pool-types";
+import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 
 const MAX_POWER = 20;
 const MAX_STEPS = 200;
@@ -16,6 +16,7 @@ export class PoolService {
 
     private totals: Record<BallType, number>;
     private players: Record<BallType, number>;
+    private collisions: Collision[] = [];
 
     private turns: BallType[];
     private turnIndex = 0;
@@ -76,6 +77,7 @@ export class PoolService {
         return this.balls.map((b, i) => ({
             position: new Vector2(b.phaserSprite.x, b.phaserSprite.y),
             hidden: this.inHole[i] === true,
+            collision: this.collisions[i],
         }));
     }
 
@@ -87,10 +89,11 @@ export class PoolService {
         const keyPositions: KeyPositions = [this.getKeyPosition()];
 
         let turn = this.whoseTurn();
-        if (this.players[turn] == this.totals[turn]) turn = "black";
         let hitBallType = false;
+        if (this.players[turn] == this.totals[turn]) turn = "black";
 
         for (let step = 0; step < MAX_STEPS; step++) {
+            this.collisions.length = 0;
             let anyMoving = false;
 
             for (let i = 0; i < this.balls.length; i++) {
@@ -144,6 +147,8 @@ export class PoolService {
 
                             // only apply velocity changes on first iteration
                             if (iteration === 0) {
+                                this.collisions[i] = 'ball';
+
                                 const vel1 = velocities[i]!;
                                 const vel2 = velocities[j]!;
 
@@ -177,6 +182,8 @@ export class PoolService {
                         if (!this.isPointInPolygon(b1, collider)) continue;
 
                         if (iteration === 0) {
+                            this.collisions[i] = 'wall';
+
                             const vel1 = velocities[i]!;
                             const normal = this.getNormal(b1, collider);
 
@@ -196,6 +203,7 @@ export class PoolService {
                         if (b1.distance(hole.sprite.position) < BALL_RADIUS * 0.85) {
                             this.inHole[i] = true;
                             this.players[ball1.ballType]++;
+                            this.collisions[i] = 'hole';
                             break;
                         }
                     }
@@ -220,14 +228,7 @@ export class PoolService {
         return keyPositions;
     }
 
-    private getNormal(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): { x: number; y: number } {
+    private getNormal(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): { x: number; y: number } {
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -252,14 +253,7 @@ export class PoolService {
         return closestNormal;
     }
 
-    private isPointInPolygon(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): boolean {
+    private isPointInPolygon(b: Phaser.Math.Vector2, { sprite: { size: { points }, }, }: Collider): boolean {
         const { x, y } = b;
 
         let inside = false;

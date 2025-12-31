@@ -47,7 +47,7 @@ export class PoolGameScene extends Phaser.Scene {
     private background!: Phaser.GameObjects.Image;
     private playerTurn!: Phaser.GameObjects.Text;
     private holeBalls: Phaser.GameObjects.Sprite[] = [];
-    private holePlayedSounds: (number | undefined)[] = [];
+    private playedSounds: (number | undefined)[] = [];
 
     private settingsButton: Phaser.GameObjects.Text | undefined;
     private settingsModal!: SettingsModal;
@@ -501,18 +501,25 @@ export class PoolGameScene extends Phaser.Scene {
             const sprite = this.balls[i]!.phaserSprite;
             if (!sprite.visible && i < this.balls.length - 1) return;
 
-            const pos = this.toTableCoordinates(key.position.x, key.position.y);
+            const pos = key.position;
             sprite.setPosition(pos.x, pos.y);
             sprite.visible = !key.hidden;
 
             if (key.hidden) this.holeBalls[i]?.setAlpha(1);
 
-            if (key.hidden && this.holePlayedSounds[i] === undefined) {
-                this.holePlayedSounds[i] = 1;
-                this.sound.play(POOL_ASSETS.SOUND_EFFECTS.BALL_FALLING_INTO_POCKET);
-                setTimeout(() => {
-                    this.holePlayedSounds[i] = undefined;
-                }, 2000);
+            if (this.playedSounds[i] === undefined && key.collision !== undefined) {
+                switch (key.collision) {
+                    case 'wall':
+                        this.sound.play(POOL_ASSETS.SOUND_EFFECTS.BALL_HITTING_TABLE_EDGE);
+                        break;
+                    case 'ball':
+                        this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
+                        break;
+                    case 'hole':
+                        this.sound.play(POOL_ASSETS.SOUND_EFFECTS.BALL_FALLING_INTO_POCKET);
+                        break;
+                }
+                this.sound.addListener('stop', () => { this.playedSounds[i] = undefined; }, { once: true });
             }
         });
     }
