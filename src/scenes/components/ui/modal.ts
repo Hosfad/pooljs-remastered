@@ -409,9 +409,143 @@ export class Modal extends Phaser.GameObjects.Container {
     }
 
     public resizeModal(width: number, height: number): void {
+        const oldWidth = this.config.width;
+        const oldHeight = this.config.height;
+
         this.config.width = width;
         this.config.height = height;
-        this.updateSize(width, height);
+
+        if (this.panel) {
+            this.panel.setSize(width, height);
+            this.panel.setInteractive({ useHandCursor: true }); // Reset hit area
+        }
+
+        this.updateRetroBackground();
+        this.updateBordersAndBevels();
+        this.updateTitlePosition();
+        this.updateGridAndCorners();
+        this.updateDraggableArea();
+
+        // Update content container positioning if needed
+        this.contentContainer.setPosition(0, 0);
+
+        // Reposition modal to stay centered if it was centered
+        const wasCentered = Math.abs(this.x - this.sceneWidth / 2) < 10 && Math.abs(this.y - this.sceneHeight / 2) < 10;
+        if (wasCentered) {
+            this.x = this.sceneWidth / 2;
+            this.y = this.sceneHeight / 2;
+        }
+    }
+
+    protected updateRetroBackground(): void {
+        const retroBackground = this.list.find(
+            (child) => child instanceof Phaser.GameObjects.Graphics
+        ) as Phaser.GameObjects.Graphics;
+
+        if (retroBackground) {
+            retroBackground.clear();
+            const { backgroundColor, backgroundAlpha, width, height } = this.config;
+
+            retroBackground.fillStyle(backgroundColor, backgroundAlpha);
+            retroBackground.fillRect(-width / 2 - 10, -height / 2 - 10, width + 20, height + 20);
+
+            retroBackground.lineStyle(1, 0x00ff00, 0.1);
+            for (let y = -height / 2; y < height / 2; y += 4) {
+                retroBackground.beginPath();
+                retroBackground.moveTo(-width / 2, y);
+                retroBackground.lineTo(width / 2, y);
+                retroBackground.strokePath();
+            }
+        }
+    }
+
+    protected updateBordersAndBevels(): void {
+        const { width, height, borderColor, borderThickness, cornerRadius, panelColor, panelAlpha } = this.config;
+
+        const outerBorder = this.list.find(
+            (child) => child instanceof Phaser.GameObjects.Graphics
+        ) as Phaser.GameObjects.Graphics;
+
+        if (outerBorder) {
+            outerBorder.clear();
+            outerBorder.fillStyle(0x4a2500, 1);
+            outerBorder.fillRoundedRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, cornerRadius + 5);
+        }
+
+        const innerBevel = this.list.find(
+            (child) => child instanceof Phaser.GameObjects.Graphics
+        ) as Phaser.GameObjects.Graphics;
+
+        if (innerBevel) {
+            innerBevel.clear();
+            innerBevel.lineStyle(2, 0xdeb887, 0.8);
+            innerBevel.strokeRoundedRect(-width / 2 + 2, -height / 2 + 2, width - 4, height - 4, cornerRadius - 2);
+        }
+
+        if (this.panel) {
+            this.panel.setStrokeStyle(borderThickness, borderColor, 1);
+        }
+    }
+
+    protected updateTitlePosition(): void {
+        const { height } = this.config;
+        if (this.titleText) {
+            this.titleText.setPosition(0, -height / 2 + 25);
+
+            // Update cursor position
+            const cursor = this.list.find(
+                (child) => child instanceof Phaser.GameObjects.Text && child.text === "_"
+            ) as Phaser.GameObjects.Text;
+
+            if (cursor) {
+                cursor.setPosition(this.titleText.width / 2 + 10, -height / 2 + 25);
+            }
+        }
+    }
+
+    protected updateGridAndCorners(): void {
+        if (!this.config.drawGrid) return;
+
+        const gridGraphics = this.list.filter((child) => child instanceof Phaser.GameObjects.Graphics);
+
+        const cornerGraphics = this.list.filter((child) => child instanceof Phaser.GameObjects.Graphics);
+
+        gridGraphics.forEach((g) => this.remove(g, true));
+        cornerGraphics.forEach((g) => this.remove(g, true));
+
+        this.addPanelTexture();
+    }
+
+    protected updateDraggableArea(): void {
+        const existingTitleBar = this.list.find(
+            (child) => child instanceof Phaser.GameObjects.Rectangle && child.fillColor === 0 && child.fillAlpha === 0
+        );
+
+        if (existingTitleBar) {
+            this.remove(existingTitleBar, true);
+        }
+
+        const { width, height } = this.config;
+        const titleBar = this.scene.add.rectangle(0, -height / 2 + 25, width, 50, 0x000000, 0);
+        titleBar.setInteractive({ useHandCursor: true });
+
+        titleBar.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+            this.isDragging = true;
+            this.dragOffset.x = this.x - pointer.worldX;
+            this.dragOffset.y = this.y - pointer.worldY;
+        });
+
+        titleBar.on("pointerup", () => {
+            this.isDragging = false;
+        });
+
+        titleBar.on("pointerout", () => {
+            if (this.isDragging && !this.scene.input.activePointer.isDown) {
+                this.isDragging = false;
+            }
+        });
+
+        this.add(titleBar);
     }
     public updateSize(width: number, height: number): void {
         this.contentContainer.setSize(width, height);

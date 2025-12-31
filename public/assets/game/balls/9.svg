@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="176" height="176" viewBox="857.5 302.5 176 176">
+  <radialGradient id="ball9_grad1" cx="945.5349" cy="2733.6479" r="121.1265" gradientTransform="matrix(1 0 0 0.2326 0 -157.392)" gradientUnits="userSpaceOnUse">
+    <stop offset="0" style="stop-color:#001A00"/>
+    <stop offset="0.2728" style="stop-color:#00361C"/>
+    <stop offset="0.6089" style="stop-color:#0B4D30"/>
+    <stop offset="0.8617" style="stop-color:#185B3A"/>
+    <stop offset="1" style="stop-color:#1C603E"/>
+  </radialGradient>
+  <radialGradient id="ball9_grad2" cx="945.5349" cy="380.4545" r="88" gradientUnits="userSpaceOnUse">
+    <stop offset="0" style="stop-color:#FFFFFF"/>
+    <stop offset="0.3846" style="stop-color:#FCFCFC"/>
+    <stop offset="0.5567" style="stop-color:#F4F4F5"/>
+    <stop offset="0.6864" style="stop-color:#E9EAEB"/>
+    <stop offset="0.7949" style="stop-color:#DADBDD"/>
+    <stop offset="0.8901" style="stop-color:#C7C8CA"/>
+    <stop offset="0.9746" style="stop-color:#AFB1B4"/>
+    <stop offset="1" style="stop-color:#A7A9AC"/>
+  </radialGradient>
+  <radialGradient id="ball9_grad3" cx="977.0333" cy="347.4016" r="117.6537" gradientUnits="userSpaceOnUse">
+    <stop offset="0" style="stop-color:#FFFFFF"/>
+    <stop offset="0.3559" style="stop-color:#FFE86E"/>
+    <stop offset="0.6633" style="stop-color:#FFDE17"/>
+    <stop offset="0.7707" style="stop-color:#FFCC16"/>
+    <stop offset="0.916" style="stop-color:#FDB717"/>
+    <stop offset="1" style="stop-color:#FCAF17"/>
+  </radialGradient>
+  <circle fill="url(#ball9_grad2)" cx="945.5" cy="390.5" r="88"/>
+  <path fill="url(#ball9_grad3)" d="M857.5,390.2c0,20,6.7,38.4,17.9,53.2h140.3c11.2-14.8,17.9-33.2,17.9-53.2c0-20.7-7.2-39.8-19.2-54.8H876.7C864.7,350.4,857.5,369.5,857.5,390.2z"/>
+  <circle fill="#FFFFFF" cx="945.5" cy="390.5" r="39.8"/>
+  <text transform="matrix(1 0 0 1 929.4548 410.0645)" font-family="'MyriadPro-Semibold'" font-size="60px">9</text>
+</svg>

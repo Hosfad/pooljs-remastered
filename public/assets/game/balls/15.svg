@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="176" height="176" viewBox="1105.6 525 176 176">
+  <radialGradient id="ball15_grad1" cx="1193.6238" cy="3690.624" r="121.1264" gradientTransform="matrix(1 0 0 0.2326 0 -157.392)" gradientUnits="userSpaceOnUse">
+    <stop offset="0" style="stop-color:#001A00"/>
+    <stop offset="0.2728" style="stop-color:#00361C"/>
+    <stop offset="0.6089" style="stop-color:#0B4D30"/>
+    <stop offset="0.8617" style="stop-color:#185B3A"/>
+    <stop offset="1" style="stop-color:#1C603E"/>
+  </radialGradient>
+  <radialGradient id="ball15_grad2" cx="1193.6238" cy="603.0471" r="88" gradientUnits="userSpaceOnUse">
+    <stop offset="0" style="stop-color:#FFFFFF"/>
+    <stop offset="0.3846" style="stop-color:#FCFCFC"/>
+    <stop offset="0.5567" style="stop-color:#F4F4F5"/>
+    <stop offset="0.6864" style="stop-color:#E9EAEB"/>
+    <stop offset="0.7949" style="stop-color:#DADBDD"/>
+    <stop offset="0.8901" style="stop-color:#C7C8CA"/>
+    <stop offset="0.9746" style="stop-color:#AFB1B4"/>
+    <stop offset="1" style="stop-color:#A7A9AC"/>
+  </radialGradient>
+  <radialGradient id="ball15_grad3" cx="1223.6222" cy="572.5491" r="100.5" gradientUnits="userSpaceOnUse">
+    <stop offset="0" style="stop-color:#FFFFFF"/>
+    <stop offset="0.2565" style="stop-color:#F47D76"/>
+    <stop offset="0.3269" style="stop-color:#E26761"/>
+    <stop offset="0.4646" style="stop-color:#CE4342"/>
+    <stop offset="0.5706" style="stop-color:#C32932"/>
+    <stop offset="0.6314" style="stop-color:#BE1E2D"/>
+    <stop offset="0.7268" style="stop-color:#BA1D2C"/>
+    <stop offset="0.86" style="stop-color:#AE1A28"/>
+    <stop offset="1" style="stop-color:#9C1421"/>
+  </radialGradient>
+  <circle fill="url(#ball15_grad2)" cx="1193.6" cy="613" r="88"/>
+  <path fill="url(#ball15_grad3)" d="M1105.6,613.9c0,20,6.7,38.4,17.9,53.2h140.3c11.2-14.8,17.9-33.2,17.9-53.2c0-20.7-7.2-39.8-19.2-54.8h-137.6C1112.8,574.1,1105.6,593.1,1105.6,613.9z"/>
+  <circle fill="#FFFFFF" cx="1193.6" cy="613" r="39.8"/>
+  <text transform="matrix(1 0 0 1 1163.5437 632.6571)" font-family="'MyriadPro-Semibold'" font-size="60px" letter-spacing="-4">15</text>
+</svg>

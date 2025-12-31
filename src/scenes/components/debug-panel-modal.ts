@@ -281,9 +281,8 @@ export class DebugPanelModal extends Modal {
     private expandModal(width: number, height: number): void {
         this.contentWidth = width - 40;
         this.contentHeight = height - 80;
-        this.text.setWordWrapWidth(this.contentWidth - 20);
 
-        this.updateInputUIPosition();
+        this.resizeModal(width, height);
     }
 
     private createInputUI() {
@@ -488,6 +487,7 @@ export class DebugPanelModal extends Modal {
         if (!commandDef) return console.log(`Unknown command: ${cmdName}. Type 'help' for available commands.`);
         if (args.length < commandDef.args.length) {
             console.log(`Error: ${commandDef.name} requires ${commandDef.args.length} arguments`);
+
             console.log(`Usage: ${commandDef.name} ${commandDef.args.map((arg) => `<${arg.name}:${arg.type}>`).join(" ")}`);
             return;
         }
@@ -732,6 +732,11 @@ export class DebugPanelModal extends Modal {
         // Update cursor position
         this.inputCursor.setPosition(this.inputField.x + 5, INPUT_Y + 10);
         this.updateInputDisplay();
+    }
+
+    private updateTextPosition(): void {
+        this.text.setWordWrapWidth(this.contentWidth - 20);
+        this.text.setPosition(this.startX - this.contentWidth / 2 + 10, this.startY + 10);
     }
 
     public override update() {

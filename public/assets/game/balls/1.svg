@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="176" height="176" viewBox="113.3 79.9 176 176">
+  <radialGradient id="ball1_grad1" cx="201.2683" cy="1776.672" r="121.1265" gradientTransform="matrix(1 0 0 0.2326 0 -157.392)" gradientUnits="userSpaceOnUse">
+    <stop offset="0" style="stop-color:#001A00"/>
+    <stop offset="0.2728" style="stop-color:#00361C"/>
+    <stop offset="0.6089" style="stop-color:#0B4D30"/>
+    <stop offset="0.8617" style="stop-color:#185B3A"/>
+    <stop offset="1" style="stop-color:#1C603E"/>
+  </radialGradient>
+  <radialGradient id="ball1_grad2" cx="228.2683" cy="123.8619" r="126.7495" gradientUnits="userSpaceOnUse">
+    <stop offset="0" style="stop-color:#FFFFFF"/>
+    <stop offset="0.3559" style="stop-color:#FFE86E"/>
+    <stop offset="0.6633" style="stop-color:#FFDE17"/>
+    <stop offset="0.7707" style="stop-color:#FFCC16"/>
+    <stop offset="0.916" style="stop-color:#FDB717"/>
+    <stop offset="1" style="stop-color:#FCAF17"/>
+  </radialGradient>
+  <circle fill="url(#ball1_grad2)" cx="201.3" cy="167.9" r="88"/>
+  <circle fill="#FFFFFF" cx="201.3" cy="167.9" r="39.8"/>
+  <text transform="matrix(1 0 0 1 185.1884 187.4719)" font-family="'MyriadPro-Semibold'" font-size="60px">1</text>
+</svg>

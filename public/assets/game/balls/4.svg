@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="176" height="176" viewBox="857.5 79.9 176 176">
+  <radialGradient id="ball4_grad1" cx="945.5349" cy="1776.672" r="121.1265" gradientTransform="matrix(1 0 0 0.2326 0 -157.392)" gradientUnits="userSpaceOnUse">
+    <stop offset="0" style="stop-color:#001A00"/>
+    <stop offset="0.2728" style="stop-color:#00361C"/>
+    <stop offset="0.6089" style="stop-color:#0B4D30"/>
+    <stop offset="0.8617" style="stop-color:#185B3A"/>
+    <stop offset="1" style="stop-color:#1C603E"/>
+  </radialGradient>
+  <radialGradient id="ball4_grad2" cx="978.5333" cy="132.3632" r="132.6057" gradientUnits="userSpaceOnUse">
+    <stop offset="0" style="stop-color:#FFFFFF"/>
+    <stop offset="0.2423" style="stop-color:#916CAF"/>
+    <stop offset="0.3825" style="stop-color:#8858A4"/>
+    <stop offset="0.533" style="stop-color:#81469B"/>
+    <stop offset="0.6241" style="stop-color:#7F3F98"/>
+    <stop offset="0.6994" style="stop-color:#7B3D94"/>
+    <stop offset="0.7987" style="stop-color:#75398D"/>
+    <stop offset="0.911" style="stop-color:#6B3280"/>
+    <stop offset="1" style="stop-color:#602A73"/>
+  </radialGradient>
+  <circle fill="url(#ball4_grad2)" cx="945.5" cy="167.9" r="88"/>
+  <circle fill="#FFFFFF" cx="945.5" cy="167.9" r="39.8"/>
+  <text transform="matrix(1 0 0 1 929.4548 187.4719)" font-family="'MyriadPro-Semibold'" font-size="60px">4</text>
+</svg>
