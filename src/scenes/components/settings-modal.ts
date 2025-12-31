@@ -34,6 +34,7 @@ export class SettingsModal extends Modal {
             panelColor: 0x0a0a1a,
             backgroundColor: 0x001100,
             borderColor: Phaser.Display.Color.HexStringToColor(COLORS.color).color,
+            hotkey: Phaser.Input.Keyboard.KeyCodes.F3,
         };
 
         super(scene, x, y, config);

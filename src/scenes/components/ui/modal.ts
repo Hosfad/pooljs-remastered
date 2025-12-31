@@ -18,8 +18,9 @@ export interface ModalConfig {
     accentColor?: string;
     scrollable?: boolean;
     scrollHeight?: number;
-    drawBackground?: boolean; // NEW: Control whether to draw the dark background
-    hotkey?: typeof Phaser.Input.Keyboard.KeyCodes[keyof typeof Phaser.Input.Keyboard.KeyCodes]; // NEW: Hotkey to toggle modal
+    drawBackground?: boolean;
+    hotkey?: typeof Phaser.Input.Keyboard.KeyCodes[keyof typeof Phaser.Input.Keyboard.KeyCodes];
+    disableBackgroundClicks?: boolean;
 }
 
 export class Modal extends Phaser.GameObjects.Container {
@@ -29,7 +30,7 @@ export class Modal extends Phaser.GameObjects.Container {
     protected config: Required<Omit<ModalConfig, "hotkey">> & {
         hotkey?: typeof Phaser.Input.Keyboard.KeyCodes[keyof typeof Phaser.Input.Keyboard.KeyCodes];
     }; // UPDATED
-    private hotkey?: Phaser.Input.Keyboard.Key; // NEW: Store hotkey reference
+    private hotkey?: Phaser.Input.Keyboard.Key;
 
     private onCloseCallback?: () => void;
     private isDragging = false;
@@ -65,6 +66,7 @@ export class Modal extends Phaser.GameObjects.Container {
             scrollHeight: 300,
             drawBackground: true,
             hotkey: undefined,
+            disableBackgroundClicks: false,
             ...config,
         };
 
@@ -108,8 +110,7 @@ export class Modal extends Phaser.GameObjects.Container {
 
         this.blockingBackground.setInteractive();
         this.blockingBackground.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-            const rect = this.contentContainer.getBounds();
-
+            if (this.config.disableBackgroundClicks) return;
             this.hide();
         });
 
@@ -314,7 +315,8 @@ export class Modal extends Phaser.GameObjects.Container {
     }
 
     public show(): void {
-        setGlobalModalOpenVariable(true);
+        if (!this.config.disableBackgroundClicks) setGlobalModalOpenVariable(true);
+
         if (this.config.drawBackground && this.blockingBackground) {
             this.blockingBackground.setVisible(true);
             this.blockingBackground.setActive(true);
@@ -347,7 +349,7 @@ export class Modal extends Phaser.GameObjects.Container {
     }
 
     public hide(): void {
-        setGlobalModalOpenVariable(false);
+        if (!this.config.disableBackgroundClicks) setGlobalModalOpenVariable(false);
         this.scene.tweens.add({
             targets: this,
             scaleX: 0.8,
