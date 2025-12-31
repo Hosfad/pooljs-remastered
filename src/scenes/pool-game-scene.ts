@@ -10,9 +10,6 @@ import {
     MODAL_OPEN,
     POOL_ASSETS,
     POOL_SCENE_KEYS,
-    POOL_TABLE_HEIGHT,
-    POOL_TABLE_WIDTH,
-    POWER_METER,
 } from "../common/pool-constants";
 import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
 import { PoolService } from "../services/pool-service";
@@ -31,6 +28,12 @@ export class PoolGameScene extends Phaser.Scene {
     private holes: Hole[] = [];
     private cue!: Cue;
     private colliders: Collider[] = [];
+
+    // Dynamic dimensions based on device scale
+    private tableWidth!: number;
+    private tableHeight!: number;
+    private marginX!: number;
+    private marginY!: number;
 
     private powerMeter!: {
         background: Phaser.GameObjects.Graphics;
@@ -66,9 +69,14 @@ export class PoolGameScene extends Phaser.Scene {
     public create(): void {
         this.isMobile = this.game.device.input.touch;
 
+        // Calculate dimensions based on device scale with margins
+        this.calculateTableDimensions();
+
         if (DEBUG_GRAPHICS) this.setupDebugPanel();
-        this.background = this.add.image(POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 2, POOL_ASSETS.BACKGROUND);
-        this.background.setDisplaySize(POOL_TABLE_WIDTH, POOL_TABLE_HEIGHT);
+
+        // Center the table on the screen
+        this.background = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, POOL_ASSETS.BACKGROUND);
+        this.background.setDisplaySize(this.tableWidth, this.tableHeight);
 
         // Initialize game objects
         this.createHoles();
@@ -83,6 +91,48 @@ export class PoolGameScene extends Phaser.Scene {
 
         this.service = new PoolService(this.balls, this.colliders, this.holes);
         console.log("Pool game initialized with", this.balls.length, "balls");
+    }
+
+    private calculateTableDimensions(): void {
+        const canvas = this.game.scale.canvas;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        const marginPercentage = 0.1;
+        const maxMargin = 100;
+
+        this.marginX = Math.min(canvasWidth * marginPercentage, maxMargin);
+        this.marginY = Math.min(canvasHeight * marginPercentage, maxMargin);
+
+        const availableWidth = canvasWidth - 2 * this.marginX;
+        const availableHeight = canvasHeight - 2 * this.marginY;
+
+        // Maintain the original table aspect ratio
+        const originalAspectRatio = 16 / 10;
+        const availableAspectRatio = availableWidth / availableHeight;
+
+        if (availableAspectRatio > originalAspectRatio) {
+            this.tableHeight = availableHeight;
+            this.tableWidth = this.tableHeight * originalAspectRatio;
+        } else {
+            this.tableWidth = availableWidth;
+            this.tableHeight = this.tableWidth / originalAspectRatio;
+        }
+
+        // Center the table
+        this.marginX = (canvasWidth - this.tableWidth) / 2;
+        this.marginY = (canvasHeight - this.tableHeight) / 2;
+
+        console.log(
+            `Canvas: ${canvasWidth}x${canvasHeight}, Table: ${this.tableWidth}x${this.tableHeight}, Margin: ${this.marginX},${this.marginY}`
+        );
+    }
+
+    private toTableCoordinates(x: number, y: number): { x: number; y: number } {
+        return {
+            x: this.marginX + x,
+            y: this.marginY + y,
+        };
     }
 
     public override update(): void {
@@ -101,10 +151,11 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createUI() {
-        this.settingsModal = new SettingsModal(this, POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 2);
+        this.settingsModal = new SettingsModal(this, this.cameras.main.centerX, this.cameras.main.centerY);
 
+        const tableCenter = this.toTableCoordinates(this.tableWidth / 2, this.tableHeight / 4);
         this.playerTurn = this.add
-            .text(POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 4, "PLAYER TURN", {
+            .text(tableCenter.x, tableCenter.y, "PLAYER TURN", {
                 fontFamily: "Arial",
                 fontSize: "24px",
                 color: "#00ff00",
@@ -113,15 +164,12 @@ export class PoolGameScene extends Phaser.Scene {
             .setOrigin(0.5, 0.5);
 
         for (let i = 0; i < this.balls.length - 1; i++) {
-            // -2 white and black
             const ball = this.balls[i]!;
             const sprite = ball.phaserSprite;
 
             const w = BALL_RADIUS * 2;
-            const spr = this.add
-                .sprite(POOL_TABLE_WIDTH / 5 + w * i, POOL_TABLE_HEIGHT / 20, sprite.texture)
-                .setAlpha(0.5)
-                .setOrigin(0.5, 0.5);
+            const position = this.toTableCoordinates(this.tableWidth / 5 + w * i, this.tableHeight / 20);
+            const spr = this.add.sprite(position.x, position.y, sprite.texture).setAlpha(0.5).setOrigin(0.5, 0.5);
 
             this.holeBalls.push(spr);
         }
@@ -135,8 +183,9 @@ export class PoolGameScene extends Phaser.Scene {
             strokeThickness: 2,
         };
 
+        const buttonPosition = this.toTableCoordinates(this.tableWidth - 100, 30);
         this.settingsButton = this.add
-            .text(POOL_TABLE_WIDTH - 100, 30, "⚙️ SETTINGS", buttonStyle)
+            .text(buttonPosition.x, buttonPosition.y, "⚙️ SETTINGS", buttonStyle)
             .setOrigin(0.5)
             .setInteractive({ useHandCursor: true })
             .setDepth(100);
@@ -153,7 +202,7 @@ export class PoolGameScene extends Phaser.Scene {
         const ROW_SPACING = DIAMETER * 0.8;
         const COL_SPACING = DIAMETER * 0.8;
 
-        const rackOrigin = { x: POOL_TABLE_WIDTH / 4, y: POOL_TABLE_HEIGHT / 2 };
+        const rackOrigin = { x: this.tableWidth / 4, y: this.tableHeight / 2 };
 
         // --- Create racked balls (triangle) ---
         for (let row = 0; row < ROWS; row++) {
@@ -172,12 +221,11 @@ export class PoolGameScene extends Phaser.Scene {
         }
 
         const eightBall = this.balls[this.balls.length - 1]!;
-
         eightBall.ballType = "black";
         eightBall.phaserSprite.setTexture(POOL_ASSETS.BLACK_BALL);
 
         //  whiteball ball ---
-        const cueX = POOL_TABLE_WIDTH * 0.75;
+        const cueX = this.tableWidth * 0.75;
         const cueY = rackOrigin.y;
 
         this.createBall(cueX, cueY, "white", POOL_ASSETS.WHITE_BALL);
@@ -189,7 +237,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.aimLine = this.add.graphics();
 
         const whiteBall = this.balls[this.balls.length - 1]!;
-        const { x, y } = whiteBall.phaserSprite;
+        const { x, y } = this.toTableCoordinates(whiteBall.phaserSprite.x, whiteBall.phaserSprite.y);
         const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUE_STICK);
         cueSprite.setOrigin(1, 0.5);
 
@@ -214,8 +262,8 @@ export class PoolGameScene extends Phaser.Scene {
             RAIL_POCKET_INNER: 2.05, // Inner pocket edge divisor
         };
 
-        const xRatio = POOL_TABLE_WIDTH / 16;
-        const yRatio = POOL_TABLE_HEIGHT / 12;
+        const xRatio = this.tableWidth / 16;
+        const yRatio = this.tableHeight / 12;
 
         const createMirroredColliders = () => {
             // LEFT CUSHION (vertical rail)
@@ -231,11 +279,11 @@ export class PoolGameScene extends Phaser.Scene {
                     },
                     {
                         x: xRatio * (CUSHION_CONSTANTS.SIDE_OUTER_X - CUSHION_CONSTANTS.SIDE_THICKNESS_X),
-                        y: POOL_TABLE_HEIGHT - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
+                        y: this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
                     },
                     {
                         x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X,
-                        y: POOL_TABLE_HEIGHT - yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y,
+                        y: this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y,
                     },
                 ],
                 normal: new Vector2(1, 0),
@@ -243,7 +291,7 @@ export class PoolGameScene extends Phaser.Scene {
 
             const rightCushion = {
                 points: leftCushion.points.map((p) => ({
-                    x: POOL_TABLE_WIDTH - p.x,
+                    x: this.tableWidth - p.x,
                     y: p.y,
                 })),
                 normal: new Vector2(-1, 0),
@@ -260,11 +308,11 @@ export class PoolGameScene extends Phaser.Scene {
                         y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
                     },
                     {
-                        x: POOL_TABLE_WIDTH / CUSHION_CONSTANTS.RAIL_POCKET_OUTER,
+                        x: this.tableWidth / CUSHION_CONSTANTS.RAIL_POCKET_OUTER,
                         y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
                     },
                     {
-                        x: POOL_TABLE_WIDTH / CUSHION_CONSTANTS.RAIL_POCKET_INNER,
+                        x: this.tableWidth / CUSHION_CONSTANTS.RAIL_POCKET_INNER,
                         y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y,
                     },
                 ],
@@ -274,14 +322,14 @@ export class PoolGameScene extends Phaser.Scene {
             const bottomLeftCushion = {
                 points: topLeftCushion.points.map((p) => ({
                     x: p.x,
-                    y: POOL_TABLE_HEIGHT - p.y,
+                    y: this.tableHeight - p.y,
                 })),
                 normal: new Vector2(0, -1),
             };
 
             const topRightCushion = {
                 points: topLeftCushion.points.map((p) => ({
-                    x: POOL_TABLE_WIDTH - p.x,
+                    x: this.tableWidth - p.x,
                     y: p.y,
                 })),
                 normal: new Vector2(0, 1),
@@ -289,8 +337,8 @@ export class PoolGameScene extends Phaser.Scene {
 
             const bottomRightCushion = {
                 points: topLeftCushion.points.map((p) => ({
-                    x: POOL_TABLE_WIDTH - p.x,
-                    y: POOL_TABLE_HEIGHT - p.y,
+                    x: this.tableWidth - p.x,
+                    y: this.tableHeight - p.y,
                 })),
                 normal: new Vector2(0, -1),
             };
@@ -304,19 +352,23 @@ export class PoolGameScene extends Phaser.Scene {
             const graphics = this.add.graphics();
             graphics.fillStyle(0xff0000, 0.5);
             graphics.beginPath();
-            graphics.moveTo(def.points[0]!.x, def.points[0]!.y);
+
+            const firstPoint = this.toTableCoordinates(def.points[0]!.x, def.points[0]!.y);
+            graphics.moveTo(firstPoint.x, firstPoint.y);
 
             for (let i = 1; i < def.points.length; i++) {
-                graphics.lineTo(def.points[i]!.x, def.points[i]!.y);
+                const point = this.toTableCoordinates(def.points[i]!.x, def.points[i]!.y);
+                graphics.lineTo(point.x, point.y);
             }
 
             graphics.closePath();
             graphics.fillPath();
 
+            const adjustedPoints = def.points.map((p) => this.toTableCoordinates(p.x, p.y));
             const collider: Collider = {
                 sprite: {
-                    position: new Vector2(def.points[0]!.x, def.points[0]!.y),
-                    size: { points: def.points.map((p) => new Vector2(p.x, p.y)) },
+                    position: new Vector2(adjustedPoints[0]!.x, adjustedPoints[0]!.y),
+                    size: { points: adjustedPoints.map((p) => new Vector2(p.x, p.y)) },
                     normal: def.normal,
                     color: "brown",
                     visible: true,
@@ -331,30 +383,43 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createPowerMeter(): void {
-        const { X, Y, WIDTH, HEIGHT, HANDLE_HEIGHT, MIN_Y } = POWER_METER;
+        // Position power meter relative to the table
+        const powerMeterX = this.marginX + this.tableWidth / 2;
+        const powerMeterY = this.marginY + this.tableHeight - 100;
+        const powerMeterWidth = 40;
+        const powerMeterHeight = 200;
+        const handleHeight = 30;
+        const minY = powerMeterY;
+        const maxY = powerMeterY + powerMeterHeight - handleHeight;
 
         // Background of power meter
         const background = this.add.graphics();
         background.fillStyle(0x1a1a1a, 0.9);
-        background.fillRoundedRect(X - WIDTH / 2, Y, WIDTH, HEIGHT, 10);
+        background.fillRoundedRect(powerMeterX - powerMeterWidth / 2, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
         background.lineStyle(3, 0x4a3520, 1);
-        background.strokeRoundedRect(X - WIDTH / 2, Y, WIDTH, HEIGHT, 10);
+        background.strokeRoundedRect(powerMeterX - powerMeterWidth / 2, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
 
         const fill = this.add.graphics();
-        const handle = this.add.sprite(X, MIN_Y + HANDLE_HEIGHT / 2, POOL_ASSETS.DRAG_ICON);
+        const handle = this.add.sprite(powerMeterX, minY + handleHeight / 2, POOL_ASSETS.DRAG_ICON);
         handle.setScale(0.05);
         handle.setRotation(Math.PI / 2);
         handle.setInteractive({ draggable: true, useHandCursor: true });
 
         // Add power label
-        this.add.text(X - WIDTH / 2, Y - 30, "POWER", {
+        this.add.text(powerMeterX - powerMeterWidth / 2, powerMeterY - 30, "POWER", {
             fontFamily: "Arial",
             fontSize: "18px",
             color: "#d4af37",
             fontStyle: "bold",
         });
 
-        this.powerMeter = { background, fill, handle, isDragging: false, power: 0 };
+        this.powerMeter = {
+            background,
+            fill,
+            handle,
+            isDragging: false,
+            power: 0,
+        };
 
         // Setup drag events
         handle.on("dragstart", () => {
@@ -376,27 +441,27 @@ export class PoolGameScene extends Phaser.Scene {
 
         handle.on("drag", (_pointer: Phaser.Input.Pointer, _dragX: number, dragY: number) => {
             if (MODAL_OPEN) return;
-            const { MIN_Y, MAX_Y, HANDLE_HEIGHT } = POWER_METER;
 
-            const usableHeight = MAX_Y - MIN_Y - HANDLE_HEIGHT;
-
-            const clampedY = Phaser.Math.Clamp(dragY, MIN_Y + HANDLE_HEIGHT / 2, MAX_Y - HANDLE_HEIGHT / 2);
-
-            const power = (clampedY - (MIN_Y + HANDLE_HEIGHT / 2)) / usableHeight;
+            const usableHeight = maxY - minY - handleHeight;
+            const clampedY = Phaser.Math.Clamp(dragY, minY + handleHeight / 2, maxY - handleHeight / 2);
+            const power = (clampedY - (minY + handleHeight / 2)) / usableHeight;
             this.setPower(power);
         });
         this.updatePowerMeterFromPower();
     }
 
     private updatePowerMeterFromPower(): void {
-        const { X, WIDTH, HEIGHT, MIN_Y, MAX_Y, HANDLE_HEIGHT } = POWER_METER;
+        const powerMeterX = this.marginX + this.tableWidth / 2;
+        const powerMeterY = this.marginY + this.tableHeight - 100;
+        const powerMeterWidth = 40;
+        const powerMeterHeight = 200;
+        const handleHeight = 30;
+        const minY = powerMeterY;
+        const maxY = powerMeterY + powerMeterHeight - handleHeight;
 
         const { power, fill, handle } = this.powerMeter;
-
-        const usableHeight = MAX_Y - MIN_Y - HANDLE_HEIGHT;
-
-        const handleY = MIN_Y + HANDLE_HEIGHT / 2 + usableHeight * power;
-
+        const usableHeight = maxY - minY - handleHeight;
+        const handleY = minY + handleHeight / 2 + usableHeight * power;
         handle.y = handleY;
 
         fill.clear();
@@ -408,10 +473,10 @@ export class PoolGameScene extends Phaser.Scene {
         else if (power > 0.33) color = 0xffff00;
 
         const fillHeight = usableHeight * power;
-
         fill.fillStyle(color, 0.7);
-        fill.fillRoundedRect(X - WIDTH / 2 + 5, MIN_Y + 5, WIDTH - 10, fillHeight, 5);
+        fill.fillRoundedRect(powerMeterX - powerMeterWidth / 2 + 5, minY + 5, powerMeterWidth - 10, fillHeight, 5);
     }
+
     private isTouchingPowerMeter(pointer: Phaser.Input.Pointer): boolean {
         const handleBounds = this.powerMeter.handle.getBounds();
         return (
@@ -421,6 +486,7 @@ export class PoolGameScene extends Phaser.Scene {
             pointer.y <= handleBounds.y + handleBounds.height
         );
     }
+
     private setPower(power: number): void {
         this.powerMeter.power = power;
         this.updatePowerMeterFromPower();
@@ -435,7 +501,7 @@ export class PoolGameScene extends Phaser.Scene {
             const sprite = this.balls[i]!.phaserSprite;
             if (!sprite.visible && i < this.balls.length - 1) return;
 
-            const pos = key.position;
+            const pos = this.toTableCoordinates(key.position.x, key.position.y);
             sprite.setPosition(pos.x, pos.y);
             sprite.visible = !key.hidden;
 
@@ -444,7 +510,6 @@ export class PoolGameScene extends Phaser.Scene {
             if (key.hidden && this.holePlayedSounds[i] === undefined) {
                 this.holePlayedSounds[i] = 1;
                 this.sound.play(POOL_ASSETS.SOUND_EFFECTS.BALL_FALLING_INTO_POCKET);
-                // TODO: Remove this timeout :)
                 setTimeout(() => {
                     this.holePlayedSounds[i] = undefined;
                 }, 2000);
@@ -454,28 +519,32 @@ export class PoolGameScene extends Phaser.Scene {
 
     private createBall(x: number, y: number, ballType: Ball["ballType"], texture: string) {
         const r = BALL_RADIUS;
+        const position = this.toTableCoordinates(x, y);
 
-        const sprite = this.add.sprite(x, y, texture);
+        const sprite = this.add.sprite(position.x, position.y, texture);
         sprite.setScale((r * 2) / sprite.width);
 
-        const ball: Ball = { ballType, phaserSprite: sprite };
+        const ball: Ball = {
+            ballType,
+            phaserSprite: sprite,
+        };
 
         this.balls.push(ball);
     }
 
     private createHoles(): void {
-        const ratio = POOL_TABLE_WIDTH / 16;
-        const hRatio = POOL_TABLE_HEIGHT / 12;
+        const ratio = this.tableWidth / 16;
+        const hRatio = this.tableHeight / 12;
 
         const leftHolesX = ratio * 0.8;
         const topLeftHoleY = hRatio;
-        const bottomLeftHoleY = POOL_TABLE_HEIGHT - topLeftHoleY;
+        const bottomLeftHoleY = this.tableHeight - topLeftHoleY;
 
-        const rightColliderX = POOL_TABLE_WIDTH - leftHolesX;
+        const rightColliderX = this.tableWidth - leftHolesX;
         const topRightHoleY = topLeftHoleY;
         const bottomRightHoleY = bottomLeftHoleY;
 
-        const centerHolesX = POOL_TABLE_WIDTH / 2;
+        const centerHolesX = this.tableWidth / 2;
         const centerHolesYOffset = 20;
 
         const holePositions = [
@@ -488,17 +557,19 @@ export class PoolGameScene extends Phaser.Scene {
         ];
 
         holePositions.forEach((pos) => {
+            const position = this.toTableCoordinates(pos.x, pos.y);
+
             let graphics: Phaser.GameObjects.Graphics | undefined;
 
             if (DEBUG_GRAPHICS) {
                 graphics = this.add.graphics();
                 graphics.fillStyle(0x008000, 0.8);
-                graphics.fillCircle(pos.x, pos.y, HOLE_RADIUS);
+                graphics.fillCircle(position.x, position.y, HOLE_RADIUS);
             }
 
             const hole: Hole = {
                 sprite: {
-                    position: new Vector2(pos.x, pos.y),
+                    position: new Vector2(position.x, position.y),
                     color: "green",
                     size: { r: HOLE_RADIUS },
                     visible: true,
@@ -657,6 +728,13 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private setupDebugPanel() {
+        const debugPanelHeight = 180;
+        const debugPanelWidth = this.cameras.main.width / 2;
+        const debugPanelPosition = {
+            x: this.cameras.main.width / 2 - debugPanelWidth / 2,
+            y: this.cameras.main.height - debugPanelHeight,
+        };
+
         this.debugPanel = new DebugPanel(
             this,
             {
@@ -676,9 +754,11 @@ export class PoolGameScene extends Phaser.Scene {
                     const b = this.balls[this.balls.length - 1]!;
                     return `(${b.phaserSprite.x.toFixed(1)}, ${b.phaserSprite.y.toFixed(1)})`;
                 },
+                "TABLE SIZE": () => `${this.tableWidth.toFixed(0)}x${this.tableHeight.toFixed(0)}`,
+                "DEVICE SCALE": () => `${this.game.scale.canvas.width}x${this.game.scale.canvas.height}`,
             },
-            { width: POOL_TABLE_WIDTH, height: 180 },
-            { x: 0, y: POOL_TABLE_HEIGHT }
+            { width: debugPanelWidth, height: debugPanelHeight },
+            debugPanelPosition
         );
     }
 

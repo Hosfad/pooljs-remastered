@@ -189,7 +189,7 @@ export class DebugPanel {
             .setDepth(100);
 
         this.text = this.scene.add
-            .text(10, panelY + 10, "", {
+            .text(x + 10, panelY + 10, "", {
                 fontFamily: "monospace",
                 fontSize: "14px",
                 color: "#00ff00",
@@ -197,7 +197,7 @@ export class DebugPanel {
             })
             .setDepth(100);
 
-        const BUTTON_GRID_X = width - 130;
+        const BUTTON_GRID_X = x + width - 130;
 
         this.scrollIndicator = this.scene.add
             .text(BUTTON_GRID_X, panelY + panelHeight - 25, "", {
@@ -268,18 +268,19 @@ export class DebugPanel {
         const { x, y } = this.position!;
 
         const INPUT_Y = y + height - 40;
+        const INPUT_X = x;
 
         this.inputBg = this.scene.add
             .graphics()
             .fillStyle(0x000000, 0.9)
-            .fillRect(0, INPUT_Y, width, 40)
+            .fillRect(INPUT_X, INPUT_Y, width, 40)
             .lineStyle(2, 0x00ff00, 1)
-            .strokeRect(0, INPUT_Y, width, 40)
+            .strokeRect(INPUT_X, INPUT_Y, width, 40)
             .setVisible(false)
             .setDepth(100);
 
         this.inputField = this.scene.add
-            .text(10, INPUT_Y + 10, "", {
+            .text(INPUT_X + 10, INPUT_Y + 10, "", {
                 fontFamily: "monospace",
                 fontSize: "16px",
                 color: "#00ff00",
@@ -295,7 +296,7 @@ export class DebugPanel {
             .setDepth(100);
 
         this.closeButton = this.scene.add
-            .text(width - 40, INPUT_Y + 10, "[X]", {
+            .text(INPUT_X + width - 40, INPUT_Y + 10, "[X]", {
                 fontFamily: "monospace",
                 fontSize: "16px",
                 color: "#ff0000",
