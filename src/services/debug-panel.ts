@@ -79,7 +79,7 @@ export class DebugPanel {
         this.createInputUI();
         this.registerInput();
         this.registerCommands();
-        this.hideInput();
+        // this.hideInput();
         console.log("Debug panel initialized", config);
     }
 

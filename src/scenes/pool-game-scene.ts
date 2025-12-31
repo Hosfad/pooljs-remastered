@@ -40,6 +40,8 @@ export class PoolGameScene extends Phaser.Scene {
 
     // Graphics
     private background!: Phaser.GameObjects.Image;
+    private playerTurn!: Phaser.GameObjects.Text;
+    private holeBalls: Phaser.GameObjects.Sprite[] = [];
 
     // Input state
     private mousePosition = new Vector2();
@@ -66,6 +68,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.createBalls();
         this.createCue();
         this.createPowerMeter();
+        this.createUI();
 
         // Setup input
         this.setupInput();
@@ -74,8 +77,30 @@ export class PoolGameScene extends Phaser.Scene {
         console.log("Pool game initialized with", this.balls.length, "balls");
     }
 
+    private createUI() {
+        this.playerTurn = this.add.text(POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 4, "PLAYER TURN", {
+            fontFamily: "Arial",
+            fontSize: "24px",
+            color: "#00ff00",
+            fontStyle: "bold",
+        }).setOrigin(0.5, 0.5);
+
+        for (let i = 0; i < this.balls.length - 1; i++) { // -2 white and black
+            const ball = this.balls[i]!;
+            const sprite = ball.phaserSprite;
+
+            const w = BALL_RADIUS * 2;
+            const spr = this.add
+                .sprite(POOL_TABLE_WIDTH / 5 + w * i, POOL_TABLE_HEIGHT / 20, sprite.texture)
+                .setAlpha(0.5)
+                .setOrigin(0.5, 0.5);
+
+            this.holeBalls.push(spr);
+        }
+    }
+
     private createBalls() {
-        const ROWS = 5;
+        const ROWS = 3;
         const r = BALL_RADIUS;
         const DIAMETER = r * 2;
         const ROW_SPACING = DIAMETER * 0.8;
@@ -91,7 +116,7 @@ export class PoolGameScene extends Phaser.Scene {
 
             for (let i = 0; i < ballsInRow; i++) {
                 const isSolid = i % 2 === 0;
-                const ballType = isSolid ? "solid" : "striped";
+                const ballType = isSolid ? "yellow" : "red";
                 const texture = isSolid ? POOL_ASSETS.SOLID_BALL : POOL_ASSETS.STRIPED_BALL;
 
                 const y = startY + i * ROW_SPACING;
@@ -340,6 +365,14 @@ export class PoolGameScene extends Phaser.Scene {
 
     public override update(): void {
         this.input.enabled = !this.keyPositions.length;
+
+        const turn = this.service.whoseTurn().toUpperCase();
+        if (!this.balls[this.balls.length - 2]?.phaserSprite.visible) {
+            this.playerTurn.setText(this.service.winner() ? `${turn} WINS!` : `${turn} LOSES!`);
+        } else {
+            this.playerTurn.setText(`Is ${turn} turn!`);
+        }
+
         this.updateCue();
         this.updateKeyPositions();
         this.debugPanel?.update();
@@ -350,10 +383,14 @@ export class PoolGameScene extends Phaser.Scene {
 
         const frame = this.keyPositions.shift()!;
         frame.forEach((key, i) => {
-            const pos = key.position;
             const sprite = this.balls[i]!.phaserSprite;
+            if (!sprite.visible && i < this.balls.length - 1) return;
+
+            const pos = key.position;
             sprite.setPosition(pos.x, pos.y);
             sprite.visible = !key.hidden;
+
+            if (key.hidden) this.holeBalls[i]?.setAlpha(1);
         });
     }
 
@@ -522,6 +559,9 @@ export class PoolGameScene extends Phaser.Scene {
                     const b = this.balls[this.balls.length - 1]!;
                     return `(${b.phaserSprite.x.toFixed(1)}, ${b.phaserSprite.y.toFixed(1)})`;
                 },
+                TURN: () => this.service.whoseTurn(),
+                PLAYERS: () => Object.keys(this.service.players).map((t) => `${t}: ${this.service.players[t]}`).join(", "),
+                TOTALS: () => Object.keys(this.service.totals).map((t) => `${t}: ${this.service.totals[t]}`).join(", "),
             },
             { width: POOL_TABLE_WIDTH, height: 180 },
             { x: 0, y: POOL_TABLE_HEIGHT }
