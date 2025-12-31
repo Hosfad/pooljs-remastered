@@ -59,6 +59,9 @@ export class DebugPanel {
     private originalPosition = { x: 0, y: 0 };
     private originalSize = { width: 0, height: 0 };
 
+    private bg!: Phaser.GameObjects.Graphics;
+    private buttons: Phaser.GameObjects.Text[] = [];
+
     constructor(
         private scene: Phaser.Scene,
         private config: DebugConfigRecord,
@@ -76,6 +79,7 @@ export class DebugPanel {
         this.createInputUI();
         this.registerInput();
         this.registerCommands();
+        this.hideInput();
         console.log("Debug panel initialized", config);
     }
 
@@ -172,27 +176,25 @@ export class DebugPanel {
         const { width, height } = this.size;
         const { x, y } = this.position!;
 
-        const bg = this.scene.add.graphics();
-        bg.fillStyle(0x000000, 0.85);
-        bg.fillRect(x, y, width, height);
-        bg.lineStyle(2, 0x00ff00, 0.6);
-        bg.strokeRect(x, y, width, height);
-        bg.setDepth(100);
-        (this as any).bg = bg;
+        this.bg = this.scene.add.graphics()
+            .fillStyle(0x000000, 0.85)
+            .fillRect(x, y, width, height)
+            .lineStyle(2, 0x00ff00, 0.6)
+            .strokeRect(x, y, width, height)
+            .setDepth(100);
+
         this.text = this.scene.add.text(10, y + 10, "", {
             fontFamily: "monospace",
             fontSize: "14px",
             color: "#00ff00",
             wordWrap: { width: width - 20 },
-        });
-        this.text.setDepth(100);
+        }).setDepth(100);
 
         this.scrollIndicator = this.scene.add.text(width - 120, y + height - 25, "", {
             fontFamily: "monospace",
             fontSize: "12px",
             color: "#00ff00",
-        });
-        this.scrollIndicator.setDepth(100);
+        }).setDepth(100);
 
         this.clearButton = this.scene.add
             .text(width - 120, y + 10, "[ 🗑 Clear Logs]", {
@@ -211,9 +213,7 @@ export class DebugPanel {
                 color: "#00ff00",
             })
             .setInteractive({ useHandCursor: true })
-            .on("pointerdown", () => {
-                this.toggleExpand();
-            })
+            .on("pointerdown", () => this.toggleExpand())
             .setDepth(100);
 
         this.scrollUpButton = this.scene.add
@@ -235,6 +235,8 @@ export class DebugPanel {
             .setInteractive({ useHandCursor: true })
             .on("pointerdown", () => (this.scrollOffset = this.getMaxScroll()))
             .setDepth(100);
+
+        this.buttons = [this.expandButton, this.clearButton, this.scrollUpButton, this.scrollDownButton];
     }
 
     private toggleExpand() {
@@ -248,9 +250,7 @@ export class DebugPanel {
 
         this.updateUIPositions();
 
-        if (this.logs.length <= this.visibleLogs) {
-            this.scrollOffset = 0;
-        }
+        if (this.logs.length <= this.visibleLogs) this.scrollOffset = 0;
     }
 
     private createInputUI() {
@@ -259,27 +259,26 @@ export class DebugPanel {
 
         const INPUT_Y = y + height - 40;
 
-        this.inputBg = this.scene.add.graphics();
-        this.inputBg.fillStyle(0x000000, 0.9);
-        this.inputBg.fillRect(0, INPUT_Y, width, 40);
-        this.inputBg.lineStyle(2, 0x00ff00, 1);
-        this.inputBg.strokeRect(0, INPUT_Y, width, 40);
-        this.inputBg.setVisible(false);
-        this.inputBg.setDepth(100);
+        this.inputBg = this.scene.add.graphics()
+            .fillStyle(0x000000, 0.9)
+            .fillRect(0, INPUT_Y, width, 40)
+            .lineStyle(2, 0x00ff00, 1)
+            .strokeRect(0, INPUT_Y, width, 40)
+            .setVisible(false)
+            .setDepth(100);
 
         this.inputField = this.scene.add.text(10, INPUT_Y + 10, "", {
             fontFamily: "monospace",
             fontSize: "16px",
             color: "#00ff00",
             padding: { x: 5, y: 3 },
-        });
-        this.inputField.setVisible(false);
-        this.inputField.setDepth(100);
+        }).setVisible(false).setDepth(100);
 
-        this.inputCursor = this.scene.add.rectangle(this.inputField.x + 5, INPUT_Y + 10, 2, 20, 0x00ff00);
-        this.inputCursor.setOrigin(0, 0);
-        this.inputCursor.setVisible(false);
-        this.inputCursor.setDepth(100);
+        this.inputCursor = this.scene.add
+            .rectangle(this.inputField.x + 5, INPUT_Y + 10, 2, 20, 0x00ff00)
+            .setOrigin(0, 0)
+            .setVisible(false)
+            .setDepth(100);
 
         this.closeButton = this.scene.add
             .text(width - 40, INPUT_Y + 10, "[X]", {
@@ -290,9 +289,9 @@ export class DebugPanel {
                 padding: { x: 4, y: 2 },
             })
             .setInteractive({ useHandCursor: true })
-            .on("pointerdown", () => this.hideInput());
-        this.closeButton.setVisible(false);
-        this.closeButton.setDepth(100);
+            .on("pointerdown", () => this.hideInput())
+            .setVisible(false)
+            .setDepth(100);
     }
 
     private showInput() {
@@ -301,9 +300,12 @@ export class DebugPanel {
         this.inputField.setVisible(true);
         this.closeButton.setVisible(true);
         this.inputCursor.setVisible(true);
+        this.bg.setVisible(true);
+        this.text.setVisible(true);
+        this.buttons.forEach((b) => b.setVisible(true));
+
         this.cursorVisible = true;
         this.cursorTimer = 0;
-
         this.cursorPosition = this.inputText.length;
 
         this.updateInputDisplay();
@@ -322,6 +324,9 @@ export class DebugPanel {
         this.inputField.setVisible(false);
         this.closeButton.setVisible(false);
         this.inputCursor.setVisible(false);
+        this.text.setVisible(false);
+        this.bg.setVisible(false);
+        this.buttons.forEach((b) => b.setVisible(false));
 
         this.inputText = "";
         this.cursorPosition = 0;
