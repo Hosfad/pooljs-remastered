@@ -629,8 +629,12 @@ export class PoolGameScene extends Phaser.Scene {
                 INPUT_STATE: () => {
                     const draggingPowerMeter = this.powerMeter.isDragging;
                     const draggingShot = this.isDraggingShot;
-                    return (draggingShot && !this.isMobile) || draggingPowerMeter ? "AIMING" : "IDLE";
+                    return (
+                        `[${this.service.whoseTurn().toUpperCase()}] - ` +
+                        ((draggingShot && !this.isMobile) || draggingPowerMeter ? "AIMING" : "IDLE")
+                    );
                 },
+
                 BALL_RADIUS: () => BALL_RADIUS,
                 POWER: () => this.powerMeter.power.toFixed(2),
                 "CUE ANGLE": () => Phaser.Math.RadToDeg(this.cue.rotation).toFixed(1) + "°",
@@ -638,7 +642,6 @@ export class PoolGameScene extends Phaser.Scene {
                     const b = this.balls[this.balls.length - 1]!;
                     return `(${b.phaserSprite.x.toFixed(1)}, ${b.phaserSprite.y.toFixed(1)})`;
                 },
-                TURN: () => this.service.whoseTurn(),
             },
             { width: POOL_TABLE_WIDTH, height: 180 },
             { x: 0, y: POOL_TABLE_HEIGHT }

@@ -1,4 +1,5 @@
 import * as Phaser from "phaser";
+import { padButtonText } from "../common";
 import { POOL_TABLE_WIDTH } from "../common/pool-constants";
 
 type DebugConfigRecord = Record<string, () => string | number | boolean>;
@@ -62,7 +63,10 @@ export class DebugPanel {
     private bg!: Phaser.GameObjects.Graphics;
     private buttons: Phaser.GameObjects.Text[] = [];
 
-    private panelVisible = true; // Track if the entire panel is visible
+    private panelVisible = true;
+    private isDragging = false;
+    private dragOffset = { x: 0, y: 0 };
+    private readonly DRAG_HANDLE_HEIGHT = 20;
 
     constructor(
         private scene: Phaser.Scene,
@@ -81,6 +85,7 @@ export class DebugPanel {
         this.createInputUI();
         this.registerInput();
         this.registerCommands();
+
         // this.hideInput();
         console.log("Debug panel initialized", config);
     }
@@ -172,16 +177,19 @@ export class DebugPanel {
         const { width, height } = this.size;
         const { x, y } = this.position!;
 
+        const panelY = y + this.DRAG_HANDLE_HEIGHT;
+        const panelHeight = height - this.DRAG_HANDLE_HEIGHT;
+
         this.bg = this.scene.add
             .graphics()
             .fillStyle(0x000000, 0.85)
-            .fillRect(x, y, width, height)
+            .fillRect(x, panelY, width, panelHeight)
             .lineStyle(2, 0x00ff00, 0.6)
-            .strokeRect(x, y, width, height)
+            .strokeRect(x, panelY, width, panelHeight)
             .setDepth(100);
 
         this.text = this.scene.add
-            .text(10, y + 10, "", {
+            .text(10, panelY + 10, "", {
                 fontFamily: "monospace",
                 fontSize: "14px",
                 color: "#00ff00",
@@ -189,16 +197,27 @@ export class DebugPanel {
             })
             .setDepth(100);
 
+        const BUTTON_GRID_X = width - 130;
+
         this.scrollIndicator = this.scene.add
-            .text(width - 120, y + height - 25, "", {
+            .text(BUTTON_GRID_X, panelY + panelHeight - 25, "", {
                 fontFamily: "monospace",
                 fontSize: "12px",
                 color: "#00ff00",
             })
             .setDepth(100);
 
+        this.expandButton = this.scene.add
+            .text(BUTTON_GRID_X, panelY + 10, padButtonText(this.isExpanded ? "- Collapse" : "+ Expand"), {
+                fontFamily: "monospace",
+                fontSize: "12px",
+                color: "#00ff00",
+            })
+            .setInteractive({ useHandCursor: true })
+            .on("pointerdown", () => this.toggleExpand())
+            .setDepth(100);
         this.clearButton = this.scene.add
-            .text(width - 120, y + 10, "[ 🗑 Clear Logs]", {
+            .text(BUTTON_GRID_X, panelY + 25, padButtonText("- Clear Logs"), {
                 fontFamily: "monospace",
                 fontSize: "12px",
                 color: "#00ff00",
@@ -207,18 +226,8 @@ export class DebugPanel {
             .on("pointerdown", () => (this.logs = []))
             .setDepth(100);
 
-        this.expandButton = this.scene.add
-            .text(width - 120, y + 25, `[ ${this.isExpanded ? "- Collapse" : "+ Expand"}]`, {
-                fontFamily: "monospace",
-                fontSize: "12px",
-                color: "#00ff00",
-            })
-            .setInteractive({ useHandCursor: true })
-            .on("pointerdown", () => this.toggleExpand())
-            .setDepth(100);
-
         this.scrollUpButton = this.scene.add
-            .text(width - 120, y + 50, "[ ↑ Scroll Up]", {
+            .text(BUTTON_GRID_X, panelY + 55, padButtonText("↑ Scroll Up"), {
                 fontFamily: "monospace",
                 fontSize: "12px",
                 color: "#00ff00",
@@ -228,7 +237,7 @@ export class DebugPanel {
             .setDepth(100);
 
         this.scrollDownButton = this.scene.add
-            .text(width - 120, y + 65, "[ ↓ Scroll Down]", {
+            .text(BUTTON_GRID_X, panelY + 70, padButtonText("↓ Scroll Down"), {
                 fontFamily: "monospace",
                 fontSize: "12px",
                 color: "#00ff00",
@@ -242,7 +251,7 @@ export class DebugPanel {
 
     private toggleExpand() {
         this.isExpanded = !this.isExpanded;
-        this.expandButton.setText(`[ ${this.isExpanded ? "- Collapse" : "+ Expand"}]`);
+        this.expandButton.setText(padButtonText(this.isExpanded ? "- Collapse" : "+ Expand"));
 
         this.visibleLogs = this.isExpanded ? this.EXPANDED_VISIBLE_LOGS : this.COLLAPSED_VISIBLE_LOGS;
 
@@ -779,14 +788,15 @@ export class DebugPanel {
         }
 
         this.text.setPosition(10, y + 10);
-        this.text.setWordWrapWidth(width - 20); // Update word wrap width
+        this.text.setWordWrapWidth(width - 20);
+        const BUTTON_GRID_X = width - 130;
 
-        this.scrollIndicator.setPosition(width - 120, y + height - 25);
+        this.scrollIndicator.setPosition(BUTTON_GRID_X, y + height - 25);
 
-        this.clearButton.setPosition(width - 120, y + 10);
-        this.expandButton.setPosition(width - 120, y + 25);
-        this.scrollUpButton.setPosition(width - 120, y + 50);
-        this.scrollDownButton.setPosition(width - 120, y + 65);
+        this.expandButton.setPosition(BUTTON_GRID_X, y + 10);
+        this.clearButton.setPosition(BUTTON_GRID_X, y + 25);
+        this.scrollUpButton.setPosition(BUTTON_GRID_X, y + 50);
+        this.scrollDownButton.setPosition(BUTTON_GRID_X, y + 65);
 
         this.updateInputUIPosition();
     }
