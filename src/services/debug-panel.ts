@@ -23,7 +23,6 @@ export class DebugPanel {
     private text!: Phaser.GameObjects.Text;
     private scrollIndicator!: Phaser.GameObjects.Text;
 
-    private readonly BOX_HEIGHT = 190;
     private readonly COLLAPSED_VISIBLE_LOGS = 8;
     private readonly EXPANDED_VISIBLE_LOGS = 18;
     private readonly COLUMN_WIDTH = 80;
@@ -63,17 +62,8 @@ export class DebugPanel {
     constructor(
         private scene: Phaser.Scene,
         private config: DebugConfigRecord,
-        private size: {
-            width: number;
-            height: number;
-        } = {
-            width: POOL_TABLE_WIDTH,
-            height: 200,
-        },
-        private position: {
-            x: number;
-            y: number;
-        } = { x: 0, y: 0 }
+        private size: { width: number; height: number; } = { width: POOL_TABLE_WIDTH, height: 200 },
+        private position: { x: number; y: number; } = { x: 0, y: 0 }
     ) {
         this.scene = scene;
         this.config = config;
@@ -91,6 +81,13 @@ export class DebugPanel {
 
     private registerCommands() {
         this.commands = [
+            {
+                name: "eval",
+                args: [{ name: "code", type: "string", autofillOptions: Object.keys(globalThis) }],
+                execute: (args?: CommandArgType[]) => {
+                    console.log(eval((args || []).join(" ")));
+                },
+            },
             {
                 name: "echo",
                 args: [{ name: "message", type: "string", autofillOptions: [] }],
@@ -313,6 +310,12 @@ export class DebugPanel {
         this.scene.input.keyboard?.enableGlobalCapture();
     }
 
+    private resetInput() {
+        this.inputText = "";
+        this.cursorPosition = 0;
+        this.updateInputDisplay();
+    }
+
     private hideInput() {
         this.inputVisible = false;
         this.inputBg.setVisible(false);
@@ -352,13 +355,25 @@ export class DebugPanel {
         }
     }
 
+    private findHighestMatchingPrefix(matches: string[]): string {
+        const smallest = matches.reduce((acc, m) => (m.length < acc.length ? m : acc));
+
+        let i = 0;
+        let prefix = "";
+        while (matches.every((m) => m.startsWith(prefix + smallest[i]!))) {
+            prefix += smallest[i++]!;
+        }
+
+        return prefix;
+    }
+
     private autocompleteCurrentArgument() {
         const parts = this.inputText.split(" ");
         const commandName = parts[0]?.toLowerCase();
-        const currentArgIndex = Math.max(0, parts.length - 1);
 
         // Find the current word being typed (at cursor position)
         const words = this.inputText.split(" ");
+
         let charCount = 0;
         let currentWordIndex = 0;
         let currentWordStart = 0;
@@ -375,17 +390,23 @@ export class DebugPanel {
         const currentWord = words[currentWordIndex] || "";
 
         if (currentWordIndex === 0) {
-            const matchingCommands = this.commands.filter((cmd) => cmd.name.startsWith(currentWord.toLowerCase()));
+            const matchingCommands = this.commands
+                .filter((cmd) => cmd.name.startsWith(currentWord.toLowerCase()))
+                .map(cmd => cmd.name);
 
-            if (matchingCommands.length === 1) {
-                words[0] = matchingCommands[0]!.name;
+            const prefix = this.findHighestMatchingPrefix(matchingCommands);
+
+            if (prefix.length > currentWord.length) {
+                words[0] = prefix;
                 this.inputText = words.join(" ");
-                this.cursorPosition = matchingCommands[0]!.name.length;
+                this.cursorPosition = prefix.length;
                 this.updateInputDisplay();
-                return;
-            } else if (matchingCommands.length > 1) {
-                console.log(`Commands: ${matchingCommands.map((c) => c.name).join(", ")}`);
             }
+
+            if (matchingCommands.length > 1) {
+                console.log(`Commands: ${matchingCommands.join(", ")}`);
+            }
+
             return;
         }
 
@@ -397,16 +418,19 @@ export class DebugPanel {
         if (argIndex < command.args.length) {
             const argDef = command.args[argIndex];
             if (!argDef) return;
+
             const options = [...argDef.autofillOptions];
-
             const matchingOptions = options.filter((opt) => opt.toLowerCase().startsWith(currentWord.toLowerCase()));
+            const prefix = this.findHighestMatchingPrefix(matchingOptions);
 
-            if (matchingOptions.length === 1) {
-                words[currentWordIndex] = matchingOptions[0]!;
+            if (prefix.length > currentWord.length) {
+                words[currentWordIndex] = prefix;
                 this.inputText = words.join(" ");
-                this.cursorPosition = currentWordStart + matchingOptions[0]!.length;
+                this.cursorPosition = currentWordStart + prefix.length;
                 this.updateInputDisplay();
-            } else if (matchingOptions.length > 1) {
+            }
+
+            if (matchingOptions.length > 1) {
                 console.log(`${matchingOptions.join(", ")}`);
             }
         }
@@ -488,7 +512,7 @@ export class DebugPanel {
                 if (this.inputText.trim()) {
                     this.executeCommand(this.inputText);
                 }
-                this.hideInput();
+                this.resetInput();
                 return;
             }
 
