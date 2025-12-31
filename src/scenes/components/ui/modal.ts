@@ -21,6 +21,7 @@ export interface ModalConfig {
     drawBackground?: boolean;
     hotkey?: typeof Phaser.Input.Keyboard.KeyCodes[keyof typeof Phaser.Input.Keyboard.KeyCodes];
     disableBackgroundClicks?: boolean;
+    drawGrid?: boolean;
 }
 
 export class Modal extends Phaser.GameObjects.Container {
@@ -40,6 +41,7 @@ export class Modal extends Phaser.GameObjects.Container {
     private sceneWidth: number;
     private sceneHeight: number;
 
+    private isOpenVar = false;
     constructor(scene: Phaser.Scene, x: number, y: number, config: ModalConfig = {}, onClose?: () => void) {
         super(scene, x, y);
 
@@ -67,6 +69,7 @@ export class Modal extends Phaser.GameObjects.Container {
             drawBackground: true,
             hotkey: undefined,
             disableBackgroundClicks: false,
+            drawGrid: true,
             ...config,
         };
 
@@ -85,7 +88,9 @@ export class Modal extends Phaser.GameObjects.Container {
 
         scene.add.existing(this);
     }
-
+    public isOpen(): boolean {
+        return this.isOpenVar;
+    }
     protected createModal(): void {
         if (this.config.drawBackground) {
             this.createBlockingBackground();
@@ -159,7 +164,7 @@ export class Modal extends Phaser.GameObjects.Container {
         this.panel.setInteractive({ useHandCursor: true });
         this.add(this.panel);
 
-        this.addPanelTexture();
+        if (this.config.drawGrid) this.addPanelTexture();
     }
 
     protected addPanelTexture(): void {
@@ -271,10 +276,13 @@ export class Modal extends Phaser.GameObjects.Container {
 
     protected createContentContainer(): void {
         const { width, height, scrollable, scrollHeight } = this.config;
-        this.contentContainer = this.scene.add.container(0, -240);
-        this.contentContainer.setDepth(1000);
 
-        this.contentContainer.setInteractive();
+        this.contentContainer = this.scene.add.container(0, 0);
+        this.contentContainer.setDepth(1000);
+        // if (DEBUG_GRAPHICS) {
+        //     this.contentContainer.add(this.scene.add.rectangle(0, 0, width, height, 0xffffff, 0.5));
+        //     this.contentContainer.setInteractive();
+        // }
 
         this.add(this.contentContainer);
     }
@@ -316,7 +324,7 @@ export class Modal extends Phaser.GameObjects.Container {
 
     public show(): void {
         if (!this.config.disableBackgroundClicks) setGlobalModalOpenVariable(true);
-
+        this.isOpenVar = true;
         if (this.config.drawBackground && this.blockingBackground) {
             this.blockingBackground.setVisible(true);
             this.blockingBackground.setActive(true);
@@ -350,6 +358,7 @@ export class Modal extends Phaser.GameObjects.Container {
 
     public hide(): void {
         if (!this.config.disableBackgroundClicks) setGlobalModalOpenVariable(false);
+        this.isOpenVar = false;
         this.scene.tweens.add({
             targets: this,
             scaleX: 0.8,
@@ -397,6 +406,15 @@ export class Modal extends Phaser.GameObjects.Container {
 
     public setOnClose(callback: () => void): void {
         this.onCloseCallback = callback;
+    }
+
+    public resizeModal(width: number, height: number): void {
+        this.config.width = width;
+        this.config.height = height;
+        this.updateSize(width, height);
+    }
+    public updateSize(width: number, height: number): void {
+        this.contentContainer.setSize(width, height);
     }
 
     public override destroy(fromScene?: boolean): void {

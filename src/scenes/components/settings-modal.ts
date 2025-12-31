@@ -57,7 +57,8 @@ export class SettingsModal extends Modal {
 
     private createSettingsContent(): void {
         const container = this.getContentContainer();
-        let yPosition = 0;
+        const height = this.config.height;
+        let yPosition = -height / 2 + 100;
         const spacing = 60;
         const sectionSpacing = 80;
 

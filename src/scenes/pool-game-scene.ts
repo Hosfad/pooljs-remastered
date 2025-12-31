@@ -13,13 +13,13 @@ import {
 } from "../common/pool-constants";
 import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
 import { PoolService } from "../services/pool-service";
+import { DebugPanelModal } from "./components/debug-panel-modal";
 import { SettingsModal } from "./components/settings-modal";
-import { DebugPanel } from "./debug-panel";
 
 const Vector2 = Phaser.Math.Vector2;
 
 export class PoolGameScene extends Phaser.Scene {
-    private debugPanel?: DebugPanel;
+    private debugPanel?: DebugPanelModal;
     private service!: PoolService;
     private keyPositions: KeyPositions = [];
 
@@ -742,9 +742,28 @@ export class PoolGameScene extends Phaser.Scene {
             y: this.cameras.main.height - debugPanelHeight,
         };
 
-        this.debugPanel = new DebugPanel(
-            this,
-            {
+        this.debugPanel = new DebugPanelModal(this, 0, 0, {
+            INPUT_STATE: () => {
+                const draggingPowerMeter = this.powerMeter.isDragging;
+                const draggingShot = this.isDraggingShot;
+                return (
+                    `[${this.service.whoseTurn().toUpperCase()}] - ` +
+                    ((draggingShot && !this.isMobile) || draggingPowerMeter ? "AIMING" : "IDLE")
+                );
+            },
+
+            BALL_RADIUS: () => BALL_RADIUS,
+            POWER: () => this.powerMeter.power.toFixed(2),
+            "CUE ANGLE": () => Phaser.Math.RadToDeg(this.cue.rotation).toFixed(1) + "°",
+            "WHITE BALL": () => {
+                const b = this.balls[this.balls.length - 1]!;
+                return `(${b.phaserSprite.x.toFixed(1)}, ${b.phaserSprite.y.toFixed(1)})`;
+            },
+            "TABLE SIZE": () => `${this.tableWidth.toFixed(0)}x${this.tableHeight.toFixed(0)}`,
+            "DEVICE SCALE": () => `${this.game.scale.canvas.width}x${this.game.scale.canvas.height}`,
+        });
+        /**
+         *   {
                 INPUT_STATE: () => {
                     const draggingPowerMeter = this.powerMeter.isDragging;
                     const draggingShot = this.isDraggingShot;
@@ -764,9 +783,7 @@ export class PoolGameScene extends Phaser.Scene {
                 "TABLE SIZE": () => `${this.tableWidth.toFixed(0)}x${this.tableHeight.toFixed(0)}`,
                 "DEVICE SCALE": () => `${this.game.scale.canvas.width}x${this.game.scale.canvas.height}`,
             },
-            { width: debugPanelWidth, height: debugPanelHeight },
-            debugPanelPosition
-        );
+         */
     }
 
     private setupButtonHover(button: Phaser.GameObjects.Text, onClick: () => void): void {
