@@ -528,7 +528,9 @@ export class PoolGameScene extends Phaser.Scene {
             if (!sprite.visible && i < this.balls.length - 1) return;
 
             const pos = key.position;
+            if (pos.x + pos.y != sprite.x + sprite.y) sprite.rotation += 0.1;
             sprite.setPosition(pos.x, pos.y);
+            // increment rotation angle of sprite
             sprite.visible = !key.hidden;
 
             if (key.hidden) this.holeBalls[i]?.setAlpha(1);
