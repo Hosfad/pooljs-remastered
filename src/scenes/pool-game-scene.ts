@@ -560,8 +560,6 @@ export class PoolGameScene extends Phaser.Scene {
                     return `(${b.phaserSprite.x.toFixed(1)}, ${b.phaserSprite.y.toFixed(1)})`;
                 },
                 TURN: () => this.service.whoseTurn(),
-                PLAYERS: () => Object.keys(this.service.players).map((t) => `${t}: ${this.service.players[t]}`).join(", "),
-                TOTALS: () => Object.keys(this.service.totals).map((t) => `${t}: ${this.service.totals[t]}`).join(", "),
             },
             { width: POOL_TABLE_WIDTH, height: 180 },
             { x: 0, y: POOL_TABLE_HEIGHT }
