@@ -20,6 +20,10 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.load.image(POOL_ASSETS.BLACK_BALL, "/game/balls/black.svg");
         this.load.image(POOL_ASSETS.STRIPED_BALL, "/game/balls/11.svg");
         this.load.image(POOL_ASSETS.SOLID_BALL, "/game/balls/1.svg");
+
+        // Create animation AFTER assets are loaded
+        this.createLoadingAnimation();
+
         this.load.image(POOL_ASSETS.BACKGROUND, "/game/background.png");
         this.load.image(POOL_ASSETS.CUE_STICK, "/game/cues/expert.svg");
         this.load.image(POOL_ASSETS.DRAG_ICON, "/game/drag.png");
@@ -33,17 +37,12 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.load.svg(POOL_ASSETS.CUES.BASIC, "/game/cues/basic.svg");
         this.load.svg(POOL_ASSETS.CUES.EXPERT, "/game/cues/expert.svg");
 
-        this.load.on("complete", () => {
-            this.transitionToGame();
-        });
+        this.load.on("complete", () => this.transitionToGame());
     }
 
     create(): void {
         const { width, height } = this.cameras.main;
         this.add.image(width / 2, height / 2, "loading-background").setDisplaySize(width, height);
-
-        // Create animation AFTER assets are loaded
-        this.createLoadingAnimation();
     }
 
     private transitionToGame(): void {

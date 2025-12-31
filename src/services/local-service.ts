@@ -1,36 +1,13 @@
 import type { BallType, KeyPositions } from "../common/pool-types";
-import { PoolService, type PoolState } from "./pool-service";
-import { Service } from "./service";
-import * as Phaser from "phaser";
-
-export enum Events {
-    INIT = "game-start",
-    ENDS = "game-end",
-    PULL = "pull",
-    HITS = "hit",
-}
-
-export interface EventsData {
-    [Events.HITS]: { keyPositions: KeyPositions; state: PoolState };
-    [Events.PULL]: { x: number; y: number; angle: number };
-    [Events.INIT]: void;
-}
+import { PoolService } from "./pool-service";
+import { Events, Service } from "./service";
 
 export class LocalService extends Service {
     private service: PoolService;
-    private events = new Phaser.Events.EventEmitter();
 
     constructor(service: PoolService) {
         super();
         this.service = service;
-    }
-
-    public subscribe<T extends keyof EventsData>(event: T, callback: (data: EventsData[T]) => void) {
-        this.events.on(event, callback);
-    }
-
-    public send<T extends keyof EventsData>(event: T, data: EventsData[T]) {
-        this.events.emit(event, data);
     }
 
     override connect(): Promise<boolean> {

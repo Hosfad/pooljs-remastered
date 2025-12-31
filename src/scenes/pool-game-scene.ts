@@ -12,10 +12,11 @@ import {
     POOL_SCENE_KEYS,
 } from "../common/pool-constants";
 import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
-import { Events, LocalService } from "../services/local-service";
+import { LocalService } from "../services/local-service";
 import { PoolService } from "../services/pool-service";
 import { DebugPanelModal } from "./components/debug-panel-modal";
 import { SettingsModal } from "./components/settings-modal";
+import { Events } from "../services/service";
 
 const Vector2 = Phaser.Math.Vector2;
 
