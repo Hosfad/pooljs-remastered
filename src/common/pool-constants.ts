@@ -22,6 +22,11 @@ export const POOL_ASSETS = {
         BALL_FALLING_INTO_POCKET: "ball-falling-into-pocket",
         BALL_HITTING_TABLE_EDGE: "ball-hitting-table-edge",
     },
+
+    CUES: {
+        BASIC: "cue-basic",
+        EXPERT: "cue-expert",
+    },
 } as const;
 
 export const POOL_SCENE_KEYS = {

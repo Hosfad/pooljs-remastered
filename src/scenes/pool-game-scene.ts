@@ -12,10 +12,10 @@ import {
     POOL_SCENE_KEYS,
 } from "../common/pool-constants";
 import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
+import { Events, LocalService } from "../services/local-service";
 import { PoolService } from "../services/pool-service";
 import { DebugPanelModal } from "./components/debug-panel-modal";
 import { SettingsModal } from "./components/settings-modal";
-import { Events, LocalService } from "../services/local-service";
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -262,6 +262,8 @@ export class PoolGameScene extends Phaser.Scene {
         const { x, y } = this.toTableCoordinates(whiteBall.phaserSprite.x, whiteBall.phaserSprite.y);
         const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUE_STICK);
         cueSprite.setOrigin(1, 0.5);
+        cueSprite.setScale(0.6);
+        cueSprite.setFlipX(true);
 
         this.cue = { phaserSprite: cueSprite, rotation: 0, power: 0 };
     }
@@ -537,17 +539,23 @@ export class PoolGameScene extends Phaser.Scene {
 
             if (this.playedSounds[i] === undefined && key.collision !== undefined) {
                 switch (key.collision) {
-                    case 'wall':
+                    case "wall":
                         this.sound.play(POOL_ASSETS.SOUND_EFFECTS.BALL_HITTING_TABLE_EDGE);
                         break;
-                    case 'ball':
+                    case "ball":
                         this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
                         break;
-                    case 'hole':
+                    case "hole":
                         this.sound.play(POOL_ASSETS.SOUND_EFFECTS.BALL_FALLING_INTO_POCKET);
                         break;
                 }
-                this.sound.addListener('stop', () => { this.playedSounds[i] = undefined; }, { once: true });
+                this.sound.addListener(
+                    "stop",
+                    () => {
+                        this.playedSounds[i] = undefined;
+                    },
+                    { once: true }
+                );
             }
         });
     }
@@ -657,7 +665,7 @@ export class PoolGameScene extends Phaser.Scene {
                 return;
             }
 
-            if (this.isMobile && this.powerMeter.isDragging || !this.isMobile && this.isDraggingShot) {
+            if ((this.isMobile && this.powerMeter.isDragging) || (!this.isMobile && this.isDraggingShot)) {
                 this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
                 this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
                 this.setPower(0);
@@ -678,7 +686,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.cue.phaserSprite.setPosition(offsetX, offsetY);
         this.cue.phaserSprite.setRotation(angle);
         this.cue.rotation = angle;
-    };
+    }
 
     private updateCue(): void {
         if (!this.cue.phaserSprite) return;
@@ -768,7 +776,7 @@ export class PoolGameScene extends Phaser.Scene {
             },
             "TABLE SIZE": () => `${this.tableWidth.toFixed(0)}x${this.tableHeight.toFixed(0)}`,
             "DEVICE SCALE": () => `${this.game.scale.canvas.width}x${this.game.scale.canvas.height}`,
-            "WINNER": () => this.service.winner() ? "WINNER" : "",
+            WINNER: () => (this.service.winner() ? "WINNER" : ""),
         });
     }
 
