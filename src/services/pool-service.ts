@@ -2,8 +2,8 @@ import * as Phaser from "phaser";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 import { BALL_RADIUS } from "../common/pool-constants";
 
-const MAX_POWER = 20;
-const MAX_STEPS = 200;
+const MAX_POWER = 30;
+const MAX_STEPS = 250;
 
 const Vector2 = Phaser.Math.Vector2;
 
