@@ -1,11 +1,17 @@
 import * as Phaser from "phaser";
-import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
+import { BALL_RADIUS } from "../common/pool-constants";
 
 const MAX_POWER = 20;
 const MAX_STEPS = 200;
 
 const Vector2 = Phaser.Math.Vector2;
+
+export interface PoolState {
+    inHole: Record<number, boolean>;
+    totals: Record<BallType, number>;
+    players: Record<BallType, number>;
+}
 
 export class PoolService {
     private balls: Ball[];
@@ -13,7 +19,6 @@ export class PoolService {
     private holes: Hole[];
 
     private inHole: Record<number, boolean> = {};
-
     private totals: Record<BallType, number>;
     private players: Record<BallType, number>;
     private collisions: Collision[] = [];
@@ -45,11 +50,27 @@ export class PoolService {
         const blackBall = balls - 2;
         const whiteBall = balls - 1;
         const turn = this.whoseTurn();
-        return this.players[turn] === this.totals[turn] && this.inHole[blackBall] === true && !this.inHole[whiteBall];
+        console.log(`
+        ${turn}
+        ${this.players[turn]} vs ${this.totals[turn]}
+        ${this.inHole[blackBall]} vs ${this.inHole[whiteBall]}
+        result: ${this.players[turn] === this.totals[turn] && this.inHole[blackBall] === true && this.inHole[whiteBall] !== true}
+        `);
+        return this.players[turn] === this.totals[turn] && this.inHole[blackBall] === true && this.inHole[whiteBall] !== true;
     }
 
-    public ballsInHole(): number {
-        return Object.keys(this.inHole).length;
+    public getState(): PoolState {
+        return {
+            inHole: this.inHole,
+            totals: this.totals,
+            players: this.players,
+        };
+    }
+
+    public setState(state: PoolState): void {
+        this.inHole = state.inHole;
+        this.totals = state.totals;
+        this.players = state.players;
     }
 
     public whoseTurn(): BallType {
