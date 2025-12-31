@@ -51,14 +51,16 @@ export class PoolGameScene extends Phaser.Scene {
     private lockedAimAngle = 0;
     private dragVector = new Vector2();
     private aimLine!: Phaser.GameObjects.Graphics;
-
     private lastCuePosition = { x: 0, y: 0, rotation: 0 };
+    private isMobile = false;
 
     constructor() {
         super({ key: POOL_SCENE_KEYS.POOL_GAME });
     }
 
     public create(): void {
+        this.isMobile = this.game.device.input.touch;
+
         if (DEBUG_GRAPHICS) this.setupDebugPanel();
         this.background = this.add.image(POOL_TABLE_WIDTH / 2, POOL_TABLE_HEIGHT / 2, POOL_ASSETS.BACKGROUND);
         this.background.setDisplaySize(POOL_TABLE_WIDTH, POOL_TABLE_HEIGHT);
@@ -76,6 +78,21 @@ export class PoolGameScene extends Phaser.Scene {
 
         this.service = new PoolService(this.balls, this.colliders, this.holes);
         console.log("Pool game initialized with", this.balls.length, "balls");
+    }
+
+    public override update(): void {
+        this.input.enabled = !this.keyPositions.length;
+
+        const turn = this.service.whoseTurn().toUpperCase();
+        if (!this.balls[this.balls.length - 2]?.phaserSprite.visible) {
+            this.playerTurn.setText(this.service.winner() ? `${turn} WINS!` : `${turn} LOSES!`);
+        } else {
+            this.playerTurn.setText(`Is ${turn} turn!`);
+        }
+
+        this.updateCue();
+        this.updateKeyPositions();
+        this.debugPanel?.update();
     }
 
     private createUI() {
@@ -319,6 +336,11 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         handle.on("dragend", () => {
+            if (this.powerMeter.power <= 0) {
+                this.powerMeter.isDragging = false;
+                return;
+            }
+
             this.powerMeter.isDragging = false;
             this.keyPositions = this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
             this.setPower(0);
@@ -361,25 +383,18 @@ export class PoolGameScene extends Phaser.Scene {
         fill.fillStyle(color, 0.7);
         fill.fillRoundedRect(X - WIDTH / 2 + 5, MIN_Y + 5, WIDTH - 10, fillHeight, 5);
     }
-
+    private isTouchingPowerMeter(pointer: Phaser.Input.Pointer): boolean {
+        const handleBounds = this.powerMeter.handle.getBounds();
+        return (
+            pointer.x >= handleBounds.x &&
+            pointer.x <= handleBounds.x + handleBounds.width &&
+            pointer.y >= handleBounds.y &&
+            pointer.y <= handleBounds.y + handleBounds.height
+        );
+    }
     private setPower(power: number): void {
         this.powerMeter.power = power;
         this.updatePowerMeterFromPower();
-    }
-
-    public override update(): void {
-        this.input.enabled = !this.keyPositions.length;
-
-        const turn = this.service.whoseTurn().toUpperCase();
-        if (!this.balls[this.balls.length - 2]?.phaserSprite.visible) {
-            this.playerTurn.setText(this.service.winner() ? `${turn} WINS!` : `${turn} LOSES!`);
-        } else {
-            this.playerTurn.setText(`Is ${turn} turn!`);
-        }
-
-        this.updateCue();
-        this.updateKeyPositions();
-        this.debugPanel?.update();
     }
 
     private updateKeyPositions(): void {
@@ -470,25 +485,49 @@ export class PoolGameScene extends Phaser.Scene {
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
             this.mousePosition.set(pointer.x, pointer.y);
+
+            if (this.isMobile && this.isDraggingShot && !this.powerMeter.isDragging) {
+                const whiteBall = this.balls[this.balls.length - 1]!;
+                const { x, y } = whiteBall.phaserSprite!;
+
+                this.lockedAimAngle = Math.atan2(pointer.y - y, pointer.x - x);
+            }
         });
 
         this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+            const isTouchingPowerMeter = this.isTouchingPowerMeter(pointer);
+
+            // Handle by the power meter
+            if (this.isMobile && isTouchingPowerMeter) return;
+
             const whiteBall = this.balls[this.balls.length - 1]!;
             const { x, y } = whiteBall.phaserSprite!;
 
             // Lock aim direction ON CLICK
             this.lockedAimAngle = Math.atan2(pointer.y - y, pointer.x - x);
 
-            this.dragStartPosition.set(pointer.x, pointer.y);
+            if (!this.isMobile) this.dragStartPosition.set(pointer.x, pointer.y);
+
             this.isDraggingShot = true;
         });
 
         this.input.on("pointerup", () => {
-            this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
+            if (this.powerMeter.power <= 0) {
+                this.isDraggingShot = false;
+                return;
+            }
+
+            if (this.isMobile && this.powerMeter.isDragging) {
+                this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
+                this.keyPositions = this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
+                this.setPower(0);
+            } else if (!this.isMobile && this.isDraggingShot) {
+                this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
+                this.keyPositions = this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
+                this.setPower(0);
+            }
 
             this.isDraggingShot = false;
-            this.keyPositions = this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
-            this.setPower(0);
         });
     }
 
@@ -510,36 +549,61 @@ export class PoolGameScene extends Phaser.Scene {
             return;
         }
 
+        const updateCueBullback = (x: number, y: number, angle: number) => {
+            // Pullback cue based on power
+            const maxPullback = 200;
+            const pullbackDistance = BALL_RADIUS + this.powerMeter.power * maxPullback;
+
+            const offsetX = x - Math.cos(angle) * pullbackDistance;
+            const offsetY = y - Math.sin(angle) * pullbackDistance;
+
+            this.cue.phaserSprite.setPosition(offsetX, offsetY);
+            this.cue.phaserSprite.setRotation(angle);
+            this.cue.rotation = angle;
+            this.lastCuePosition = { x: offsetX, y: offsetY, rotation: angle };
+        };
+
+        if (this.isMobile && this.powerMeter.isDragging) {
+            this.cue.phaserSprite.setPosition(this.lastCuePosition.x, this.lastCuePosition.y);
+            this.cue.phaserSprite.setRotation(this.lastCuePosition.rotation);
+            this.cue.rotation = this.lastCuePosition.rotation;
+
+            // Still show aim line with current angle
+            this.drawAimLine(x, y, this.cue.rotation);
+            updateCueBullback(x, y, this.cue.rotation);
+            return;
+        }
+
         if (this.isDraggingShot) {
             angle = this.lockedAimAngle;
 
-            const aimDir = new Vector2(Math.cos(this.lockedAimAngle), Math.sin(this.lockedAimAngle));
+            if (!this.isMobile) {
+                const aimDir = new Vector2(Math.cos(this.lockedAimAngle), Math.sin(this.lockedAimAngle));
 
-            this.dragVector.set(
-                this.mousePosition.x - this.dragStartPosition.x,
-                this.mousePosition.y - this.dragStartPosition.y
-            );
+                this.dragVector.set(
+                    this.mousePosition.x - this.dragStartPosition.x,
+                    this.mousePosition.y - this.dragStartPosition.y
+                );
 
-            const pullDir = aimDir.clone().negate();
-            const pullAmount = this.dragVector.dot(pullDir);
+                const pullDir = aimDir.clone().negate();
+                const pullAmount = this.dragVector.dot(pullDir);
 
-            // Only allow positive pull (dragging backward)
-            const maxDrag = 200;
-            const power = Math.max(Math.min(pullAmount, maxDrag) / maxDrag, 0);
-            this.setPower(power);
+                // Only allow positive pull (dragging backward)
+                const maxDrag = 200;
+                const power = Math.max(Math.min(pullAmount, maxDrag) / maxDrag, 0);
+                this.setPower(power);
+            }
         } else {
             // Free aiming when not dragging
             angle = Math.atan2(this.mousePosition.y - y, this.mousePosition.x - x);
         }
 
-        // Pullback cue based on power
-        const maxPullback = 150;
-        const pullbackDistance = BALL_RADIUS + this.powerMeter.power * maxPullback;
-
-        const offsetX = x - Math.cos(angle) * pullbackDistance;
-        const offsetY = y - Math.sin(angle) * pullbackDistance;
-
         // Aim line
+        this.drawAimLine(x, y, angle);
+        updateCueBullback(x, y, angle);
+    }
+
+    private drawAimLine(ballX: number, ballY: number, angle: number): void {
         this.aimLine.clear();
 
         const aimDir = new Vector2(Math.cos(angle), Math.sin(angle));
@@ -548,26 +612,25 @@ export class PoolGameScene extends Phaser.Scene {
         const aimLineLength = 1000;
         const aimLineStartOffset = BALL_RADIUS + 2;
 
-        const aimStartX = x + aimDir.x * aimLineStartOffset;
-        const aimStartY = y + aimDir.y * aimLineStartOffset;
+        const aimStartX = ballX + aimDir.x * aimLineStartOffset;
+        const aimStartY = ballY + aimDir.y * aimLineStartOffset;
 
         this.aimLine.lineStyle(2, 0xffffff, 1.5);
         this.aimLine.beginPath();
         this.aimLine.moveTo(aimStartX, aimStartY);
         this.aimLine.lineTo(aimStartX + aimDir.x * aimLineLength, aimStartY + aimDir.y * aimLineLength);
         this.aimLine.strokePath();
-
-        // Apply transform
-        this.cue.phaserSprite.setPosition(offsetX, offsetY);
-        this.cue.phaserSprite.setRotation(angle);
-        this.cue.rotation = angle;
-        this.lastCuePosition = { x: offsetX, y: offsetY, rotation: angle };
     }
 
     private setupDebugPanel() {
         this.debugPanel = new DebugPanel(
             this,
             {
+                INPUT_STATE: () => {
+                    const draggingPowerMeter = this.powerMeter.isDragging;
+                    const draggingShot = this.isDraggingShot;
+                    return (draggingShot && !this.isMobile) || draggingPowerMeter ? "AIMING" : "IDLE";
+                },
                 BALL_RADIUS: () => BALL_RADIUS,
                 POWER: () => this.powerMeter.power.toFixed(2),
                 "CUE ANGLE": () => Phaser.Math.RadToDeg(this.cue.rotation).toFixed(1) + "°",

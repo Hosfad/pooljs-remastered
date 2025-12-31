@@ -47,9 +47,9 @@ export const SCORED_BALL_AREA = {
 export const POWER_METER = {
     X: POOL_TABLE_WIDTH + 100,
     Y: 50,
-    WIDTH: 60,
+    WIDTH: 80,
     HEIGHT: 600,
-    HANDLE_HEIGHT: 50,
+    HANDLE_HEIGHT: 60,
     MIN_Y: 50,
-    MAX_Y: 650,
+    MAX_Y: 660,
 };
