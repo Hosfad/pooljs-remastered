@@ -1,4 +1,5 @@
 import * as Phaser from "phaser";
+import { CUE_DATA, type CueId } from "../../common/pool-types";
 import { Modal, type ModalConfig } from "./ui/modal";
 import { SliderControl } from "./ui/slider";
 import { ToggleControl } from "./ui/toggle";
@@ -14,6 +15,7 @@ export interface SettingsConfig {
     showTutorial: boolean;
     tableColor: string;
     difficulty: "easy" | "normal" | "hard";
+    selectedCueId: CueId;
 }
 const COLORS = {
     color: "#ffd700",
@@ -23,6 +25,8 @@ const COLORS = {
 export class SettingsModal extends Modal {
     private currentSettings: SettingsConfig;
     private onSaveCallback: ((settings: SettingsConfig) => void) | undefined;
+    private availableCueIds: CueId[] = [];
+    private currentCueIndex: number = 0;
 
     constructor(scene: Phaser.Scene, x: number, y: number) {
         const config: ModalConfig = {
@@ -50,7 +54,9 @@ export class SettingsModal extends Modal {
             showTutorial: true,
             tableColor: "#2a4a2a",
             difficulty: "normal",
+            selectedCueId: "basic", // Default cue ID
         };
+        this.availableCueIds = ["basic", "advanced", "expert", "sword", "wooden_sword"];
 
         this.createSettingsContent();
     }
@@ -81,6 +87,13 @@ export class SettingsModal extends Modal {
         });
         yPosition += sectionSpacing;
 
+        // Cue Selection Section
+        this.createSectionTitle(container, "CUE SELECTION", yPosition);
+        yPosition += spacing;
+
+        this.createCueSelectionUI(container, yPosition);
+        yPosition += 220; // Space for cue display
+
         // Gameplay Section
         this.createSectionTitle(container, "GAMEPLAY", yPosition);
         yPosition += spacing;
@@ -92,7 +105,6 @@ export class SettingsModal extends Modal {
         this.createToggleControl(container, "SHOW AIM LINE", yPosition, this.currentSettings.showPowerMeter, (value) => {
             this.currentSettings.showPowerMeter = value;
         });
-        yPosition += spacing;
 
         this.createActionButtons(container, yPosition + 40);
     }
@@ -181,6 +193,113 @@ export class SettingsModal extends Modal {
             }
         );
         container.add(toggle);
+    }
+
+    private createCueSelectionUI(container: Phaser.GameObjects.Container, y: number): void {
+        const cueContainer = this.scene.add.container(0, y);
+        const { width, height } = this.config;
+
+        const PADDING = 50;
+        const boxWidth = width - PADDING * 2;
+        const originX = -(width / 2);
+
+        const cueBox = this.scene.add.graphics();
+        cueBox.fillStyle(0x000000, 0.3);
+        cueBox.fillRoundedRect(originX + PADDING, 0, boxWidth, 100, 10);
+        cueBox.lineStyle(2, Phaser.Display.Color.HexStringToColor(COLORS.color).color, 1);
+        cueBox.strokeRoundedRect(originX + PADDING, 0, boxWidth, 100, 10);
+
+        cueContainer.add(cueBox);
+
+        const cueData = CUE_DATA[this.availableCueIds[this.currentCueIndex]!];
+        const cueImage = this.scene.add.image(0, 50, cueData.spriteId).setOrigin(0.5).setDisplaySize(300, 150);
+
+        cueContainer.add(cueImage);
+
+        container.add(cueContainer);
+
+        const updateCueDisplay = () => {
+            const cueData = CUE_DATA[this.availableCueIds[this.currentCueIndex]!];
+            const displayName = cueData.id.replace("cue-", "").toLowerCase();
+            cueImage.setTexture(cueData.spriteId);
+            this.currentSettings.selectedCueId = displayName as CueId;
+            console.log(this.currentSettings.selectedCueId);
+        };
+
+        this.createCueNavigationButtons(cueContainer, 150, updateCueDisplay);
+
+        updateCueDisplay();
+    }
+
+    private createCueNavigationButtons(container: Phaser.GameObjects.Container, y: number, onUpdate: () => void): void {
+        const buttonStyle = {
+            fontFamily: '"Courier New", monospace',
+            fontSize: "24px",
+            color: COLORS.color,
+            backgroundColor: "#002200",
+            padding: { x: 15, y: 8 },
+            stroke: "#00aa00",
+            strokeThickness: 2,
+        };
+
+        // Left arrow button
+        const leftButton = this.scene.add
+            .text(-120, y, "◀", {
+                ...buttonStyle,
+                fontSize: "28px",
+            })
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
+
+        // Right arrow button
+        const rightButton = this.scene.add
+            .text(120, y, "▶", {
+                ...buttonStyle,
+                fontSize: "28px",
+            })
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
+
+        [leftButton, rightButton].forEach((button) => {
+            button.on("pointerover", () => {
+                button.setStyle({
+                    ...buttonStyle,
+                    color: "#ffff00",
+                    backgroundColor: "#006600",
+                    stroke: "#ffff00",
+                });
+            });
+
+            button.on("pointerout", () => {
+                button.setStyle(buttonStyle);
+            });
+
+            button.on("pointerdown", () => {
+                button.setStyle({
+                    ...buttonStyle,
+                    color: "#000000",
+                    backgroundColor: "#00ff00",
+                    stroke: "#000000",
+                });
+            });
+
+            button.on("pointerup", () => {
+                button.setStyle(buttonStyle);
+            });
+        });
+
+        leftButton.on("pointerdown", () => {
+            this.currentCueIndex = (this.currentCueIndex - 1 + this.availableCueIds.length) % this.availableCueIds.length;
+            onUpdate();
+        });
+
+        rightButton.on("pointerdown", () => {
+            this.currentCueIndex = (this.currentCueIndex + 1) % this.availableCueIds.length;
+            onUpdate();
+        });
+
+        container.add(leftButton);
+        container.add(rightButton);
     }
 
     private createActionButtons(container: Phaser.GameObjects.Container, y: number): void {
@@ -273,6 +392,7 @@ export class SettingsModal extends Modal {
             showTutorial: true,
             tableColor: "#2a4a2a",
             difficulty: "normal",
+            selectedCueId: "basic",
         };
 
         this.updateAllUIElements();

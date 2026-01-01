@@ -1,11 +1,7 @@
-import { insertCoin, isHost, me, onPlayerJoin, RPC, type PlayerState } from "playroomkit";
-import { Events } from "./service";
-import type { BallType, KeyPositions } from "../common/pool-types";
+import { insertCoin, isHost, me, onPlayerJoin, RPC } from "playroomkit";
+import type { KeyPositions, Player } from "../common/pool-types";
 import { LocalService } from "./local-service";
-
-interface Player extends PlayerState {
-    ballType: BallType;
-}
+import { Events } from "./service";
 
 export class MultiplayerService extends LocalService {
     private players: { [key: string]: Player } = {};
@@ -13,22 +9,33 @@ export class MultiplayerService extends LocalService {
     override async connect(): Promise<boolean> {
         try {
             this.registerEvents();
-            await insertCoin({
-                maxPlayersPerRoom: 2,
-                defaultPlayerStates: { ballType: 'white' } as Player
-            }, () => {
-                if (!isHost()) return;
+            await insertCoin(
+                {
+                    maxPlayersPerRoom: 2,
+                    defaultPlayerStates: { ballType: "white" } as Player,
+                },
+                () => {
+                    if (!isHost()) return;
 
-                const ballTypes = ['red', 'yellow'];
+                    const ballTypes = ["red", "yellow"];
 
-                Object.values(this.players).forEach((player, i) => {
-                    player.setState('ballType', ballTypes[i]);
-                });
+                    const players = Object.values(this.players);
+                    players.forEach((player, i) => {
+                        player.setState("ballType", ballTypes[i]);
+                    });
 
-                // Para firas
-                // const images = Object.values(this.players).map(p => p.getProfile().photo);
-                RPC.call(Events.INIT, {}, RPC.Mode.ALL);
-            });
+                    RPC.call(
+                        Events.INIT,
+                        {
+                            players: players.map((p) => {
+                                const profile = p.getProfile();
+                                return { ...profile, ...p, ballType: p.getState("ballType") };
+                            }),
+                        },
+                        RPC.Mode.ALL
+                    );
+                }
+            );
             return true;
         } catch (error) {
             console.error(error);
@@ -37,7 +44,7 @@ export class MultiplayerService extends LocalService {
     }
 
     override isMyTurn(): boolean {
-        return this.service.whoseTurn() === me()?.getState('ballType');
+        return this.service.whoseTurn() === me()?.getState("ballType");
     }
 
     override hitBalls(powerPercent: number, angle: number): KeyPositions {
@@ -51,8 +58,8 @@ export class MultiplayerService extends LocalService {
     }
 
     registerEvents() {
-        RPC.register(Events.INIT, async () => {
-            this.send(Events.INIT, undefined);
+        RPC.register(Events.INIT, async (data) => {
+            this.send(Events.INIT, data);
         });
 
         RPC.register(Events.PULL, async (data) => {
@@ -60,7 +67,6 @@ export class MultiplayerService extends LocalService {
         });
 
         RPC.register(Events.HITS, async (data) => {
-            console.log(data);
             this.send(Events.HITS, data);
         });
 
@@ -72,5 +78,3 @@ export class MultiplayerService extends LocalService {
         });
     }
 }
-
-

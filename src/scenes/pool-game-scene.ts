@@ -11,12 +11,12 @@ import {
     POOL_ASSETS,
     POOL_SCENE_KEYS,
 } from "../common/pool-constants";
-import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
+import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
+import { MultiplayerService } from "../services/multiplayer-service";
 import { PoolService } from "../services/pool-service";
+import { Events } from "../services/service";
 import { DebugPanelModal } from "./components/debug-panel-modal";
 import { SettingsModal } from "./components/settings-modal";
-import { Events } from "../services/service";
-import { MultiplayerService } from "../services/multiplayer-service";
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -58,7 +58,6 @@ export class PoolGameScene extends Phaser.Scene {
 
     // Graphics
     private background!: Phaser.GameObjects.Image;
-    private playerTurn!: Phaser.GameObjects.Text;
     private holeBalls: Phaser.GameObjects.Sprite[] = [];
     private playedSounds: (number | undefined)[] = [];
 
@@ -75,13 +74,33 @@ export class PoolGameScene extends Phaser.Scene {
     private isMobile = false;
 
     private gameInfoHeader!: {
-        player1Avatar: Phaser.GameObjects.Sprite;
+        player1Avatar: Phaser.GameObjects.Sprite & { startBlinking: () => void; stopBlinking: () => void };
         player1Name: Phaser.GameObjects.Text;
-        player2Avatar: Phaser.GameObjects.Sprite;
+
+        player2Avatar: Phaser.GameObjects.Sprite & { startBlinking: () => void; stopBlinking: () => void };
         player2Name: Phaser.GameObjects.Text;
+
         roundCounter: Phaser.GameObjects.Text;
         roundNumber: number;
+        spectatorAvatars: Phaser.GameObjects.Sprite[] | null;
+        spectatorNames: Phaser.GameObjects.Text[] | null;
     };
+
+    private pocketedBallsRail!: {
+        background: Phaser.GameObjects.Graphics;
+        ballPositions: Array<{ x: number; y: number }>;
+        ballSprites: Phaser.GameObjects.Sprite[];
+        pocketedBalls: Array<{ ball: Ball; positionIndex: number; isAnimating: boolean }>;
+        animationTweens: Phaser.Tweens.Tween[];
+    };
+    private players: {
+        id: string;
+        name: string;
+        photo: string;
+        ballType: BallType;
+    }[] = [];
+
+    private spectators: any[] = [];
 
     constructor() {
         super({ key: POOL_SCENE_KEYS.POOL_GAME });
@@ -110,7 +129,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.createCue();
         this.createPowerMeter();
         this.createUI();
-        this.createGameInfoHeader();
+        this.createPocketedBallsRail();
 
         // Setup input
         this.registerEvents();
@@ -118,26 +137,38 @@ export class PoolGameScene extends Phaser.Scene {
 
         this.service.connect().then((connected) => {
             if (connected) {
-
             } else {
-
             }
         });
     }
 
     private updatePlayerTurn() {
-        const winner = this.service.winner();
-        if (winner) {
-            this.playerTurn.setText(`${winner} WINS!`);
-        } else {
-            const turn = this.service.whoseTurn().toUpperCase();
-            this.playerTurn.setText(`Is ${turn} turn!`);
-        }
+        const turn = this.service.whoseTurn().toUpperCase();
+        const currentPlayer = this.players.findIndex((p) => p.ballType.toLowerCase() === turn.toLowerCase());
+        if (!this.gameInfoHeader) return;
+
+        this.gameInfoHeader.roundNumber++;
+        this.gameInfoHeader.roundCounter.setText(
+            `Round: ${this.gameInfoHeader.roundNumber}\n\nTurn:\n${turn.toLowerCase()}`
+        );
+
+        if (currentPlayer === -1) return;
+        const avatar = currentPlayer === 0 ? this.gameInfoHeader.player1Avatar : this.gameInfoHeader.player2Avatar;
+        const otherBorder = currentPlayer === 0 ? this.gameInfoHeader.player2Avatar : this.gameInfoHeader.player1Avatar;
+        otherBorder.startBlinking();
+        this.time.delayedCall(200, () => {
+            otherBorder.stopBlinking();
+        });
+        avatar.startBlinking();
     }
 
     private registerEvents() {
-        this.service.subscribe(Events.INIT, () => {
-            this.updatePlayerTurn();
+        this.service.subscribe(Events.INIT, (data) => {
+            const { players } = data;
+            this.players = players;
+
+            this.loadAavatarsAndCreateInfoHeader();
+
             this.isGameStarted = true;
             console.log("Pool game initialized with", this.balls.length, "balls");
         });
@@ -150,8 +181,24 @@ export class PoolGameScene extends Phaser.Scene {
             console.log(keyPositions, state);
             this.keyPositions = keyPositions;
             this.service.setState(state);
+
+            this.updatePlayerTurn();
+
+            this.checkForNewlyPocketedBalls();
+        });
+    }
+    private loadAavatarsAndCreateInfoHeader(): void {
+        if (!this.players) return;
+        const player1 = this.players[0];
+        const player2 = this.players[1];
+        if (!player1 || !player2) return;
+        this.load.image("player1Avatar", player1.photo);
+        this.load.image("player2Avatar", player2.photo);
+        this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+            this.createGameInfoHeader();
             this.updatePlayerTurn();
         });
+        this.load.start();
     }
 
     private calculateTableDimensions(): void {
@@ -204,21 +251,13 @@ export class PoolGameScene extends Phaser.Scene {
 
         this.updateCue();
         this.updateKeyPositions();
+        this.checkForNewlyPocketedBalls();
+
         this.debugPanel?.update();
     }
 
     private createUI() {
         this.settingsModal = new SettingsModal(this, this.cameras.main.centerX, this.cameras.main.centerY);
-
-        const tableCenter = this.toTableCoordinates(this.tableWidth / 2, this.tableHeight / 4);
-        this.playerTurn = this.add
-            .text(tableCenter.x, tableCenter.y, "PLAYER TURN", {
-                fontFamily: "Arial",
-                fontSize: "24px",
-                color: "#00ff00",
-                fontStyle: "bold",
-            })
-            .setOrigin(0.5, 0.5);
 
         const buttonStyle = {
             fontFamily: '"Courier New", monospace',
@@ -295,19 +334,19 @@ export class PoolGameScene extends Phaser.Scene {
 
     private createColliders(): void {
         const CUSHION_CONSTANTS = {
-            SIDE_INNER_X: 0.2, // Inner edge x position
+            SIDE_INNER_X: 0, // Inner edge x position
             SIDE_OUTER_X: 1.0, // Outer edge x position
             SIDE_THICKNESS_X: 0, // Thickness in x direction
             SIDE_TOP_Y: 0.8, // Top inset
             SIDE_BOTTOM_Y: 1.8, // Bottom inset
 
             // Top/bottom cushion dimensions (horizontal rails)
-            RAIL_OUTER_Y: 0.2, // Outer edge y position
+            RAIL_OUTER_Y: 0, // Outer edge y position
             RAIL_INNER_Y: 1.3, // Inner edge y position
-            RAIL_THICKNESS_Y: 1.1, // Thickness in y direction (RAIL_INNER_Y - RAIL_OUTER_Y adjusted)
+            RAIL_THICKNESS_Y: 1.3, // Thickness in y direction (RAIL_INNER_Y - RAIL_OUTER_Y adjusted)
             RAIL_SIDE_X: 0.6, // Side inset
             RAIL_CORNER_X: 1.4, // Corner diagonal inset
-            RAIL_POCKET_OUTER: 2.09, // Outer pocket edge divisor
+            RAIL_POCKET_OUTER: 2.14, // Outer pocket edge divisor
             RAIL_POCKET_INNER: 2.05, // Inner pocket edge divisor
         };
 
@@ -435,181 +474,6 @@ export class PoolGameScene extends Phaser.Scene {
         console.log("Created", this.colliders.length, "colliders");
     }
 
-    private createPowerMeter(): void {
-        const powerMeterWidth = 60;
-        const powerMeterHeight = 550;
-        const handleHeight = 50;
-        const powerMeterX = this.marginX + this.tableWidth + 50;
-        const powerMeterY = this.marginY + this.tableHeight / 2 - powerMeterHeight / 2;
-        const minY = powerMeterY;
-        const maxY = powerMeterY + powerMeterHeight - handleHeight;
-
-        // Background of power meter
-        const background = this.add.graphics();
-        background.fillStyle(0x1a1a1a, 0.9);
-        background.fillRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
-        background.lineStyle(3, 0x4a3520, 1);
-        background.strokeRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
-
-        const fill = this.add.graphics();
-        const handle = this.add.sprite(powerMeterX + powerMeterWidth / 2, minY + handleHeight / 2, POOL_ASSETS.DRAG_ICON);
-        handle.setScale(0.05);
-        handle.setRotation(Math.PI / 2);
-        handle.setInteractive({ draggable: true, useHandCursor: true });
-
-        // Add power label
-        this.add
-            .text(powerMeterX + powerMeterWidth / 2, powerMeterY - 30, "POWER", {
-                fontFamily: "Arial",
-                fontSize: "18px",
-                color: "#d4af37",
-                fontStyle: "bold",
-            })
-            .setOrigin(0.5, 0.5);
-
-        this.powerMeter = {
-            background,
-            fill,
-            handle,
-            isDragging: false,
-            power: 0,
-            position: {
-                x: powerMeterX,
-                y: powerMeterY,
-            },
-            size: {
-                width: powerMeterWidth,
-                height: powerMeterHeight,
-                handleHeight,
-            },
-        };
-
-        // Setup drag events
-        handle.on("dragstart", () => {
-            if (MODAL_OPEN) return;
-            this.powerMeter.isDragging = true;
-        });
-
-        handle.on("dragend", () => {
-            if (MODAL_OPEN) return;
-            if (this.powerMeter.power <= 0) {
-                this.powerMeter.isDragging = false;
-                return;
-            }
-
-            this.powerMeter.isDragging = false;
-            this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
-            this.setPower(0);
-        });
-
-        handle.on("drag", (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
-            if (MODAL_OPEN) return;
-
-            const usableHeight = maxY - minY - handleHeight;
-            const clampedY = Phaser.Math.Clamp(dragY, minY + handleHeight / 2, maxY - handleHeight / 2);
-            const power = (clampedY - (minY + handleHeight / 2)) / usableHeight;
-            this.setPower(power);
-            handle.x = powerMeterX + powerMeterWidth / 2; // Keep handle centered horizontally
-        });
-        this.updatePowerMeterFromPower();
-    }
-
-    private createGameInfoHeader(): void {
-        const canvasWidth = this.game.scale.canvas.width;
-        const headerHeight = 100;
-        const headerY = 40;
-
-        const padding = 500;
-        const textSpacing = 120;
-
-        const player1Avatar = this.add
-            .sprite(padding, headerY + headerHeight / 2, POOL_ASSETS.AVATAR)
-            .setScale(0.2)
-            .setOrigin(0, 0.5);
-
-        const player1Name = this.add
-            .text(padding + textSpacing, headerY + headerHeight / 2, "Player 1", {
-                fontFamily: "Arial",
-                fontSize: "20px",
-                color: "#ffffff",
-                fontStyle: "bold",
-            })
-            .setOrigin(0, 0.5);
-
-        const roundCounter = this.add
-            .text(canvasWidth / 2, headerY + headerHeight / 2, "Round: 1", {
-                fontFamily: "Arial",
-                fontSize: "24px",
-                color: "#ffd700",
-                fontStyle: "bold",
-            })
-            .setOrigin(0.5, 0.5);
-
-        const rightPadding = canvasWidth - padding;
-        const player2Avatar = this.add
-            .sprite(rightPadding, headerY + headerHeight / 2, POOL_ASSETS.AVATAR)
-            .setScale(0.2)
-            .setOrigin(1, 0.5);
-
-        const player2Name = this.add
-            .text(rightPadding - textSpacing, headerY + headerHeight / 2, "Player 2", {
-                fontFamily: "Arial",
-                fontSize: "20px",
-                color: "#ffffff",
-                fontStyle: "bold",
-            })
-            .setOrigin(1, 0.5);
-
-        this.gameInfoHeader = {
-            player1Avatar,
-            player1Name,
-            player2Avatar,
-            player2Name,
-            roundCounter,
-            roundNumber: 1,
-        };
-    }
-
-    private updatePowerMeterFromPower(): void {
-        const { power, fill, handle } = this.powerMeter;
-        const { x, y } = this.powerMeter.position;
-        const { width, height, handleHeight } = this.powerMeter.size;
-
-        const minY = y;
-        const maxY = y + height - handleHeight;
-
-        const usableHeight = maxY - minY - handleHeight;
-        const handleY = minY + handleHeight / 2 + usableHeight * power;
-        handle.y = handleY;
-
-        fill.clear();
-
-        if (power <= 0) return;
-
-        let color = 0x00ff00;
-        if (power > 0.66) color = 0xff0000;
-        else if (power > 0.33) color = 0xffff00;
-
-        const fillHeight = usableHeight * power;
-        fill.fillStyle(color, 0.7);
-        fill.fillRoundedRect(x + 5, minY + 5, width - 10, fillHeight, 5);
-    }
-
-    private isTouchingPowerMeter(pointer: Phaser.Input.Pointer): boolean {
-        const handleBounds = this.powerMeter.handle.getBounds();
-        return (
-            pointer.x >= handleBounds.x &&
-            pointer.x <= handleBounds.x + handleBounds.width &&
-            pointer.y >= handleBounds.y &&
-            pointer.y <= handleBounds.y + handleBounds.height
-        );
-    }
-
-    private setPower(power: number): void {
-        this.powerMeter.power = power;
-        this.updatePowerMeterFromPower();
-    }
-
     private updateKeyPositions(): void {
         if (!this.keyPositions.length) return;
 
@@ -660,6 +524,7 @@ export class PoolGameScene extends Phaser.Scene {
         const ball: Ball = {
             ballType,
             phaserSprite: sprite,
+            isPocketed: false,
         };
 
         this.balls.push(ball);
@@ -667,9 +532,9 @@ export class PoolGameScene extends Phaser.Scene {
 
     private createHoles(): void {
         const ratio = this.tableWidth / 16;
-        const hRatio = this.tableHeight / 12;
+        const hRatio = this.tableHeight / 14;
 
-        const leftHolesX = ratio * 0.8;
+        const leftHolesX = ratio * 0.65;
         const topLeftHoleY = hRatio;
         const bottomLeftHoleY = this.tableHeight - topLeftHoleY;
 
@@ -678,7 +543,7 @@ export class PoolGameScene extends Phaser.Scene {
         const bottomRightHoleY = bottomLeftHoleY;
 
         const centerHolesX = this.tableWidth / 2;
-        const centerHolesYOffset = 20;
+        const centerHolesYOffset = 0;
 
         const holePositions = [
             { x: leftHolesX, y: topLeftHoleY },
@@ -895,5 +760,477 @@ export class PoolGameScene extends Phaser.Scene {
             });
             onClick();
         });
+    }
+
+    // GAME INFO HEADER
+
+    private createGameInfoHeader(): void {
+        const canvasWidth = this.game.scale.canvas.width;
+        const headerHeight = 100;
+        const headerY = 80;
+
+        const padding = 500;
+        const nameOffset = 10;
+        const spectatorAvatarSize = 40;
+        const spectatorSpacing = 30;
+
+        const players = this.players;
+        const spectators = this.players;
+
+        if (players.length === 0) return;
+
+        const rightPadding = canvasWidth - padding;
+        const centerY = headerY + headerHeight / 2;
+
+        const headerContainer = this.add.container(0, 0);
+
+        const player1 = players[0];
+        let player1Avatar: Phaser.GameObjects.Sprite & { startBlinking?: () => void; stopBlinking?: () => void };
+        let player1Name: Phaser.GameObjects.Text;
+        let player1BlinkTween: Phaser.Tweens.Tween;
+
+        if (player1) {
+            player1Avatar = this.add
+                .sprite(padding, centerY, "player1Avatar")
+                .setScale(0.8)
+                .setOrigin(0.5, 0.5)
+                .setVisible(true);
+
+            player1Name = this.add
+                .text(player1Avatar.x, player1Avatar.y + nameOffset, `${player1.name} (${player1.ballType})`, {
+                    fontFamily: "Arial",
+                    fontSize: "20px",
+                    color: "#ffffff",
+                    fontStyle: "bold",
+                })
+                .setOrigin(0.5, 0);
+
+            player1BlinkTween = this.tweens.add({
+                targets: [player1Avatar, player1Name],
+                scale: { from: 0.8, to: 0.85 },
+                alpha: { from: 0.75, to: 0.95 },
+                duration: 800,
+                ease: "Sine.easeInOut",
+                yoyo: true,
+                repeat: -1,
+                paused: true,
+            });
+
+            player1Avatar.startBlinking = function () {
+                player1BlinkTween.play();
+            };
+
+            player1Avatar.stopBlinking = function () {
+                player1BlinkTween.pause();
+                player1BlinkTween.seek(0);
+                this.setAlpha(0.2);
+            };
+
+            headerContainer.add([player1Avatar, player1Name]);
+        }
+
+        let spectatorAvatars: Phaser.GameObjects.Sprite[] = [];
+        let spectatorNames: Phaser.GameObjects.Text[] = [];
+
+        if (spectators.length > 0) {
+            const spectatorsStartX = canvasWidth / 2;
+            const spectatorsY = headerY;
+
+            const totalSpectatorsWidth =
+                spectators.length * spectatorAvatarSize + (spectators.length - 1) * spectatorSpacing;
+
+            let currentX = spectatorsStartX - totalSpectatorsWidth / 2 + spectatorAvatarSize / 2;
+
+            spectators.forEach((spectator, index) => {
+                const avatarTexture = index === 0 ? "player1Avatar" : "player2Avatar";
+
+                const spectatorAvatar = this.add
+                    .sprite(currentX, spectatorsY, avatarTexture)
+                    .setScale(spectatorAvatarSize / 100)
+                    .setOrigin(0.5, 0.5)
+                    .setAlpha(0.7)
+                    .setInteractive({ useHandCursor: true });
+
+                spectatorAvatar
+                    .on("pointerover", () => {
+                        spectatorAvatar.setAlpha(1);
+                    })
+                    .on("pointerout", () => {
+                        spectatorAvatar.setAlpha(0.7);
+                    });
+
+                spectatorAvatars.push(spectatorAvatar);
+                headerContainer.add([spectatorAvatar]);
+
+                currentX += spectatorAvatarSize + spectatorSpacing;
+            });
+        }
+
+        const roundCounter = this.add
+            .text(canvasWidth / 2, centerY, "Round: 1", {
+                fontFamily: "Arial",
+                fontSize: "24px",
+                color: "#ffd700",
+                fontStyle: "bold",
+            })
+            .setOrigin(0.5, 0.5);
+
+        headerContainer.add(roundCounter);
+
+        const player2 = players[1];
+        let player2Avatar: (Phaser.GameObjects.Sprite & { startBlinking?: () => void; stopBlinking?: () => void }) | null =
+            null;
+        let player2Name: Phaser.GameObjects.Text | null = null;
+        let player2BlinkTween: Phaser.Tweens.Tween | null = null;
+
+        if (player2) {
+            player2Avatar = this.add
+                .sprite(rightPadding, centerY, "player2Avatar")
+                .setScale(0.8)
+                .setOrigin(0.5, 0.5)
+                .setVisible(true);
+
+            player2Name = this.add
+                .text(player2Avatar.x, player2Avatar.y + nameOffset, `${player2.name} (${player2.ballType})`, {
+                    fontFamily: "Arial",
+                    fontSize: "20px",
+                    color: "#ffffff",
+                    fontStyle: "bold",
+                })
+                .setOrigin(0.5, 0);
+
+            player2BlinkTween = this.tweens.add({
+                targets: [player2Avatar, player2Name],
+                scale: { from: 0.8, to: 0.85 },
+                alpha: { from: 0.75, to: 0.95 },
+                duration: 800,
+                ease: "Sine.easeInOut",
+                yoyo: true,
+                repeat: -1,
+                paused: true,
+            });
+
+            player2Avatar.startBlinking = function () {
+                player2BlinkTween!.play();
+            };
+
+            player2Avatar.stopBlinking = function () {
+                player2BlinkTween!.pause();
+                player2BlinkTween!.seek(0);
+                this.setAlpha(0.3);
+            };
+
+            headerContainer.add([player2Avatar, player2Name]);
+        } else {
+            if (spectators.length === 0) {
+                const waitingText = this.add
+                    .text(rightPadding, centerY, "Waiting for Player 2...", {
+                        fontFamily: "Arial",
+                        fontSize: "18px",
+                        color: "#888888",
+                        fontStyle: "italic",
+                    })
+                    .setOrigin(0.5, 0.5);
+                headerContainer.add(waitingText);
+            }
+        }
+
+        this.gameInfoHeader = {
+            player1Avatar: player1Avatar! as Phaser.GameObjects.Sprite & {
+                startBlinking: () => void;
+                stopBlinking: () => void;
+            },
+            player1Name: player1Name!,
+            player2Avatar: player2Avatar as Phaser.GameObjects.Sprite & {
+                startBlinking: () => void;
+                stopBlinking: () => void;
+            },
+            player2Name: player2Name!,
+            spectatorAvatars: spectatorAvatars,
+            spectatorNames: spectatorNames,
+            roundCounter,
+            roundNumber: 0,
+        };
+    }
+
+    // POCKETED BALLS RAIL
+
+    private createPocketedBallsRail(): void {
+        const railWidth = 40;
+        const railHeight = this.tableHeight * 0.8;
+        const railX = this.marginX - railWidth - 20;
+        const railY = this.marginY + (this.tableHeight - railHeight) / 2;
+        const ballRadius = BALL_RADIUS * 0.75;
+
+        const background = this.add.graphics();
+
+        background.fillStyle(0x1a1a1a, 0.9);
+        background.fillRoundedRect(railX, railY, railWidth, railHeight, 10);
+
+        background.fillStyle(0x1a1a1a, 0.9);
+        background.fillRoundedRect(railX + 3, railY + 3, railWidth - 6, railHeight - 6, 8);
+
+        background.lineStyle(3, 0x4a3520, 1);
+        background.strokeRoundedRect(railX, railY, railWidth, railHeight, 10);
+
+        const columns = 1;
+        const rows = 14;
+        const verticalSpacing = ballRadius * 1.5;
+        const startX = railX + railWidth / 2;
+        const startY = railY + ballRadius + 10;
+
+        const ballPositions: Array<{ x: number; y: number }> = [];
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < columns; col++) {
+                const x = startX;
+                const y = startY + row * verticalSpacing;
+                ballPositions.push({ x, y });
+            }
+        }
+
+        const ballSprites: Phaser.GameObjects.Sprite[] = [];
+        ballPositions.forEach((pos) => {
+            const emptySprite = this.add
+                .sprite(pos.x, pos.y, POOL_ASSETS.WHITE_BALL)
+                .setScale((ballRadius * 2) / 256)
+                .setAlpha(0)
+                .setVisible(false);
+            ballSprites.push(emptySprite);
+        });
+
+        this.pocketedBallsRail = {
+            background,
+            ballPositions,
+            ballSprites,
+            pocketedBalls: [],
+            animationTweens: [],
+        };
+    }
+
+    private checkForNewlyPocketedBalls(): void {
+        const allBalls = this.balls.slice(0, this.balls.length - 1);
+
+        allBalls.forEach((ball, index) => {
+            if (!ball.phaserSprite.visible && !ball.isPocketed) {
+                const alreadyPocketed = this.pocketedBallsRail.pocketedBalls.some((pb) => pb.ball === ball);
+
+                if (!alreadyPocketed) {
+                    ball.isPocketed = false;
+                    this.animateBallToRail(ball, index);
+                }
+            }
+        });
+    }
+
+    private animateBallToRail(ball: Ball, ballIndex: number): void {
+        const positionIndex = this.pocketedBallsRail.ballPositions.length - 1 - this.pocketedBallsRail.pocketedBalls.length;
+
+        if (positionIndex < 0) {
+            console.warn("Rail is full!");
+            return;
+        }
+
+        const targetPosition = this.pocketedBallsRail.ballPositions[positionIndex];
+        if (!targetPosition) return;
+        const dropStartPosition = {
+            x: targetPosition.x,
+            y: this.marginY - 50,
+        };
+
+        const ballClone = this.add.sprite(ball.phaserSprite.x, ball.phaserSprite.y, ball.phaserSprite.texture.key);
+        ballClone.setScale(ball.phaserSprite.scale);
+        ballClone.setAlpha(0.8);
+
+        this.pocketedBallsRail.pocketedBalls.push({
+            ball,
+            positionIndex,
+            isAnimating: true,
+        });
+
+        const moveToTopTween = this.tweens.add({
+            targets: ballClone,
+            x: dropStartPosition.x,
+            y: dropStartPosition.y,
+            duration: 400,
+            ease: "Power2",
+            onComplete: () => {
+                const dropTween = this.tweens.add({
+                    targets: ballClone,
+                    y: targetPosition.y,
+                    duration: 300,
+                    ease: "Bounce.easeOut",
+                    onComplete: () => {
+                        ballClone.destroy();
+
+                        const pocketedBall = this.pocketedBallsRail.pocketedBalls.find((pb) => pb.ball === ball);
+                        if (pocketedBall) {
+                            pocketedBall.isAnimating = false;
+                        }
+
+                        this.updateRailDisplay();
+
+                        if (positionIndex > 0) {
+                            const landedOnIndex = positionIndex - 1;
+                            const landedOnSprite = this.pocketedBallsRail.ballSprites[landedOnIndex];
+                            if (landedOnSprite && landedOnSprite.visible) {
+                                this.tweens.add({
+                                    targets: landedOnSprite,
+                                    scale: landedOnSprite.scale,
+                                    duration: 100,
+                                    yoyo: true,
+                                    ease: "Sine.easeInOut",
+                                });
+                            }
+                        }
+                    },
+                });
+
+                this.pocketedBallsRail.animationTweens.push(dropTween);
+            },
+        });
+
+        this.pocketedBallsRail.animationTweens.push(moveToTopTween);
+    }
+
+    private updateRailDisplay(): void {
+        this.pocketedBallsRail.ballSprites.forEach((sprite) => {
+            sprite.setVisible(false);
+            sprite.setAlpha(0);
+        });
+
+        this.pocketedBallsRail.pocketedBalls.forEach((pocketedBall) => {
+            if (!pocketedBall.isAnimating) {
+                const sprite = this.pocketedBallsRail.ballSprites[pocketedBall.positionIndex];
+                if (sprite) {
+                    sprite.setTexture(pocketedBall.ball.phaserSprite.texture.key);
+                    sprite.setAlpha(1);
+                    sprite.setVisible(true);
+                    sprite.setScale((BALL_RADIUS * 2) / 256);
+                    sprite.setDepth(100 + pocketedBall.positionIndex);
+                }
+            }
+        });
+    }
+
+    // POWER METER
+
+    private createPowerMeter(): void {
+        const powerMeterWidth = 60;
+        const powerMeterHeight = 550;
+        const handleHeight = 50;
+        const powerMeterX = this.marginX + this.tableWidth + 50;
+        const powerMeterY = this.marginY + this.tableHeight / 2 - powerMeterHeight / 2;
+        const minY = powerMeterY;
+        const maxY = powerMeterY + powerMeterHeight - handleHeight;
+
+        // Background of power meter
+        const background = this.add.graphics();
+        background.fillStyle(0x1a1a1a, 0.9);
+        background.fillRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
+        background.lineStyle(3, 0x4a3520, 1);
+        background.strokeRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
+
+        const fill = this.add.graphics();
+        const handle = this.add.sprite(powerMeterX + powerMeterWidth / 2, minY + handleHeight / 2, POOL_ASSETS.DRAG_ICON);
+        handle.setScale(0.05);
+        handle.setRotation(Math.PI / 2);
+        handle.setInteractive({ draggable: true, useHandCursor: true });
+
+        // Add power label
+        this.add
+            .text(powerMeterX + powerMeterWidth / 2, powerMeterY - 30, "POWER", {
+                fontFamily: "Arial",
+                fontSize: "18px",
+                color: "#d4af37",
+                fontStyle: "bold",
+            })
+            .setOrigin(0.5, 0.5);
+
+        this.powerMeter = {
+            background,
+            fill,
+            handle,
+            isDragging: false,
+            power: 0,
+            position: {
+                x: powerMeterX,
+                y: powerMeterY,
+            },
+            size: {
+                width: powerMeterWidth,
+                height: powerMeterHeight,
+                handleHeight,
+            },
+        };
+
+        // Setup drag events
+        handle.on("dragstart", () => {
+            if (MODAL_OPEN) return;
+            this.powerMeter.isDragging = true;
+        });
+
+        handle.on("dragend", () => {
+            if (MODAL_OPEN) return;
+            if (this.powerMeter.power <= 0) {
+                this.powerMeter.isDragging = false;
+                return;
+            }
+
+            this.powerMeter.isDragging = false;
+            this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
+            this.setPower(0);
+        });
+
+        handle.on("drag", (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
+            if (MODAL_OPEN) return;
+
+            const usableHeight = maxY - minY - handleHeight;
+            const clampedY = Phaser.Math.Clamp(dragY, minY + handleHeight / 2, maxY - handleHeight / 2);
+            const power = (clampedY - (minY + handleHeight / 2)) / usableHeight;
+            this.setPower(power);
+            handle.x = powerMeterX + powerMeterWidth / 2; // Keep handle centered horizontally
+        });
+        this.updatePowerMeterFromPower();
+    }
+
+    private updatePowerMeterFromPower(): void {
+        const { power, fill, handle } = this.powerMeter;
+        const { x, y } = this.powerMeter.position;
+        const { width, height, handleHeight } = this.powerMeter.size;
+
+        const minY = y;
+        const maxY = y + height - handleHeight;
+
+        const usableHeight = maxY - minY - handleHeight;
+        const handleY = minY + handleHeight / 2 + usableHeight * power;
+        handle.y = handleY;
+
+        fill.clear();
+
+        if (power <= 0) return;
+
+        let color = 0x00ff00;
+        if (power > 0.66) color = 0xff0000;
+        else if (power > 0.33) color = 0xffff00;
+
+        const fillHeight = usableHeight * power;
+        fill.fillStyle(color, 0.7);
+        fill.fillRoundedRect(x + 5, minY + 5, width - 10, fillHeight, 5);
+    }
+
+    private isTouchingPowerMeter(pointer: Phaser.Input.Pointer): boolean {
+        const handleBounds = this.powerMeter.handle.getBounds();
+        return (
+            pointer.x >= handleBounds.x &&
+            pointer.x <= handleBounds.x + handleBounds.width &&
+            pointer.y >= handleBounds.y &&
+            pointer.y <= handleBounds.y + handleBounds.height
+        );
+    }
+
+    private setPower(power: number): void {
+        this.powerMeter.power = power;
+        this.updatePowerMeterFromPower();
     }
 }

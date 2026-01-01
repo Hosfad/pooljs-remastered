@@ -35,8 +35,11 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.load.audio(POOL_ASSETS.SOUND_EFFECTS.BALL_HITTING_TABLE_EDGE, "/sounds/ball-hitting-table-edge.mp3");
 
         // Cues
-        this.load.svg(POOL_ASSETS.CUES.BASIC, "/game/cues/basic.svg");
-        this.load.svg(POOL_ASSETS.CUES.EXPERT, "/game/cues/expert.svg");
+        this.load.image(POOL_ASSETS.CUES.BASIC, "/game/cues/basic.svg");
+        this.load.image(POOL_ASSETS.CUES.ADVANCED, "/game/cues/advanced.svg");
+        this.load.image(POOL_ASSETS.CUES.EXPERT, "/game/cues/expert.svg");
+        this.load.image(POOL_ASSETS.CUES.SWORD, "/game/cues/sword.svg");
+        this.load.image(POOL_ASSETS.CUES.SWORD_WOOD, "/game/cues/wodden-sword.svg");
 
         this.load.on("complete", () => this.transitionToGame());
     }

@@ -1,5 +1,5 @@
 import * as Phaser from "phaser";
-import { setGlobalModalOpenVariable } from "../../../common/pool-constants";
+import { DEBUG_GRAPHICS, setGlobalModalOpenVariable } from "../../../common/pool-constants";
 
 export interface ModalConfig {
     width?: number;
@@ -65,7 +65,7 @@ export class Modal extends Phaser.GameObjects.Container {
             titleSize: "28px",
             accentColor: "#ffd700",
             scrollable: false,
-            scrollHeight: 300,
+            scrollHeight: 600,
             drawBackground: true,
             hotkey: undefined,
             disableBackgroundClicks: false,
@@ -279,10 +279,19 @@ export class Modal extends Phaser.GameObjects.Container {
 
         this.contentContainer = this.scene.add.container(0, 0);
         this.contentContainer.setDepth(1000);
-        // if (DEBUG_GRAPHICS) {
-        //     this.contentContainer.add(this.scene.add.rectangle(0, 0, width, height, 0xffffff, 0.5));
-        //     this.contentContainer.setInteractive();
-        // }
+
+        if (DEBUG_GRAPHICS) {
+            this.contentContainer.add(this.scene.add.rectangle(0, 0, width, height, 0xffffff, 0.5));
+            this.contentContainer.setInteractive();
+        }
+
+        // const mask = this.scene.make.graphics({});
+        // mask.fillRect(this.x - width / 2, this.y - height / 2, width, height);
+        // mask.setAlpha(0.5);
+        // this.contentContainer.setMask(mask.createGeometryMask());
+
+        // this.contentContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
+        // this.contentContainer.setScrollFactor(0);
 
         this.add(this.contentContainer);
     }
@@ -332,8 +341,6 @@ export class Modal extends Phaser.GameObjects.Container {
 
         this.setVisible(true);
         this.setActive(true);
-
-        this.inputPlugin.enabled = false;
 
         if (this.x === 0 && this.y === 0) {
             this.x = this.sceneWidth / 2;

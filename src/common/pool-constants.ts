@@ -1,7 +1,11 @@
 /**
  * Pool game specific constants
  */
-export const DEBUG_GRAPHICS = false;
+export let DEBUG_GRAPHICS = true;
+
+export function setDebugGraphics(debug: boolean) {
+    DEBUG_GRAPHICS = debug;
+}
 
 export let MODAL_OPEN: boolean = false;
 export function setGlobalModalOpenVariable(open: boolean) {
@@ -25,7 +29,10 @@ export const POOL_ASSETS = {
 
     CUES: {
         BASIC: "cue-basic",
+        ADVANCED: "cue-advanced",
         EXPERT: "cue-expert",
+        SWORD: "cue-sword",
+        SWORD_WOOD: "cue-wooden-sword",
     },
     AVATAR: "avatar",
 } as const;
@@ -38,8 +45,8 @@ export const POOL_SCENE_KEYS = {
 // Game dimensions
 export const POOL_TABLE_WIDTH = 1300;
 export const POOL_TABLE_HEIGHT = 768;
-export const BALL_RADIUS = 30;
-export const HOLE_RADIUS = 35;
+export const BALL_RADIUS = 15;
+export const HOLE_RADIUS = 50;
 export const CUE_LENGTH = 400;
 export const CUE_HEIGHT = 15;
 

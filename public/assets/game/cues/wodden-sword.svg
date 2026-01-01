@@ -1,0 +1,40 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="112 678 1185 62" width="1185" height="62">
+<style type="text/css">
+    .st8{fill:#999999;}
+    .st9{fill:#CECECE;}
+    .st10{opacity:0.3;}
+    .st11{fill:#F4F4F4;}
+    .st14{opacity:0.4;}
+    .st20{fill:#7C3613;}
+    .st21{fill:#63280D;}
+    .st22{fill:#893C1A;}
+</style>
+<g id="cue-5">
+    <g>
+        <polygon class="st9" points="1284.5,716.9 984.7,715.6 115.5,712.2 115.5,705.7 984.7,702.3 1284.5,701.1"/>
+        <polygon class="st8" points="984.7,698.3 984.7,719.6 1284.5,720.9 1284.5,697.1"/>
+        <path class="st20" d="M1293.4,715.6c0,4.9-4,8.8-8.8,8.8l0,0c-4.9,0-8.8-4-8.8-8.8v-13.2c0-4.9,4-8.8,8.8-8.8l0,0
+            c4.9,0,8.8,4,8.8,8.8V715.6z"/>
+        <polygon class="st20" points="984.7,698.3 984.7,719.6 1284.5,720.9 1284.5,697.1"/>
+        <rect x="1235.4" y="711.6" class="st21" width="33.8" height="2"/>
+        <rect x="1194.6" y="711.6" class="st21" width="24.9" height="2"/>
+        <rect x="993" y="711.6" class="st21" width="51.7" height="2"/>
+        <rect x="1061.7" y="711.6" class="st21" width="117" height="2"/>
+        <rect x="1216.8" y="699.6" class="st21" width="60.5" height="2.4"/>
+        <rect x="1137.2" y="699.6" class="st21" width="60.5" height="2.4"/>
+        <rect x="1029.5" y="699.6" class="st21" width="60.5" height="2.4"/>
+        <g class="st14">
+            <polygon class="st11" points="984.7,698.3 984.7,704.7 1284.5,703.5 1284.5,697.1"/>
+        </g>
+        <polygon class="st9" points="973.7,715.6 979,715.6 979,702.3 973.7,702.4"/>
+        <path class="st9" d="M118.2,709.5c0,1.5-1.2,2.8-2.8,2.8l0,0c-1.5,0-2.8-1.2-2.8-2.8v-0.9c0-1.5,1.2-2.8,2.8-2.8l0,0
+            c1.5,0,2.8,1.2,2.8,2.8V709.5z"/>
+        <rect x="115.5" y="705.7" class="st9" width="12.4" height="6.5"/>
+        <g class="st10">
+            <polygon class="st11" points="984.7,702.3 115.5,705.7 115.5,709.7 984.7,706.3"/>
+        </g>
+    </g>
+    <path class="st20" d="M990.7,713.5c0,3.4-2.7,6.1-6,6.1l0,0c-3.3,0-6-0.6-6-4v-13.3c0-3.4,2.7-4,6-4l0,0c3.3,0,6,2.7,6,6.1V713.5z"/>
+    <polygon class="st22" points="978.6,739.8 996.5,735.9 996.5,682.1 978.6,678.2"/>
+</g>
+</svg>
