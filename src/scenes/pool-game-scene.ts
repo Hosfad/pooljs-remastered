@@ -42,6 +42,15 @@ export class PoolGameScene extends Phaser.Scene {
         handle: Phaser.GameObjects.Sprite;
         isDragging: boolean;
         power: number;
+        position: {
+            x: number;
+            y: number;
+        };
+        size: {
+            width: number;
+            height: number;
+            handleHeight: number;
+        };
     };
 
     // Graphics
@@ -61,6 +70,15 @@ export class PoolGameScene extends Phaser.Scene {
     private dragVector = new Vector2();
     private aimLine!: Phaser.GameObjects.Graphics;
     private isMobile = false;
+
+    private gameInfoHeader!: {
+        player1Avatar: Phaser.GameObjects.Sprite;
+        player1Name: Phaser.GameObjects.Text;
+        player2Avatar: Phaser.GameObjects.Sprite;
+        player2Name: Phaser.GameObjects.Text;
+        roundCounter: Phaser.GameObjects.Text;
+        roundNumber: number;
+    };
 
     constructor() {
         super({ key: POOL_SCENE_KEYS.POOL_GAME });
@@ -85,6 +103,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.createCue();
         this.createPowerMeter();
         this.createUI();
+        this.createGameInfoHeader();
 
         // Setup input
         this.setupInput();
@@ -128,9 +147,10 @@ export class PoolGameScene extends Phaser.Scene {
 
         const marginPercentage = 0.1;
         const maxMargin = 100;
+        const topMargin = 100;
 
         this.marginX = Math.min(canvasWidth * marginPercentage, maxMargin);
-        this.marginY = Math.min(canvasHeight * marginPercentage, maxMargin);
+        this.marginY = Math.min(canvasHeight * marginPercentage, maxMargin) + topMargin;
 
         const availableWidth = canvasWidth - 2 * this.marginX;
         const availableHeight = canvasHeight - 2 * this.marginY;
@@ -184,17 +204,6 @@ export class PoolGameScene extends Phaser.Scene {
             })
             .setOrigin(0.5, 0.5);
 
-        for (let i = 0; i < this.balls.length - 1; i++) {
-            const ball = this.balls[i]!;
-            const sprite = ball.phaserSprite;
-
-            const w = BALL_RADIUS * 2;
-            const position = this.toTableCoordinates(-w * 2, this.tableHeight / 10 + w * i * 2);
-            const spr = this.add.sprite(position.x, position.y, sprite.texture).setAlpha(0.5).setOrigin(0.5, 0.5);
-
-            this.holeBalls.push(spr);
-        }
-
         const buttonStyle = {
             fontFamily: '"Courier New", monospace',
             fontSize: "20px",
@@ -205,7 +214,7 @@ export class PoolGameScene extends Phaser.Scene {
             strokeThickness: 2,
         };
 
-        const buttonPosition = this.toTableCoordinates(this.tableWidth - 100, 30);
+        const buttonPosition = this.toTableCoordinates(this.tableWidth + 200, -50);
         this.settingsButton = this.add
             .text(buttonPosition.x, buttonPosition.y, "⚙️ SETTINGS", buttonStyle)
             .setOrigin(0.5)
@@ -411,35 +420,36 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createPowerMeter(): void {
-        // Position power meter relative to the table
-        const powerMeterX = this.marginX + this.tableWidth / 2;
-        const powerMeterY = this.marginY + this.tableHeight - 100;
-        const powerMeterWidth = 40;
-        const powerMeterHeight = 200;
-        const handleHeight = 30;
+        const powerMeterWidth = 60;
+        const powerMeterHeight = 550;
+        const handleHeight = 50;
+        const powerMeterX = this.marginX + this.tableWidth + 50;
+        const powerMeterY = this.marginY + this.tableHeight / 2 - powerMeterHeight / 2;
         const minY = powerMeterY;
         const maxY = powerMeterY + powerMeterHeight - handleHeight;
 
         // Background of power meter
         const background = this.add.graphics();
         background.fillStyle(0x1a1a1a, 0.9);
-        background.fillRoundedRect(powerMeterX - powerMeterWidth / 2, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
+        background.fillRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
         background.lineStyle(3, 0x4a3520, 1);
-        background.strokeRoundedRect(powerMeterX - powerMeterWidth / 2, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
+        background.strokeRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
 
         const fill = this.add.graphics();
-        const handle = this.add.sprite(powerMeterX, minY + handleHeight / 2, POOL_ASSETS.DRAG_ICON);
+        const handle = this.add.sprite(powerMeterX + powerMeterWidth / 2, minY + handleHeight / 2, POOL_ASSETS.DRAG_ICON);
         handle.setScale(0.05);
         handle.setRotation(Math.PI / 2);
         handle.setInteractive({ draggable: true, useHandCursor: true });
 
         // Add power label
-        this.add.text(powerMeterX - powerMeterWidth / 2, powerMeterY - 30, "POWER", {
-            fontFamily: "Arial",
-            fontSize: "18px",
-            color: "#d4af37",
-            fontStyle: "bold",
-        });
+        this.add
+            .text(powerMeterX + powerMeterWidth / 2, powerMeterY - 30, "POWER", {
+                fontFamily: "Arial",
+                fontSize: "18px",
+                color: "#d4af37",
+                fontStyle: "bold",
+            })
+            .setOrigin(0.5, 0.5);
 
         this.powerMeter = {
             background,
@@ -447,6 +457,15 @@ export class PoolGameScene extends Phaser.Scene {
             handle,
             isDragging: false,
             power: 0,
+            position: {
+                x: powerMeterX,
+                y: powerMeterY,
+            },
+            size: {
+                width: powerMeterWidth,
+                height: powerMeterHeight,
+                handleHeight,
+            },
         };
 
         // Setup drag events
@@ -467,27 +486,82 @@ export class PoolGameScene extends Phaser.Scene {
             this.setPower(0);
         });
 
-        handle.on("drag", (_pointer: Phaser.Input.Pointer, _dragX: number, dragY: number) => {
+        handle.on("drag", (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
             if (MODAL_OPEN) return;
 
             const usableHeight = maxY - minY - handleHeight;
             const clampedY = Phaser.Math.Clamp(dragY, minY + handleHeight / 2, maxY - handleHeight / 2);
             const power = (clampedY - (minY + handleHeight / 2)) / usableHeight;
             this.setPower(power);
+            handle.x = powerMeterX + powerMeterWidth / 2; // Keep handle centered horizontally
         });
         this.updatePowerMeterFromPower();
     }
 
-    private updatePowerMeterFromPower(): void {
-        const powerMeterX = this.marginX + this.tableWidth / 2;
-        const powerMeterY = this.marginY + this.tableHeight - 100;
-        const powerMeterWidth = 40;
-        const powerMeterHeight = 200;
-        const handleHeight = 30;
-        const minY = powerMeterY;
-        const maxY = powerMeterY + powerMeterHeight - handleHeight;
+    private createGameInfoHeader(): void {
+        const canvasWidth = this.game.scale.canvas.width;
+        const headerHeight = 100;
+        const headerY = 40;
 
+        const padding = 500;
+        const textSpacing = 120;
+
+        const player1Avatar = this.add
+            .sprite(padding, headerY + headerHeight / 2, POOL_ASSETS.AVATAR)
+            .setScale(0.2)
+            .setOrigin(0, 0.5);
+
+        const player1Name = this.add
+            .text(padding + textSpacing, headerY + headerHeight / 2, "Player 1", {
+                fontFamily: "Arial",
+                fontSize: "20px",
+                color: "#ffffff",
+                fontStyle: "bold",
+            })
+            .setOrigin(0, 0.5);
+
+        const roundCounter = this.add
+            .text(canvasWidth / 2, headerY + headerHeight / 2, "Round: 1", {
+                fontFamily: "Arial",
+                fontSize: "24px",
+                color: "#ffd700",
+                fontStyle: "bold",
+            })
+            .setOrigin(0.5, 0.5);
+
+        const rightPadding = canvasWidth - padding;
+        const player2Avatar = this.add
+            .sprite(rightPadding, headerY + headerHeight / 2, POOL_ASSETS.AVATAR)
+            .setScale(0.2)
+            .setOrigin(1, 0.5);
+
+        const player2Name = this.add
+            .text(rightPadding - textSpacing, headerY + headerHeight / 2, "Player 2", {
+                fontFamily: "Arial",
+                fontSize: "20px",
+                color: "#ffffff",
+                fontStyle: "bold",
+            })
+            .setOrigin(1, 0.5);
+
+        this.gameInfoHeader = {
+            player1Avatar,
+            player1Name,
+            player2Avatar,
+            player2Name,
+            roundCounter,
+            roundNumber: 1,
+        };
+    }
+
+    private updatePowerMeterFromPower(): void {
         const { power, fill, handle } = this.powerMeter;
+        const { x, y } = this.powerMeter.position;
+        const { width, height, handleHeight } = this.powerMeter.size;
+
+        const minY = y;
+        const maxY = y + height - handleHeight;
+
         const usableHeight = maxY - minY - handleHeight;
         const handleY = minY + handleHeight / 2 + usableHeight * power;
         handle.y = handleY;
@@ -502,7 +576,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         const fillHeight = usableHeight * power;
         fill.fillStyle(color, 0.7);
-        fill.fillRoundedRect(powerMeterX - powerMeterWidth / 2 + 5, minY + 5, powerMeterWidth - 10, fillHeight, 5);
+        fill.fillRoundedRect(x + 5, minY + 5, width - 10, fillHeight, 5);
     }
 
     private isTouchingPowerMeter(pointer: Phaser.Input.Pointer): boolean {

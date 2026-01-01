@@ -23,6 +23,7 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.load.image(POOL_ASSETS.BACKGROUND, "/game/background.png");
         this.load.image(POOL_ASSETS.CUE_STICK, "/game/cues/expert.svg");
         this.load.image(POOL_ASSETS.DRAG_ICON, "/game/drag.png");
+        this.load.image(POOL_ASSETS.AVATAR, "/images/man.png");
 
         // Sound effects
         this.load.audio(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL, "/sounds/cue-hit-white-ball.mp3");

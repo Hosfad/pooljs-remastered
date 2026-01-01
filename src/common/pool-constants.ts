@@ -27,6 +27,7 @@ export const POOL_ASSETS = {
         BASIC: "cue-basic",
         EXPERT: "cue-expert",
     },
+    AVATAR: "avatar",
 } as const;
 
 export const POOL_SCENE_KEYS = {
@@ -52,14 +53,4 @@ export const SCORED_BALL_AREA = {
     START_X: 100,
     SPACING: 45,
     SCALE: 0.7,
-};
-
-export const POWER_METER = {
-    X: POOL_TABLE_WIDTH + 100,
-    Y: 50,
-    WIDTH: 80,
-    HEIGHT: 600,
-    HANDLE_HEIGHT: 60,
-    MIN_Y: 50,
-    MAX_Y: 660,
 };
