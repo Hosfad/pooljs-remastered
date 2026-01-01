@@ -1,41 +1,33 @@
 import { insertCoin, isHost, me, onPlayerJoin, RPC, type PlayerState } from "playroomkit";
-import { Events, Service } from "./service";
-import { Player } from "../api/connect-four";
+import { Events } from "./service";
+import type { BallType, KeyPositions } from "../common/pool-types";
+import { LocalService } from "./local-service";
 
-export class PlayroomService extends Service {
-    static readonly MAX_PLAYERS = 2;
-    players: { [key: string]: PlayerState } = {};
+interface Player extends PlayerState {
+    ballType: BallType;
+}
 
-    async connect(): Promise<boolean> {
+export class MultiplayerService extends LocalService {
+    private players: { [key: string]: Player } = {};
+
+    override async connect(): Promise<boolean> {
         try {
             this.registerEvents();
             await insertCoin({
-                maxPlayersPerRoom: PlayroomService.MAX_PLAYERS,
-                defaultPlayerStates: {
-                    player: Player.NONE,
-                },
+                maxPlayersPerRoom: 2,
+                defaultPlayerStates: { ballType: 'white' } as Player
             }, () => {
                 if (!isHost()) return;
-                const amountPlayers = Object.keys(this.players).length;
-                let red = "";
-                let yellow = "";
+
+                const ballTypes = ['red', 'yellow'];
 
                 Object.values(this.players).forEach((player, i) => {
-                    if (amountPlayers === PlayroomService.MAX_PLAYERS) {
-                        player.setState('player', Player[i === 0 ? 'ONE' : 'TWO']);
-                    } else if (player.getState('player') === Player.NONE) {
-                        player.setState('player', me().getState('player') == Player.ONE ? Player.TWO : Player.ONE);
-                    }
-
-                    const photo = player.getProfile().photo;
-                    if (player.getState('player') === Player.ONE) {
-                        red = photo;
-                    } else {
-                        yellow = photo;
-                    }
+                    player.setState('ballType', ballTypes[i]);
                 });
 
-                RPC.call(Events.GAME_START, { red, yellow }, RPC.Mode.ALL);
+                // Para firas
+                // const images = Object.values(this.players).map(p => p.getProfile().photo);
+                RPC.call(Events.INIT, {}, RPC.Mode.ALL);
             });
             return true;
         } catch (error) {
@@ -44,55 +36,36 @@ export class PlayroomService extends Service {
         }
     }
 
-    reload(): void {
-        RPC.call(Events.WAITING, undefined, RPC.Mode.ALL);
+    override isMyTurn(): boolean {
+        return this.service.whoseTurn() === me()?.getState('ballType');
     }
 
-    public override winnerText(): string {
-        return this.winner() && !this.isCurrentPlayer() ? "You Win!" : "Opponent Wins!";
+    override hitBalls(powerPercent: number, angle: number): KeyPositions {
+        const keyPositions = this.service.hitBalls(powerPercent, angle);
+        RPC.call(Events.HITS, { keyPositions: keyPositions, state: this.service.getState() }, RPC.Mode.ALL);
+        return keyPositions;
     }
 
-    public override isCurrentPlayer(): boolean {
-        return this.connectFour.currentPlayer === me().getState('player');
-    }
-
-    public override whoseTurn(): string {
-        for (const player of Object.values(this.players)) {
-            if (player.getState('player') === this.connectFour.currentPlayer) {
-                return player.getProfile().name + '\'s turn';
-            }
-        }
-        return "Nobody.";
-    }
-
-    setPiecePosition(x: number): void {
-        RPC.call(Events.HOVER, x, RPC.Mode.ALL);
-    }
-
-    makeMove(x: number): void {
-        RPC.call(Events.MOVE, x, RPC.Mode.ALL);
+    override pull(x: number, y: number, angle: number): void {
+        RPC.call(Events.PULL, { x, y, angle }, RPC.Mode.ALL);
     }
 
     registerEvents() {
-        RPC.register(Events.GAME_START, async (data) => {
-            this.events.emit(Events.GAME_START, data);
+        RPC.register(Events.INIT, async () => {
+            this.send(Events.INIT, undefined);
         });
 
-        RPC.register(Events.HOVER, async (x) => {
-            this.events.emit(Events.HOVER, x);
+        RPC.register(Events.PULL, async (data) => {
+            this.send(Events.PULL, data);
         });
 
-        RPC.register(Events.WAITING, async () => {
-            window.location.reload();
-        });
-
-        RPC.register(Events.MOVE, async (x) => {
-            const data = this.connectFour.makeMove(x);
-            this.events.emit(Events.MOVE, data);
+        RPC.register(Events.HITS, async (data) => {
+            console.log(data);
+            this.send(Events.HITS, data);
         });
 
         onPlayerJoin((player) => {
-            this.players[player.id] = player;
+            this.players[player.id] = player as Player;
             player.onQuit(() => {
                 delete this.players[player.id];
             });

@@ -3,7 +3,7 @@ import { PoolService } from "./pool-service";
 import { Events, Service } from "./service";
 
 export class LocalService extends Service {
-    private service: PoolService;
+    protected service: PoolService;
 
     constructor(service: PoolService) {
         super();

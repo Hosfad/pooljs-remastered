@@ -11,6 +11,7 @@ export interface PoolState {
     inHole: Record<number, boolean>;
     totals: Record<BallType, number>;
     players: Record<BallType, number>;
+    turnIndex: number;
 }
 
 export class PoolService {
@@ -50,12 +51,6 @@ export class PoolService {
         const blackBall = balls - 2;
         const whiteBall = balls - 1;
         const turn = this.whoseTurn();
-        console.log(`
-        ${turn}
-        ${this.players[turn]} vs ${this.totals[turn]}
-        ${this.inHole[blackBall]} vs ${this.inHole[whiteBall]}
-        result: ${this.players[turn] === this.totals[turn] && this.inHole[blackBall] === true && this.inHole[whiteBall] !== true}
-        `);
         return this.players[turn] === this.totals[turn] && this.inHole[blackBall] === true && this.inHole[whiteBall] !== true;
     }
 
@@ -64,6 +59,7 @@ export class PoolService {
             inHole: this.inHole,
             totals: this.totals,
             players: this.players,
+            turnIndex: this.turnIndex,
         };
     }
 
@@ -71,6 +67,7 @@ export class PoolService {
         this.inHole = state.inHole;
         this.totals = state.totals;
         this.players = state.players;
+        this.turnIndex = state.turnIndex;
     }
 
     public whoseTurn(): BallType {

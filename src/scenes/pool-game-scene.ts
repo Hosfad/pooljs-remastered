@@ -12,18 +12,20 @@ import {
     POOL_SCENE_KEYS,
 } from "../common/pool-constants";
 import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
-import { LocalService } from "../services/local-service";
 import { PoolService } from "../services/pool-service";
 import { DebugPanelModal } from "./components/debug-panel-modal";
 import { SettingsModal } from "./components/settings-modal";
 import { Events } from "../services/service";
+import { MultiplayerService } from "../services/multiplayer-service";
 
 const Vector2 = Phaser.Math.Vector2;
 
 export class PoolGameScene extends Phaser.Scene {
     private debugPanel?: DebugPanelModal;
-    private service!: LocalService;
+    private service!: MultiplayerService;
     private keyPositions: KeyPositions = [];
+
+    private isGameStarted = false;
 
     // Game state
     private balls: Ball[] = [];
@@ -83,15 +85,25 @@ export class PoolGameScene extends Phaser.Scene {
         this.createHoles();
         this.createColliders();
         this.createBalls();
+
+        this.service = new MultiplayerService(new PoolService(this.balls, this.colliders, this.holes));
+
+        // Create UI
         this.createCue();
         this.createPowerMeter();
         this.createUI();
 
         // Setup input
-        this.setupInput();
         this.registerEvents();
+        this.setupInput();
 
-        this.service.connect();
+        this.service.connect().then((connected) => {
+            if (connected) {
+
+            } else {
+
+            }
+        });
     }
 
     private updatePlayerTurn() {
@@ -104,10 +116,9 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private registerEvents() {
-        this.service = new LocalService(new PoolService(this.balls, this.colliders, this.holes));
-
         this.service.subscribe(Events.INIT, () => {
             this.updatePlayerTurn();
+            this.isGameStarted = true;
             console.log("Pool game initialized with", this.balls.length, "balls");
         });
 
@@ -116,6 +127,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
+            console.log(keyPositions, state);
             this.keyPositions = keyPositions;
             this.service.setState(state);
             this.updatePlayerTurn();
@@ -165,6 +177,8 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     public override update(): void {
+        if (!this.isGameStarted) return;
+
         this.input.enabled = !this.keyPositions.length && this.service.isMyTurn();
 
         this.updateCue();
