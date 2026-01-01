@@ -17,7 +17,7 @@ export class LocalService extends Service {
         });
     }
 
-    override winner(): boolean {
+    override winner(): string | undefined {
         return this.service.winner();
     }
 

@@ -107,10 +107,11 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private updatePlayerTurn() {
-        const turn = this.service.whoseTurn().toUpperCase();
-        if (this.service.winner()) {
-            this.playerTurn.setText(`${turn} WINS!`);
+        const winner = this.service.winner();
+        if (winner) {
+            this.playerTurn.setText(`${winner} WINS!`);
         } else {
+            const turn = this.service.whoseTurn().toUpperCase();
             this.playerTurn.setText(`Is ${turn} turn!`);
         }
     }

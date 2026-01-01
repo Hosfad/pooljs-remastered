@@ -26,7 +26,7 @@ export abstract class Service {
         this.events.emit(event, data);
     }
 
-    abstract winner(): boolean;
+    abstract winner(): string | undefined;
     abstract whoseTurn(): BallType;
     abstract isMyTurn(): boolean;
 

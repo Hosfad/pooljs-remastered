@@ -3,7 +3,7 @@ import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "..
 import { BALL_RADIUS } from "../common/pool-constants";
 
 const MAX_POWER = 30;
-const MAX_STEPS = 250;
+const MAX_STEPS = 150;
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -46,12 +46,18 @@ export class PoolService {
         console.log("Players", Object.values(this.turns).join(", "));
     }
 
-    public winner(): boolean {
+    public winner(): string | undefined {
         const balls = this.balls.length;
         const blackBall = balls - 2;
-        const whiteBall = balls - 1;
-        const turn = this.whoseTurn();
-        return this.players[turn] === this.totals[turn] && this.inHole[blackBall] === true && this.inHole[whiteBall] !== true;
+        if (this.inHole[blackBall]) {
+            const whiteBall = balls - 1;
+
+            const turn = this.whoseTurn();
+            const nextTurn = this.turns[(this.turnIndex + 1) % this.turns.length];
+
+            return this.players[turn] === this.totals[turn] && !this.inHole[whiteBall] ? turn : nextTurn;
+        }
+        return undefined;
     }
 
     public getState(): PoolState {
@@ -83,6 +89,12 @@ export class PoolService {
         const turn = this.whoseTurn();
         const points = this.players[turn];
         const keyPositions = this.simulate(velocities);
+
+        this.balls.forEach((b, i) => {
+            const key = keyPositions[0]![i]!;
+            b.phaserSprite.setPosition(key.position.x, key.position.y);
+            b.phaserSprite.visible = !key.hidden;
+        });
 
         if (this.players[turn] == points && !this.winner()) {
             this.turnIndex = (this.turnIndex + 1) % this.turns.length;
