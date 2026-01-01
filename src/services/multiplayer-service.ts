@@ -12,22 +12,16 @@ export class MultiplayerService extends LocalService {
             await insertCoin(
                 {
                     maxPlayersPerRoom: 2,
-                    defaultPlayerStates: { ballType: "white" } as Player,
+                    defaultPlayerStates: {} as Player,
                 },
                 () => {
                     if (!isHost()) return;
-
                     const ballTypes = ["red", "yellow"];
 
                     const players = Object.values(this.players);
-                    players.forEach((player, i) => {
-                        player.setState("ballType", ballTypes[i]);
-                    });
+                    players.forEach((player, i) => player.setState("ballType", ballTypes[i]));
 
-                    const data = players.map((p) =>
-                        ({ ...p.getProfile(), ...p, ballType: p.getState("ballType") })
-                    );
-
+                    const data = players.map((p) => ({ ...p.getProfile(), ...p, ballType: p.getState("ballType") }));
                     RPC.call(Events.INIT, { players: data }, RPC.Mode.ALL);
                 }
             );

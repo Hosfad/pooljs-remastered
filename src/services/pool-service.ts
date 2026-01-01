@@ -3,14 +3,16 @@ import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 
 const MAX_POWER = 30;
-const MAX_STEPS = 150;
+const MAX_STEPS = 250;
 
 const Vector2 = Phaser.Math.Vector2;
 
+type Scores = Record<BallType, number>;
+
 export interface PoolState {
     inHole: Record<number, boolean>;
-    totals: Record<BallType, number>;
-    players: Record<BallType, number>;
+    totals: Scores;
+    players: Scores;
     turnIndex: number;
 }
 
@@ -20,8 +22,8 @@ export class PoolService {
     private holes: Hole[];
 
     private inHole: Record<number, boolean> = {};
-    private totals: Record<BallType, number>;
-    private players: Record<BallType, number>;
+    private totals: Scores;
+    private players: Scores;
     private collisions: Collision[] = [];
 
     private turns: BallType[];
@@ -38,11 +40,7 @@ export class PoolService {
         for (const ball of this.balls) this.totals[ball.ballType]++;
         this.turns = Object.keys(this.totals).filter((t) => this.totals[t as BallType] > 1) as BallType[];
 
-        console.log(
-            Object.keys(this.totals)
-                .map((t) => `${t}: ${this.totals[t as BallType]}`)
-                .join(", ")
-        );
+        console.log(Object.keys(this.totals).map((t) => `${t}: ${this.totals[t as BallType]}`).join(", "));
         console.log("Players", Object.values(this.turns).join(", "));
     }
 

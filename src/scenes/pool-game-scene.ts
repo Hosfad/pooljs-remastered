@@ -12,18 +12,18 @@ import {
     POOL_SCENE_KEYS,
 } from "../common/pool-constants";
 import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
-import { MultiplayerService } from "../services/multiplayer-service";
 import { PoolService } from "../services/pool-service";
-import { Events } from "../services/service";
+import { Events, Service } from "../services/service";
 import { DebugPanelModal } from "./components/debug-panel-modal";
 import { SettingsModal } from "./components/settings-modal";
 import type { PlayerProfile } from "playroomkit";
+import { LocalService } from "../services/local-service";
 
 const Vector2 = Phaser.Math.Vector2;
 
 export class PoolGameScene extends Phaser.Scene {
     private debugPanel?: DebugPanelModal;
-    private service!: MultiplayerService;
+    private service!: Service;
     private keyPositions: KeyPositions = [];
 
     private isGameStarted = false;
@@ -111,7 +111,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.createColliders();
         this.createBalls();
 
-        this.service = new MultiplayerService(new PoolService(this.balls, this.colliders, this.holes));
+        this.service = new LocalService(new PoolService(this.balls, this.colliders, this.holes));
 
         // Create UI
         this.createCue();
@@ -128,7 +128,7 @@ export class PoolGameScene extends Phaser.Scene {
 
     private updatePlayerTurn() {
         const turn = this.service.whoseTurn().toUpperCase();
-        const currentPlayer = this.players.findIndex((p) => p.ballType.toLowerCase() === turn.toLowerCase());
+        const currentPlayer = this.players?.findIndex((p) => p.ballType.toLowerCase() === turn.toLowerCase());
         if (!this.gameInfoHeader) return;
 
         this.gameInfoHeader.roundNumber++;
@@ -159,7 +159,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
-            this.keyPositions = keyPositions;
+            this.keyPositions.push.apply(this.keyPositions, keyPositions);
             this.service.setState(state);
 
             this.updatePlayerTurn();
