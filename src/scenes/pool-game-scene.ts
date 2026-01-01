@@ -17,6 +17,7 @@ import { PoolService } from "../services/pool-service";
 import { Events } from "../services/service";
 import { DebugPanelModal } from "./components/debug-panel-modal";
 import { SettingsModal } from "./components/settings-modal";
+import type { PlayerProfile } from "playroomkit";
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -45,15 +46,8 @@ export class PoolGameScene extends Phaser.Scene {
         handle: Phaser.GameObjects.Sprite;
         isDragging: boolean;
         power: number;
-        position: {
-            x: number;
-            y: number;
-        };
-        size: {
-            width: number;
-            height: number;
-            handleHeight: number;
-        };
+        position: { x: number; y: number; };
+        size: { width: number; height: number; handleHeight: number; };
     };
 
     // Graphics
@@ -93,14 +87,8 @@ export class PoolGameScene extends Phaser.Scene {
         pocketedBalls: Array<{ ball: Ball; positionIndex: number; isAnimating: boolean }>;
         animationTweens: Phaser.Tweens.Tween[];
     };
-    private players: {
-        id: string;
-        name: string;
-        photo: string;
-        ballType: BallType;
-    }[] = [];
 
-    private spectators: any[] = [];
+    private players: (PlayerProfile & { ballType: BallType })[] = [];
 
     constructor() {
         super({ key: POOL_SCENE_KEYS.POOL_GAME });
@@ -135,11 +123,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.registerEvents();
         this.setupInput();
 
-        this.service.connect().then((connected) => {
-            if (connected) {
-            } else {
-            }
-        });
+        this.service.connect();
     }
 
     private updatePlayerTurn() {
@@ -163,8 +147,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private registerEvents() {
-        this.service.subscribe(Events.INIT, (data) => {
-            const { players } = data;
+        this.service.subscribe(Events.INIT, ({ players }) => {
             this.players = players;
 
             this.loadAavatarsAndCreateInfoHeader();
@@ -178,7 +161,6 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
-            console.log(keyPositions, state);
             this.keyPositions = keyPositions;
             this.service.setState(state);
 
@@ -816,9 +798,7 @@ export class PoolGameScene extends Phaser.Scene {
                 paused: true,
             });
 
-            player1Avatar.startBlinking = function () {
-                player1BlinkTween.play();
-            };
+            player1Avatar.startBlinking = () => player1BlinkTween.play();
 
             player1Avatar.stopBlinking = function () {
                 player1BlinkTween.pause();
@@ -836,8 +816,7 @@ export class PoolGameScene extends Phaser.Scene {
             const spectatorsStartX = canvasWidth / 2;
             const spectatorsY = headerY;
 
-            const totalSpectatorsWidth =
-                spectators.length * spectatorAvatarSize + (spectators.length - 1) * spectatorSpacing;
+            const totalSpectatorsWidth = spectators.length * spectatorAvatarSize + (spectators.length - 1) * spectatorSpacing;
 
             let currentX = spectatorsStartX - totalSpectatorsWidth / 2 + spectatorAvatarSize / 2;
 
@@ -878,8 +857,7 @@ export class PoolGameScene extends Phaser.Scene {
         headerContainer.add(roundCounter);
 
         const player2 = players[1];
-        let player2Avatar: (Phaser.GameObjects.Sprite & { startBlinking?: () => void; stopBlinking?: () => void }) | null =
-            null;
+        let player2Avatar: (Phaser.GameObjects.Sprite & { startBlinking?: () => void; stopBlinking?: () => void }) | null = null;
         let player2Name: Phaser.GameObjects.Text | null = null;
         let player2BlinkTween: Phaser.Tweens.Tween | null = null;
 
@@ -962,16 +940,15 @@ export class PoolGameScene extends Phaser.Scene {
         const railY = this.marginY + (this.tableHeight - railHeight) / 2;
         const ballRadius = BALL_RADIUS * 0.75;
 
-        const background = this.add.graphics();
+        const background = this.add.graphics()
+            .fillStyle(0x1a1a1a, 0.9)
+            .fillRoundedRect(railX, railY, railWidth, railHeight, 10)
 
-        background.fillStyle(0x1a1a1a, 0.9);
-        background.fillRoundedRect(railX, railY, railWidth, railHeight, 10);
+            .fillStyle(0x1a1a1a, 0.9)
+            .fillRoundedRect(railX + 3, railY + 3, railWidth - 6, railHeight - 6, 8)
 
-        background.fillStyle(0x1a1a1a, 0.9);
-        background.fillRoundedRect(railX + 3, railY + 3, railWidth - 6, railHeight - 6, 8);
-
-        background.lineStyle(3, 0x4a3520, 1);
-        background.strokeRoundedRect(railX, railY, railWidth, railHeight, 10);
+            .lineStyle(3, 0x4a3520, 1)
+            .strokeRoundedRect(railX, railY, railWidth, railHeight, 10);
 
         const columns = 1;
         const rows = 14;
@@ -1033,20 +1010,15 @@ export class PoolGameScene extends Phaser.Scene {
 
         const targetPosition = this.pocketedBallsRail.ballPositions[positionIndex];
         if (!targetPosition) return;
-        const dropStartPosition = {
-            x: targetPosition.x,
-            y: this.marginY - 50,
-        };
 
-        const ballClone = this.add.sprite(ball.phaserSprite.x, ball.phaserSprite.y, ball.phaserSprite.texture.key);
-        ballClone.setScale(ball.phaserSprite.scale);
-        ballClone.setAlpha(0.8);
+        const dropStartPosition = { x: targetPosition.x, y: this.marginY - 50 };
+        const sprite = ball.phaserSprite;
+        const ballClone = this.add
+            .sprite(sprite.x, sprite.y, sprite.texture.key)
+            .setScale(ball.phaserSprite.scale)
+            .setAlpha(0.8);
 
-        this.pocketedBallsRail.pocketedBalls.push({
-            ball,
-            positionIndex,
-            isAnimating: true,
-        });
+        this.pocketedBallsRail.pocketedBalls.push({ ball, positionIndex, isAnimating: true });
 
         const moveToTopTween = this.tweens.add({
             targets: ballClone,
@@ -1064,9 +1036,7 @@ export class PoolGameScene extends Phaser.Scene {
                         ballClone.destroy();
 
                         const pocketedBall = this.pocketedBallsRail.pocketedBalls.find((pb) => pb.ball === ball);
-                        if (pocketedBall) {
-                            pocketedBall.isAnimating = false;
-                        }
+                        if (pocketedBall) pocketedBall.isAnimating = false;
 
                         this.updateRailDisplay();
 
@@ -1095,20 +1065,17 @@ export class PoolGameScene extends Phaser.Scene {
 
     private updateRailDisplay(): void {
         this.pocketedBallsRail.ballSprites.forEach((sprite) => {
-            sprite.setVisible(false);
-            sprite.setAlpha(0);
+            sprite.setVisible(false).setAlpha(0);
         });
 
         this.pocketedBallsRail.pocketedBalls.forEach((pocketedBall) => {
             if (!pocketedBall.isAnimating) {
-                const sprite = this.pocketedBallsRail.ballSprites[pocketedBall.positionIndex];
-                if (sprite) {
-                    sprite.setTexture(pocketedBall.ball.phaserSprite.texture.key);
-                    sprite.setAlpha(1);
-                    sprite.setVisible(true);
-                    sprite.setScale((BALL_RADIUS * 2) / 256);
-                    sprite.setDepth(100 + pocketedBall.positionIndex);
-                }
+                this.pocketedBallsRail.ballSprites[pocketedBall.positionIndex]?.
+                    setTexture(pocketedBall.ball.phaserSprite.texture.key)
+                    .setAlpha(1)
+                    .setVisible(true)
+                    .setScale((BALL_RADIUS * 2) / 256)
+                    .setDepth(100 + pocketedBall.positionIndex);
             }
         });
     }
@@ -1125,17 +1092,18 @@ export class PoolGameScene extends Phaser.Scene {
         const maxY = powerMeterY + powerMeterHeight - handleHeight;
 
         // Background of power meter
-        const background = this.add.graphics();
-        background.fillStyle(0x1a1a1a, 0.9);
-        background.fillRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
-        background.lineStyle(3, 0x4a3520, 1);
-        background.strokeRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
+        const background = this.add.graphics()
+            .fillStyle(0x1a1a1a, 0.9)
+            .fillRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10)
+            .lineStyle(3, 0x4a3520, 1)
+            .strokeRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
 
         const fill = this.add.graphics();
-        const handle = this.add.sprite(powerMeterX + powerMeterWidth / 2, minY + handleHeight / 2, POOL_ASSETS.DRAG_ICON);
-        handle.setScale(0.05);
-        handle.setRotation(Math.PI / 2);
-        handle.setInteractive({ draggable: true, useHandCursor: true });
+        const handle = this.add
+            .sprite(powerMeterX + powerMeterWidth / 2, minY + handleHeight / 2, POOL_ASSETS.DRAG_ICON)
+            .setScale(0.05)
+            .setRotation(Math.PI / 2)
+            .setInteractive({ draggable: true, useHandCursor: true });
 
         // Add power label
         this.add
@@ -1189,8 +1157,10 @@ export class PoolGameScene extends Phaser.Scene {
             const clampedY = Phaser.Math.Clamp(dragY, minY + handleHeight / 2, maxY - handleHeight / 2);
             const power = (clampedY - (minY + handleHeight / 2)) / usableHeight;
             this.setPower(power);
+
             handle.x = powerMeterX + powerMeterWidth / 2; // Keep handle centered horizontally
         });
+
         this.updatePowerMeterFromPower();
     }
 
@@ -1210,23 +1180,18 @@ export class PoolGameScene extends Phaser.Scene {
 
         if (power <= 0) return;
 
-        let color = 0x00ff00;
-        if (power > 0.66) color = 0xff0000;
-        else if (power > 0.33) color = 0xffff00;
+        let color = 0x00ff00; // Green
+        if (power > 0.66) color = 0xff0000; // Red
+        else if (power > 0.33) color = 0xffff00; // Yellow
 
         const fillHeight = usableHeight * power;
-        fill.fillStyle(color, 0.7);
         fill.fillRoundedRect(x + 5, minY + 5, width - 10, fillHeight, 5);
+        fill.fillStyle(color, 0.7);
     }
 
-    private isTouchingPowerMeter(pointer: Phaser.Input.Pointer): boolean {
-        const handleBounds = this.powerMeter.handle.getBounds();
-        return (
-            pointer.x >= handleBounds.x &&
-            pointer.x <= handleBounds.x + handleBounds.width &&
-            pointer.y >= handleBounds.y &&
-            pointer.y <= handleBounds.y + handleBounds.height
-        );
+    private isTouchingPowerMeter({ x: px, y: py }: Phaser.Input.Pointer): boolean {
+        const { x, y, width, height } = this.powerMeter.handle.getBounds();
+        return px >= x && px <= x + width && py >= y && py <= y + height
     }
 
     private setPower(power: number): void {

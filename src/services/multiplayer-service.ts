@@ -24,16 +24,11 @@ export class MultiplayerService extends LocalService {
                         player.setState("ballType", ballTypes[i]);
                     });
 
-                    RPC.call(
-                        Events.INIT,
-                        {
-                            players: players.map((p) => {
-                                const profile = p.getProfile();
-                                return { ...profile, ...p, ballType: p.getState("ballType") };
-                            }),
-                        },
-                        RPC.Mode.ALL
+                    const data = players.map((p) =>
+                        ({ ...p.getProfile(), ...p, ballType: p.getState("ballType") })
                     );
+
+                    RPC.call(Events.INIT, { players: data }, RPC.Mode.ALL);
                 }
             );
             return true;

@@ -1,6 +1,7 @@
 import * as Phaser from "phaser";
 import type { BallType, KeyPositions } from "../common/pool-types";
 import type { PoolState } from "./pool-service";
+import type { PlayerProfile } from "playroomkit";
 
 export enum Events {
     INIT = "game-start",
@@ -12,14 +13,7 @@ export enum Events {
 export interface EventsData {
     [Events.HITS]: { keyPositions: KeyPositions; state: PoolState };
     [Events.PULL]: { x: number; y: number; angle: number };
-    [Events.INIT]: {
-        players: {
-            id: string;
-            name: string;
-            photo: string;
-            ballType: BallType;
-        }[];
-    };
+    [Events.INIT]: { players: (PlayerProfile & { ballType: BallType })[]; };
 }
 
 export abstract class Service {
