@@ -1,7 +1,32 @@
 import type { BallType, KeyPositions } from "../common/pool-types";
+import type { PoolState } from "./pool-service";
+import * as Phaser from "phaser";
+
+export enum Events {
+    INIT = "game-start",
+    ENDS = "game-end",
+    PULL = "pull",
+    HITS = "hit",
+}
+
+export interface EventsData {
+    [Events.HITS]: { keyPositions: KeyPositions; state: PoolState };
+    [Events.PULL]: { x: number; y: number; angle: number };
+    [Events.INIT]: void;
+}
 
 export abstract class Service {
-    abstract winner(): boolean;
+    private events = new Phaser.Events.EventEmitter();
+
+    public subscribe<T extends keyof EventsData>(event: T, callback: (data: EventsData[T]) => void) {
+        this.events.on(event, callback);
+    }
+
+    public send<T extends keyof EventsData>(event: T, data: EventsData[T]) {
+        this.events.emit(event, data);
+    }
+
+    abstract winner(): string | undefined;
     abstract whoseTurn(): BallType;
     abstract isMyTurn(): boolean;
 
