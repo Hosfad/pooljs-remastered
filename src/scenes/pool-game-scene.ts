@@ -140,9 +140,7 @@ export class PoolGameScene extends Phaser.Scene {
         const avatar = currentPlayer === 0 ? this.gameInfoHeader.player1Avatar : this.gameInfoHeader.player2Avatar;
         const otherBorder = currentPlayer === 0 ? this.gameInfoHeader.player2Avatar : this.gameInfoHeader.player1Avatar;
         otherBorder.startBlinking();
-        this.time.delayedCall(200, () => {
-            otherBorder.stopBlinking();
-        });
+        this.time.delayedCall(200, () => otherBorder.stopBlinking());
         avatar.startBlinking();
     }
 
