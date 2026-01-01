@@ -16,8 +16,8 @@ import { PoolService } from "../services/pool-service";
 import { Events, Service } from "../services/service";
 import { DebugPanelModal } from "./components/debug-panel-modal";
 import { SettingsModal } from "./components/settings-modal";
-import type { PlayerProfile } from "playroomkit";
 import { LocalService } from "../services/local-service";
+import type { PlayerProfile } from "playroomkit";
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -88,7 +88,7 @@ export class PoolGameScene extends Phaser.Scene {
         animationTweens: Phaser.Tweens.Tween[];
     };
 
-    private players: (PlayerProfile & { ballType: BallType })[] = [];
+    private players?: (PlayerProfile & { ballType: BallType })[] = [];
 
     constructor() {
         super({ key: POOL_SCENE_KEYS.POOL_GAME });
@@ -127,20 +127,24 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private updatePlayerTurn() {
-        const turn = this.service.whoseTurn().toUpperCase();
-        const currentPlayer = this.players?.findIndex((p) => p.ballType.toLowerCase() === turn.toLowerCase());
-        if (!this.gameInfoHeader) return;
+        const turn = this.service.whoseTurn();
+        let currentPlayer = this.players?.findIndex((p) => p.ballType === turn);
 
         this.gameInfoHeader.roundNumber++;
         this.gameInfoHeader.roundCounter.setText(
-            `Round: ${this.gameInfoHeader.roundNumber}\n\nTurn:\n${turn.toLowerCase()}`
+            `Round: ${this.gameInfoHeader.roundNumber}\n\nTurn:\n${turn.toUpperCase()}`
         );
 
-        if (currentPlayer === -1) return;
+        currentPlayer = currentPlayer ?? -1;
+
+        if (currentPlayer === -1) currentPlayer = turn === "red" ? 0 : 1;
+
         const avatar = currentPlayer === 0 ? this.gameInfoHeader.player1Avatar : this.gameInfoHeader.player2Avatar;
         const otherBorder = currentPlayer === 0 ? this.gameInfoHeader.player2Avatar : this.gameInfoHeader.player1Avatar;
+
         otherBorder.startBlinking();
         this.time.delayedCall(200, () => otherBorder.stopBlinking());
+
         avatar.startBlinking();
     }
 
@@ -148,7 +152,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.service.subscribe(Events.INIT, ({ players }) => {
             this.players = players;
 
-            this.loadAavatarsAndCreateInfoHeader();
+            this.loadAvatarsAndCreateInfoHeader();
 
             this.isGameStarted = true;
             console.log("Pool game initialized with", this.balls.length, "balls");
@@ -167,13 +171,12 @@ export class PoolGameScene extends Phaser.Scene {
             this.checkForNewlyPocketedBalls();
         });
     }
-    private loadAavatarsAndCreateInfoHeader(): void {
-        if (!this.players) return;
-        const player1 = this.players[0];
-        const player2 = this.players[1];
-        if (!player1 || !player2) return;
-        this.load.image("player1Avatar", player1.photo);
-        this.load.image("player2Avatar", player2.photo);
+    private loadAvatarsAndCreateInfoHeader(): void {
+        if (this.players) {
+            this.load.image("player1Avatar", this.players[0]?.photo);
+            this.load.image("player2Avatar", this.players[1]?.photo);
+        }
+
         this.load.once(Phaser.Loader.Events.COMPLETE, () => {
             this.createGameInfoHeader();
             this.updatePlayerTurn();
@@ -757,60 +760,69 @@ export class PoolGameScene extends Phaser.Scene {
         const players = this.players;
         const spectators = this.players;
 
-        if (players.length === 0) return;
-
         const rightPadding = canvasWidth - padding;
         const centerY = headerY + headerHeight / 2;
 
         const headerContainer = this.add.container(0, 0);
 
-        const player1 = players[0];
         let player1Avatar: Phaser.GameObjects.Sprite & { startBlinking?: () => void; stopBlinking?: () => void };
         let player1Name: Phaser.GameObjects.Text;
         let player1BlinkTween: Phaser.Tweens.Tween;
 
+        let avatar: string = POOL_ASSETS.AVATAR;
+        let scale = 0.2;
+        let pname = "Player 1";
+        let ptype = "red";
+
+        const player1 = players?.[0];
+
         if (player1) {
-            player1Avatar = this.add
-                .sprite(padding, centerY, "player1Avatar")
-                .setScale(0.8)
-                .setOrigin(0.5, 0.5)
-                .setVisible(true);
-
-            player1Name = this.add
-                .text(player1Avatar.x, player1Avatar.y + nameOffset, `${player1.name} (${player1.ballType})`, {
-                    fontFamily: "Arial",
-                    fontSize: "20px",
-                    color: "#ffffff",
-                    fontStyle: "bold",
-                })
-                .setOrigin(0.5, 0);
-
-            player1BlinkTween = this.tweens.add({
-                targets: [player1Avatar, player1Name],
-                scale: { from: 0.8, to: 0.85 },
-                alpha: { from: 0.75, to: 0.95 },
-                duration: 800,
-                ease: "Sine.easeInOut",
-                yoyo: true,
-                repeat: -1,
-                paused: true,
-            });
-
-            player1Avatar.startBlinking = () => player1BlinkTween.play();
-
-            player1Avatar.stopBlinking = function () {
-                player1BlinkTween.pause();
-                player1BlinkTween.seek(0);
-                this.setAlpha(0.2);
-            };
-
-            headerContainer.add([player1Avatar, player1Name]);
+            avatar = "player1Avatar";
+            scale = 0.8;
+            pname = player1.name;
+            ptype = player1.ballType;
         }
+
+        player1Avatar = this.add
+            .sprite(padding, centerY, avatar)
+            .setScale(scale)
+            .setOrigin(0.5, 0.5)
+            .setVisible(true);
+
+        player1Name = this.add
+            .text(player1Avatar.x, player1Avatar.y + nameOffset, `${pname} (${ptype})`, {
+                fontFamily: "Arial",
+                fontSize: "20px",
+                color: "#ffffff",
+                fontStyle: "bold",
+            })
+            .setOrigin(0.5, 0);
+
+        player1BlinkTween = this.tweens.add({
+            targets: [player1Avatar, player1Name],
+            scale: { from: 0.8, to: 0.85 },
+            alpha: { from: 0.75, to: 0.95 },
+            duration: 800,
+            ease: "Sine.easeInOut",
+            yoyo: true,
+            repeat: -1,
+            paused: true,
+        });
+
+        player1Avatar.startBlinking = () => player1BlinkTween.play();
+
+        player1Avatar.stopBlinking = function () {
+            player1BlinkTween.pause();
+            player1BlinkTween.seek(0);
+            this.setAlpha(0.2);
+        };
+
+        headerContainer.add([player1Avatar, player1Name]);
 
         let spectatorAvatars: Phaser.GameObjects.Sprite[] = [];
         let spectatorNames: Phaser.GameObjects.Text[] = [];
 
-        if (spectators.length > 0) {
+        if (spectators && spectators.length > 0) {
             const spectatorsStartX = canvasWidth / 2;
             const spectatorsY = headerY;
 
@@ -829,12 +841,8 @@ export class PoolGameScene extends Phaser.Scene {
                     .setInteractive({ useHandCursor: true });
 
                 spectatorAvatar
-                    .on("pointerover", () => {
-                        spectatorAvatar.setAlpha(1);
-                    })
-                    .on("pointerout", () => {
-                        spectatorAvatar.setAlpha(0.7);
-                    });
+                    .on("pointerover", () => spectatorAvatar.setAlpha(1))
+                    .on("pointerout", () => spectatorAvatar.setAlpha(0.7));
 
                 spectatorAvatars.push(spectatorAvatar);
                 headerContainer.add([spectatorAvatar]);
@@ -854,61 +862,70 @@ export class PoolGameScene extends Phaser.Scene {
 
         headerContainer.add(roundCounter);
 
-        const player2 = players[1];
         let player2Avatar: (Phaser.GameObjects.Sprite & { startBlinking?: () => void; stopBlinking?: () => void }) | null = null;
         let player2Name: Phaser.GameObjects.Text | null = null;
         let player2BlinkTween: Phaser.Tweens.Tween | null = null;
 
+        avatar = POOL_ASSETS.AVATAR;
+        scale = 0.2;
+        pname = "Player 2";
+        ptype = "yellow";
+
+        const player2 = players?.[1];
+
         if (player2) {
-            player2Avatar = this.add
-                .sprite(rightPadding, centerY, "player2Avatar")
-                .setScale(0.8)
-                .setOrigin(0.5, 0.5)
-                .setVisible(true);
+            avatar = "player2Avatar";
+            scale = 0.8;
+            pname = player2.name;
+            ptype = player2.ballType;
+        }
 
-            player2Name = this.add
-                .text(player2Avatar.x, player2Avatar.y + nameOffset, `${player2.name} (${player2.ballType})`, {
+        player2Avatar = this.add
+            .sprite(rightPadding, centerY, avatar)
+            .setScale(scale)
+            .setOrigin(0.5, 0.5)
+            .setVisible(true);
+
+        player2Name = this.add
+            .text(player2Avatar.x, player2Avatar.y + nameOffset, `${pname} (${ptype})`, {
+                fontFamily: "Arial",
+                fontSize: "20px",
+                color: "#ffffff",
+                fontStyle: "bold",
+            })
+            .setOrigin(0.5, 0);
+
+        player2BlinkTween = this.tweens.add({
+            targets: [player2Avatar, player2Name],
+            scale: { from: 0.8, to: 0.85 },
+            alpha: { from: 0.75, to: 0.95 },
+            duration: 800,
+            ease: "Sine.easeInOut",
+            yoyo: true,
+            repeat: -1,
+            paused: true,
+        });
+
+        player2Avatar.startBlinking = () => player2BlinkTween!.play();
+
+        player2Avatar.stopBlinking = function () {
+            player2BlinkTween!.pause();
+            player2BlinkTween!.seek(0);
+            this.setAlpha(0.3);
+        };
+
+        headerContainer.add([player2Avatar, player2Name]);
+
+        if (spectators && spectators.length === 0) {
+            const waitingText = this.add
+                .text(rightPadding, centerY, "Waiting for Player 2...", {
                     fontFamily: "Arial",
-                    fontSize: "20px",
-                    color: "#ffffff",
-                    fontStyle: "bold",
+                    fontSize: "18px",
+                    color: "#888888",
+                    fontStyle: "italic",
                 })
-                .setOrigin(0.5, 0);
-
-            player2BlinkTween = this.tweens.add({
-                targets: [player2Avatar, player2Name],
-                scale: { from: 0.8, to: 0.85 },
-                alpha: { from: 0.75, to: 0.95 },
-                duration: 800,
-                ease: "Sine.easeInOut",
-                yoyo: true,
-                repeat: -1,
-                paused: true,
-            });
-
-            player2Avatar.startBlinking = function () {
-                player2BlinkTween!.play();
-            };
-
-            player2Avatar.stopBlinking = function () {
-                player2BlinkTween!.pause();
-                player2BlinkTween!.seek(0);
-                this.setAlpha(0.3);
-            };
-
-            headerContainer.add([player2Avatar, player2Name]);
-        } else {
-            if (spectators.length === 0) {
-                const waitingText = this.add
-                    .text(rightPadding, centerY, "Waiting for Player 2...", {
-                        fontFamily: "Arial",
-                        fontSize: "18px",
-                        color: "#888888",
-                        fontStyle: "italic",
-                    })
-                    .setOrigin(0.5, 0.5);
-                headerContainer.add(waitingText);
-            }
+                .setOrigin(0.5, 0.5);
+            headerContainer.add(waitingText);
         }
 
         this.gameInfoHeader = {
