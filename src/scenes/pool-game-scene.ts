@@ -127,8 +127,24 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private updatePlayerTurn() {
+        const winner = this.service.winner();
+
+        if (winner) {
+            const midw = this.scale.width / 2;
+            const midh = this.scale.height / 2;
+
+            this.add.rectangle(midw, midh, this.tableWidth - 40, 140, 0x1f326e, 0.8);
+            this.add.text(midw, midh - 20, `${winner} WINS!`, { fontSize: '64px', }).setOrigin(0.5);
+            this.add.text(midw, midh + 40, 'Click to play again!', { fontSize: '32px', }).setOrigin(0.5);
+
+            this.input.once('pointerdown', () => this.scene.restart());
+            return;
+        }
+
         const turn = this.service.whoseTurn();
+
         let currentPlayer = this.players?.findIndex((p) => p.ballType === turn);
+
 
         this.gameInfoHeader.roundNumber++;
         this.gameInfoHeader.roundCounter.setText(
@@ -230,7 +246,7 @@ export class PoolGameScene extends Phaser.Scene {
     public override update(): void {
         if (!this.isGameStarted) return;
 
-        this.input.enabled = !this.keyPositions.length && this.service.isMyTurn();
+        this.input.enabled = !this.keyPositions.length;
 
         this.updateCue();
         this.updateKeyPositions();
@@ -565,7 +581,7 @@ export class PoolGameScene extends Phaser.Scene {
 
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-            if (MODAL_OPEN) return;
+            if (MODAL_OPEN || !this.service.isMyTurn()) return;
             this.mousePosition.set(pointer.x, pointer.y);
 
             if (this.isMobile && this.isDraggingShot && !this.powerMeter.isDragging) {
@@ -577,7 +593,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-            if (MODAL_OPEN) return;
+            if (MODAL_OPEN || !this.service.isMyTurn()) return;
 
             const isTouchingPowerMeter = this.isTouchingPowerMeter(pointer);
 
@@ -596,7 +612,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.input.on("pointerup", () => {
-            if (MODAL_OPEN) return;
+            if (MODAL_OPEN || !this.service.isMyTurn()) return;
 
             if (this.powerMeter.power <= 0) {
                 this.isDraggingShot = false;
@@ -770,7 +786,6 @@ export class PoolGameScene extends Phaser.Scene {
         let player1BlinkTween: Phaser.Tweens.Tween;
 
         let avatar: string = POOL_ASSETS.AVATAR;
-        let scale = 0.2;
         let pname = "Player 1";
         let ptype = "red";
 
@@ -778,14 +793,13 @@ export class PoolGameScene extends Phaser.Scene {
 
         if (player1) {
             avatar = "player1Avatar";
-            scale = 0.8;
             pname = player1.name;
             ptype = player1.ballType;
         }
 
         player1Avatar = this.add
             .sprite(padding, centerY, avatar)
-            .setScale(scale)
+            .setScale(0.8)
             .setOrigin(0.5, 0.5)
             .setVisible(true);
 
@@ -867,7 +881,6 @@ export class PoolGameScene extends Phaser.Scene {
         let player2BlinkTween: Phaser.Tweens.Tween | null = null;
 
         avatar = POOL_ASSETS.AVATAR;
-        scale = 0.2;
         pname = "Player 2";
         ptype = "yellow";
 
@@ -875,14 +888,13 @@ export class PoolGameScene extends Phaser.Scene {
 
         if (player2) {
             avatar = "player2Avatar";
-            scale = 0.8;
             pname = player2.name;
             ptype = player2.ballType;
         }
 
         player2Avatar = this.add
             .sprite(rightPadding, centerY, avatar)
-            .setScale(scale)
+            .setScale(0.8)
             .setOrigin(0.5, 0.5)
             .setVisible(true);
 
