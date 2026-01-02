@@ -1,6 +1,7 @@
 import * as Phaser from "phaser";
 import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
+import type { PoolState } from "../common/server-types";
 
 const MAX_POWER = 30;
 const MAX_STEPS = 250;

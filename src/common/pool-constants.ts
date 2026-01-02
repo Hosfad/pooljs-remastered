@@ -1,45 +1,53 @@
 /**
  * Pool game specific constants
  */
-export let DEBUG_GRAPHICS = true;
+export let DEBUG_GRAPHICS = false;
 
 export function setDebugGraphics(debug: boolean) {
-	DEBUG_GRAPHICS = debug;
+    DEBUG_GRAPHICS = debug;
 }
 
 export let MODAL_OPEN: boolean = false;
 export function setGlobalModalOpenVariable(open: boolean) {
-	MODAL_OPEN = open;
+    MODAL_OPEN = open;
 }
 
 export const POOL_ASSETS = {
-	BACKGROUND: "background",
-	WHITE_BALL: "spr_ball2",
-	SOLID_BALL: "spr_yellowBall2",
-	STRIPED_BALL: "spr_redBall2",
-	BLACK_BALL: "spr_blackBall2",
-	CUE_STICK: "spr_stick",
-	DRAG_ICON: "drag",
-	LOADING_BACKGROUND: "loading-background",
-	SOUND_EFFECTS: {
-		CUE_HIT_WHITE_BALL: "cue-hit-white-ball",
-		BALL_FALLING_INTO_POCKET: "ball-falling-into-pocket",
-		BALL_HITTING_TABLE_EDGE: "ball-hitting-table-edge",
-	},
+    BACKGROUND: "background",
+    WHITE_BALL: "spr_ball2",
+    SOLID_BALL: "spr_yellowBall2",
+    STRIPED_BALL: "spr_redBall2",
+    BLACK_BALL: "spr_blackBall2",
+    CUE_STICK: "spr_stick",
+    DRAG_ICON: "drag",
+    LOADING_BACKGROUND: "loading-background",
+    SOUND_EFFECTS: {
+        CUE_HIT_WHITE_BALL: "cue-hit-white-ball",
+        BALL_FALLING_INTO_POCKET: "ball-falling-into-pocket",
+        BALL_HITTING_TABLE_EDGE: "ball-hitting-table-edge",
+    },
 
-	CUES: {
-		BASIC: "cue-basic",
-		ADVANCED: "cue-advanced",
-		EXPERT: "cue-expert",
-		SWORD: "cue-sword",
-		SWORD_WOOD: "cue-wooden-sword",
-	},
-	AVATAR: "avatar",
+    CUES: {
+        BASIC: "cue-basic",
+        ADVANCED: "cue-advanced",
+        EXPERT: "cue-expert",
+        SWORD: "cue-sword",
+        SWORD_WOOD: "cue-wooden-sword",
+    },
+    AVATAR: "avatar",
+    AVATARS: {
+        PLAYER_1: "player-1-avatar",
+        PLAYER_2: "player-2-avatar",
+        PLAYER_3: "player-3-avatar",
+        PLAYER_4: "player-4-avatar",
+        PLAYER_5: "player-5-avatar",
+        PLAYER_6: "player-6-avatar",
+    },
 } as const;
 
 export const POOL_SCENE_KEYS = {
-	POOL_PRELOAD: "POOL_PRELOAD",
-	POOL_GAME: "POOL_GAME",
+    POOL_PRELOAD: "POOL_PRELOAD",
+    POOL_GAME: "POOL_GAME",
 };
 
 // Game dimensions
@@ -56,8 +64,8 @@ export const MAX_POWER = 500;
 
 // UI Constants
 export const SCORED_BALL_AREA = {
-	Y: POOL_TABLE_HEIGHT + 30,
-	START_X: 100,
-	SPACING: 45,
-	SCALE: 0.7,
+    Y: POOL_TABLE_HEIGHT + 30,
+    START_X: 100,
+    SPACING: 45,
+    SCALE: 0.7,
 };

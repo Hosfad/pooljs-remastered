@@ -3,11 +3,40 @@
  */
 
 import Phaser from "phaser";
-import type { PlayerState } from "playroomkit";
 import { POOL_ASSETS } from "./pool-constants";
 
 export interface Player extends PlayerState {
     ballType: BallType;
+}
+
+export interface PlayerState {
+    id: string;
+    name: string;
+    state: string;
+    photo: string;
+    ballType: BallType;
+    isHost: boolean;
+}
+
+export class MyPlayer implements PlayerState {
+    public id!: string;
+    public name!: string;
+    public state!: string;
+    public photo!: string;
+    public ballType!: BallType;
+    public isHost!: boolean;
+
+    constructor(data: Omit<PlayerState, "getState" | "setState" | "onQuit" | "kick">) {
+        Object.assign(this, data);
+    }
+
+    getState<T extends keyof PlayerState>(key: T): PlayerState[T] {
+        return this[key];
+    }
+
+    setState<T extends keyof PlayerState>(key: T, value: any, reliable?: boolean): void {
+        this[key] = value;
+    }
 }
 
 export type Collision = "ball" | "wall" | "hole";
