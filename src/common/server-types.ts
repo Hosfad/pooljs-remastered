@@ -1,10 +1,27 @@
 import type { Room } from "../server";
 import type { BallType, KeyPositions } from "./pool-types";
 
+type MiddlewareResponse =
+    | {
+          success: true;
+          error?: null;
+      }
+    | {
+          error: string;
+      };
+
+export type Middleware<T> = (data: T) => MiddlewareResponse | Promise<MiddlewareResponse>;
+export type MiddlewareInput<T> = Middleware<T> | Middleware<T>[];
+
 export type TEventKey = keyof EventsData;
 
+type THandler<T extends TEventKey> = (data: EventsData[T]) => void | Promise<void>;
+
 export type TEventListener = {
-    on<T extends TEventKey>(event: T, handler: (data: EventsData[T]) => void): void;
+    on<T extends TEventKey>(event: T, handler: THandler<T>): void;
+
+    on<T extends TEventKey>(event: T, middleware: MiddlewareInput<EventsData[T]>, handler: THandler<T>): void;
+
     send<T extends TEventKey>(event: T, data: EventsData[T]): void;
 };
 
@@ -24,22 +41,31 @@ export enum Events {
     ERROR_ROOM_FULL = "error-room-full",
 }
 
-type RoomEventData = {
+type RoomId = {
     roomId: string;
+};
+export type RoomEventBodyOptions = RoomId & {
     userId: string;
 };
 
+export type WebsocketError = {
+    type: "error";
+    error: string;
+};
+export type WebsocketRespone<T> =
+    | WebsocketError
+    | {
+          type: "success";
+          data: T;
+      };
+
 export type EventsData = {
     [Events.CREATE_ROOM]: { userId: string; name: string };
-    [Events.CREATE_ROOM_RESPONSE]: { roomId: string };
+    [Events.JOIN_ROOM]: RoomEventBodyOptions & { name: string };
 
-    [Events.JOIN_ROOM]: RoomEventData & { name: string };
-    [Events.JOIN_ROOM_RESPONSE]: Room;
-    [Events.ERROR_ROOM_FULL]: { roomId: string; error: string };
-
-    [Events.HITS]: RoomEventData & { keyPositions: KeyPositions; state: PoolState };
-    [Events.PULL]: RoomEventData & { x: number; y: number; angle: number };
-    [Events.INIT]: RoomEventData & {
+    [Events.HITS]: RoomEventBodyOptions & { keyPositions: KeyPositions; state: PoolState };
+    [Events.PULL]: RoomEventBodyOptions & { x: number; y: number; angle: number };
+    [Events.INIT]: RoomEventBodyOptions & {
         players: {
             id: string;
             name: string;
@@ -47,6 +73,11 @@ export type EventsData = {
             ballType: BallType;
         }[];
     };
+
+    // Responses
+    [Events.CREATE_ROOM_RESPONSE]: WebsocketRespone<RoomId>;
+    [Events.JOIN_ROOM_RESPONSE]: WebsocketRespone<Room>;
+    [Events.ERROR_ROOM_FULL]: WebsocketRespone<RoomId>;
 };
 
 export interface PoolState {

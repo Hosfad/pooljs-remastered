@@ -19,6 +19,7 @@ export class MultiplayerService extends LocalService {
             this.ws.onopen = async () => {
                 await this.insertCoin();
             };
+
             this.ws.onmessage = (e) => {
                 const rawStr = e.data;
                 const parsed = JSON.parse(rawStr) as {
@@ -27,6 +28,8 @@ export class MultiplayerService extends LocalService {
                 };
                 const { event, data } = parsed;
                 if (!event) return;
+
+                console.log("Received event", event, data);
 
                 this.eventHandlers.get(event)?.forEach((handler) => handler(data));
             };
@@ -45,7 +48,6 @@ export class MultiplayerService extends LocalService {
         if (!this.eventHandlers.has(event)) {
             this.eventHandlers.set(event, new Set());
         }
-
         this.eventHandlers.get(event)!.add(callback);
     }
 
@@ -160,14 +162,22 @@ export class MultiplayerService extends LocalService {
     }
 
     registerEvents() {
-        this.register(Events.CREATE_ROOM_RESPONSE, (data) => {
-            const { roomId } = data;
+        // TODO: Handle errors inseread of logging
+
+        this.register(Events.CREATE_ROOM_RESPONSE, (input) => {
+            if (input.type === "error") return console.error("Error creating room", input.error);
+            const { roomId } = input.data;
+
             const url = new URL(window.location.href);
             url.searchParams.set("room", roomId);
             window.history.replaceState({}, "", url.toString());
         });
 
-        this.register(Events.JOIN_ROOM_RESPONSE, (data) => {});
+        this.register(Events.JOIN_ROOM_RESPONSE, (data) => {
+            if (data.type === "error") return console.error("Error joining room", data.error);
+            const roomData = data;
+            console.log("Reviewing room", roomData);
+        });
 
         this.register(Events.PULL, (data) => {
             this.send(Events.PULL, data);
