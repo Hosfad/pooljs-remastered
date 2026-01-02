@@ -1,11 +1,11 @@
-import React from "react";
+import type { Player, Room } from "../server";
 import { createRoot } from "react-dom/client";
 import { v4 as uuid } from "uuid";
 import { type BallType, type KeyPositions } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
 import { PoolLobby } from "../scenes/components/react/lobby";
-import type { Player, Room } from "../server";
 import { LocalService } from "./local-service";
+import React from "react";
 
 export class MultiplayerService extends LocalService {
     private ws: WebSocket | null = null;
@@ -17,6 +17,7 @@ export class MultiplayerService extends LocalService {
 
             //   Render React
             const reactRoot = document.getElementById("react-root");
+
             if (reactRoot) {
                 const root = createRoot(reactRoot);
                 root.render(
@@ -76,11 +77,14 @@ export class MultiplayerService extends LocalService {
     override isMyTurn(): boolean {
         const me = this.me();
         const myTurn = this.room?.currentRound.userId === me?.userId;
+        console.log(this.room, me)
         return myTurn;
     }
+
     override winner(): string | undefined {
         return this.room?.winner;
     }
+
     override whoseTurn(): BallType {
         const players = this.room?.players;
         const currentPlayer = players?.find((p) => p.id === this.room?.currentRound.userId);
@@ -109,12 +113,7 @@ export class MultiplayerService extends LocalService {
     public me(): { userId: string; name: string } | undefined {
         const { userId } = this.getConfig();
         if (!userId) return undefined;
-        const localStorage = this.getLocalStorage();
-
-        return {
-            userId,
-            name: localStorage.name,
-        };
+        return { userId, name: this.getStorage().name, };
     }
 
     private async insertCoin() {
@@ -124,16 +123,16 @@ export class MultiplayerService extends LocalService {
     }
 
     private getConfig() {
-        const localStorage = this.getLocalStorage();
-        return { roomId: this.getRoomId(), ...localStorage };
+        const storage = this.getStorage();
+        return { roomId: this.getRoomId(), ...storage };
     }
 
-    private getLocalStorage(): { userId: string; name: string } {
-        let user = localStorage.getItem("user");
+    private getStorage(): { userId: string; name: string } {
+        let user = sessionStorage.getItem("user");
 
         if (!user) {
             const newUser = { userId: uuid(), name: this.generateRandomName() };
-            localStorage.setItem("user", JSON.stringify(newUser));
+            sessionStorage.setItem("user", JSON.stringify(newUser));
             return newUser;
         }
         const parsed = JSON.parse(user) as { userId: string; name: string };

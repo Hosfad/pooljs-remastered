@@ -110,7 +110,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.createBalls();
 
         this.service = new MultiplayerService(new PoolService(this.balls, this.colliders, this.holes));
-        this.service.connect();
+
         // Create UI
         this.createCue();
         this.createPowerMeter();
@@ -120,6 +120,8 @@ export class PoolGameScene extends Phaser.Scene {
         // Setup input
         this.registerEvents();
         this.setupInput();
+
+        this.service.connect();
     }
 
     private updatePlayerTurn() {
@@ -182,6 +184,7 @@ export class PoolGameScene extends Phaser.Scene {
             this.createGameInfoHeader();
             // this.updatePlayerTurn();
         });
+
         this.load.start();
     }
 
@@ -222,16 +225,13 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private toTableCoordinates(x: number, y: number): { x: number; y: number } {
-        return {
-            x: this.marginX + x,
-            y: this.marginY + y,
-        };
+        return { x: this.marginX + x, y: this.marginY + y };
     }
 
     public override update(): void {
         if (!this.isGameStarted) return;
 
-        //  this.input.enabled = !this.keyPositions.length;
+        this.input.enabled = !this.keyPositions.length;
 
         this.updateCue();
         this.updateKeyPositions();
@@ -260,9 +260,7 @@ export class PoolGameScene extends Phaser.Scene {
             .setInteractive({ useHandCursor: true })
             .setDepth(100);
 
-        this.setupButtonHover(this.settingsButton, () => {
-            this.settingsModal.show();
-        });
+        this.setupButtonHover(this.settingsButton, () => this.settingsModal.show());
     }
 
     private createBalls() {
@@ -362,10 +360,7 @@ export class PoolGameScene extends Phaser.Scene {
             };
 
             const rightCushion = {
-                points: leftCushion.points.map((p) => ({
-                    x: this.tableWidth - p.x,
-                    y: p.y,
-                })),
+                points: leftCushion.points.map((p) => ({ x: this.tableWidth - p.x, y: p.y, })),
                 normal: new Vector2(-1, 0),
             };
 
@@ -392,26 +387,17 @@ export class PoolGameScene extends Phaser.Scene {
             };
 
             const bottomLeftCushion = {
-                points: topLeftCushion.points.map((p) => ({
-                    x: p.x,
-                    y: this.tableHeight - p.y,
-                })),
+                points: topLeftCushion.points.map((p) => ({ x: p.x, y: this.tableHeight - p.y })),
                 normal: new Vector2(0, -1),
             };
 
             const topRightCushion = {
-                points: topLeftCushion.points.map((p) => ({
-                    x: this.tableWidth - p.x,
-                    y: p.y,
-                })),
+                points: topLeftCushion.points.map((p) => ({ x: this.tableWidth - p.x, y: p.y })),
                 normal: new Vector2(0, 1),
             };
 
             const bottomRightCushion = {
-                points: topLeftCushion.points.map((p) => ({
-                    x: this.tableWidth - p.x,
-                    y: this.tableHeight - p.y,
-                })),
+                points: topLeftCushion.points.map((p) => ({ x: this.tableWidth - p.x, y: this.tableHeight - p.y })),
                 normal: new Vector2(0, -1),
             };
 
@@ -468,9 +454,9 @@ export class PoolGameScene extends Phaser.Scene {
             if (!sprite.visible && i < this.balls.length - 1) return;
 
             const pos = key.position;
+            // increment rotation angle of sprite
             if (pos.x + pos.y != sprite.x + sprite.y) sprite.rotation += 0.1;
             sprite.setPosition(pos.x, pos.y);
-            // increment rotation angle of sprite
             sprite.visible = !key.hidden;
 
             if (key.hidden) this.holeBalls[i]?.setAlpha(1);
@@ -487,13 +473,7 @@ export class PoolGameScene extends Phaser.Scene {
                         this.sound.play(POOL_ASSETS.SOUND_EFFECTS.BALL_FALLING_INTO_POCKET);
                         break;
                 }
-                this.sound.addListener(
-                    "stop",
-                    () => {
-                        this.playedSounds[i] = undefined;
-                    },
-                    { once: true }
-                );
+                this.sound.addListener("stop", () => (this.playedSounds[i] = undefined), { once: true });
             }
         });
     }
@@ -505,13 +485,7 @@ export class PoolGameScene extends Phaser.Scene {
         const sprite = this.add.sprite(position.x, position.y, texture);
         sprite.setScale((r * 1.5) / sprite.width);
 
-        const ball: Ball = {
-            ballType,
-            phaserSprite: sprite,
-            isPocketed: false,
-        };
-
-        this.balls.push(ball);
+        this.balls.push({ ballType, phaserSprite: sprite, isPocketed: false });
     }
 
     private createHoles(): void {
@@ -564,8 +538,6 @@ export class PoolGameScene extends Phaser.Scene {
 
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-            console.log("POINTER MOVE");
-
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
             this.mousePosition.set(pointer.x, pointer.y);
 

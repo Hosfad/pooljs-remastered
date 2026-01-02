@@ -37,9 +37,7 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
             }
         });
 
-        service.listen(Events.INIT, (input) => {
-            setVisable(false);
-        });
+        service.listen(Events.INIT, (input) => setVisable(false));
     }, [service]);
 
     const handleInvite = () => {
