@@ -1,4 +1,4 @@
-import type { Room } from "../server";
+import type { Player, Room } from "../server";
 import type { BallType, KeyPositions } from "./pool-types";
 
 type MiddlewareResponse<TOutput> =
@@ -39,8 +39,9 @@ export enum Events {
     // Join room
     JOIN_ROOM = "join-room",
     JOIN_ROOM_RESPONSE = "join-room-response",
+    START_GAME = "game-start",
 
-    INIT = "game-start",
+    INIT = "game-init",
     ENDS = "game-end",
     PULL = "pull",
     HITS = "hit",
@@ -70,16 +71,12 @@ export type WebsocketRespone<T> =
 export type EventsData = {
     [Events.JOIN_ROOM]: { userId: string; name: string; roomId?: string };
     [Events.JOIN_ROOM_RESPONSE]: WebsocketRespone<Room>;
+    [Events.START_GAME]: RoomEventBodyOptions;
 
     [Events.HITS]: RoomEventBodyOptions & { keyPositions: KeyPositions; state: PoolState };
     [Events.PULL]: RoomEventBodyOptions & { x: number; y: number; angle: number };
     [Events.INIT]: RoomEventBodyOptions & {
-        players: {
-            id: string;
-            name: string;
-            photo: string;
-            ballType: BallType;
-        }[];
+        players: Player[];
     };
 
     // ERRORS

@@ -22,8 +22,13 @@ export class LocalService extends Service {
                     {
                         id: LOCAL_USER_ID,
                         name: "Player 1",
+                        roomId: LOCAL_USER_ID,
                         photo: "player-1-avatar.jpg",
-                        ballType: "yellow",
+                        state: {
+                            ballType: "yellow",
+                            eqippedCue: "basic",
+                        },
+                        isSpectator: false,
                     },
                 ],
             });

@@ -1,7 +1,6 @@
 import * as Phaser from "phaser";
 import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
-import type { PoolState } from "../common/server-types";
 
 const MAX_POWER = 30;
 const MAX_STEPS = 250;
@@ -41,7 +40,11 @@ export class PoolService {
         for (const ball of this.balls) this.totals[ball.ballType]++;
         this.turns = Object.keys(this.totals).filter((t) => this.totals[t as BallType] > 1) as BallType[];
 
-        console.log(Object.keys(this.totals).map((t) => `${t}: ${this.totals[t as BallType]}`).join(", "));
+        console.log(
+            Object.keys(this.totals)
+                .map((t) => `${t}: ${this.totals[t as BallType]}`)
+                .join(", ")
+        );
         console.log("Players", Object.values(this.turns).join(", "));
     }
 

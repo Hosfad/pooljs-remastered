@@ -1,6 +1,9 @@
+import React from "react";
+import { createRoot } from "react-dom/client";
 import { v4 as uuid } from "uuid";
 import { type KeyPositions } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
+import { PoolLobby } from "../scenes/components/react/lobby";
 import type { Player, Room } from "../server";
 import { LocalService } from "./local-service";
 
@@ -15,6 +18,18 @@ export class MultiplayerService extends LocalService {
     override async connect(): Promise<boolean> {
         try {
             if (!this.ws) this.ws = new WebSocket("ws://localhost:6969");
+
+            // Render React
+            const reactRoot = document.getElementById("react-root");
+            if (reactRoot) {
+                const root = createRoot(reactRoot);
+                root.render(
+                    <React.StrictMode>
+                        <PoolLobby service={this} />
+                    </React.StrictMode>
+                );
+            }
+
             this.registerEvents();
 
             this.ws.onopen = async () => {
@@ -43,14 +58,14 @@ export class MultiplayerService extends LocalService {
         }
     }
 
-    override subscribe<T extends keyof EventsData>(event: T, callback: (data: EventsData[T]) => void) {
+    public listen<T extends keyof EventsData>(event: T, callback: (data: EventsData[T]) => void) {
         if (!this.eventHandlers.has(event)) {
             this.eventHandlers.set(event, new Set());
         }
         this.eventHandlers.get(event)!.add(callback);
     }
 
-    override send<T extends keyof EventsData>(event: T, data: EventsData[T]) {
+    public call<T extends keyof EventsData>(event: T, data: EventsData[T]) {
         if (!this.ws || !this.ws.OPEN) {
             console.error("WebSocket is not open");
             return;
@@ -66,7 +81,7 @@ export class MultiplayerService extends LocalService {
         const { userId, roomId } = this.getConfig();
         if (!roomId) return [];
         const keyPositions = this.service.hitBalls(powerPercent, angle);
-        this.send(Events.HITS, { keyPositions: keyPositions, state: this.service.getState(), userId, roomId });
+        this.call(Events.HITS, { keyPositions: keyPositions, state: this.service.getState(), userId, roomId });
         return keyPositions;
     }
 
@@ -74,14 +89,14 @@ export class MultiplayerService extends LocalService {
         const { userId, roomId } = this.getConfig();
         if (!roomId) return;
 
-        this.send(Events.PULL, { x, y, angle, userId, roomId });
+        this.call(Events.PULL, { x, y, angle, userId, roomId });
     }
 
     public isConnected(): boolean {
         return this.ws?.readyState === WebSocket.OPEN;
     }
 
-    public me(): { userId: string; name: string; } | undefined {
+    public me(): { userId: string; name: string } | undefined {
         const { userId } = this.getConfig();
         if (!userId) return undefined;
         const localStorage = this.getLocalStorage();
@@ -95,7 +110,7 @@ export class MultiplayerService extends LocalService {
     private async insertCoin() {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return await this.connect();
         const { userId, roomId, name } = this.getConfig();
-        this.send(Events.JOIN_ROOM, { roomId: roomId ?? undefined, userId, name });
+        this.call(Events.JOIN_ROOM, { roomId: roomId ?? undefined, userId, name });
     }
 
     private getConfig() {
@@ -103,7 +118,7 @@ export class MultiplayerService extends LocalService {
         return { roomId: this.getRoomId(), ...localStorage };
     }
 
-    private getLocalStorage(): { userId: string; name: string; } {
+    private getLocalStorage(): { userId: string; name: string } {
         let user = localStorage.getItem("user");
 
         if (!user) {
@@ -111,11 +126,13 @@ export class MultiplayerService extends LocalService {
             localStorage.setItem("user", JSON.stringify(newUser));
             return newUser;
         }
-        const parsed = JSON.parse(user) as { userId: string; name: string; };
+        const parsed = JSON.parse(user) as { userId: string; name: string };
         return parsed;
     }
 
-    public getCurrentRoom(): Room | null { return this.room; }
+    public getCurrentRoom(): Room | null {
+        return this.room;
+    }
 
     public getRoomId(): string | null {
         const url = new URL(window.location.href);
@@ -125,7 +142,9 @@ export class MultiplayerService extends LocalService {
     public instanciatePlayers(room: Room) {
         const players = room.players;
         console.log("Instanciating players", players);
-        players.forEach((p) => { this.players[p.id] = p; });
+        players.forEach((p) => {
+            this.players[p.id] = p;
+        });
     }
 
     private generateRandomName() {
@@ -168,11 +187,15 @@ export class MultiplayerService extends LocalService {
     registerEvents() {
         // TODO: Handle errors inseread of logging
 
-        this.subscribe(Events.PULL, (data) => {
+        this.listen(Events.INIT, (data) => {
+            this.send(Events.INIT, data);
+        });
+
+        this.listen(Events.PULL, (data) => {
             this.send(Events.PULL, data);
         });
 
-        this.subscribe(Events.HITS, (data) => {
+        this.listen(Events.HITS, (data) => {
             this.send(Events.HITS, data);
         });
     }

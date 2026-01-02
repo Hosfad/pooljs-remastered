@@ -60,6 +60,7 @@ wss.on("connection", (ws) => {
 
     // Broadcast events
     // Dont check for existing user for joining
+
     eventListener.on(Events.JOIN_ROOM, (data) => {
         const { roomId, userId: senderId, name } = data;
         const room = getRoom(roomId);
@@ -103,6 +104,26 @@ wss.on("connection", (ws) => {
 
     // make sure there is userId and roomId
     const withRoomAuthMiddleware = roomAuthMiddleware();
+
+    eventListener.on(Events.START_GAME, withRoomAuthMiddleware, (data) => {
+        const { roomId, userId: senderId } = data;
+        const room = getRoom(roomId);
+        if (!room) return;
+        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.INIT, {
+            type: "success",
+            ...{
+                roomId: room.id,
+                userId: senderId,
+                players: room.clients.map((c, idx) => ({
+                    ...reshapePlayer(c),
+                    state: {
+                        ...c.state,
+                        ballType: idx % 2 === 0 ? "yellow" : "red",
+                    },
+                })),
+            },
+        });
+    });
 
     eventListener.on(Events.PULL, withRoomAuthMiddleware, (data) => {
         const { roomId, userId: senderId } = data;
@@ -178,17 +199,20 @@ function getRoom(roomId?: string) {
 
 function reshapeRoom(room: ServerRoom): Room {
     const players = room.clients.map((c) => {
-        const newC = { ...c, ws: undefined };
-        delete newC.ws;
-        const player: Player = {
-            ...newC,
-        };
-        return player;
+        return reshapePlayer(c);
     });
     return {
         ...room,
         players,
     };
+}
+function reshapePlayer(c: Client) {
+    const newC = { ...c, ws: undefined };
+    delete newC.ws;
+    const player: Player = {
+        ...newC,
+    };
+    return player;
 }
 
 function createEventListener(ws: WebSocket): TEventListener {
