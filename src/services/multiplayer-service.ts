@@ -1,80 +1,134 @@
-import { insertCoin, isHost, me, onPlayerJoin, RPC } from "playroomkit";
-import type { KeyPositions, Player } from "../common/pool-types";
+import { v4 as uuid } from "uuid";
+import { MyPlayer, type KeyPositions, type Player, type PlayerState } from "../common/pool-types";
+import { Events, type EventsData, type TEventKey } from "../common/server-types";
 import { LocalService } from "./local-service";
-import { Events } from "./service";
 
 export class MultiplayerService extends LocalService {
     private players: { [key: string]: Player } = {};
 
+    private ws: WebSocket | null = null;
+
+    private eventHandlers = new Map<keyof EventsData, Set<(data: any) => void>>();
+
     override async connect(): Promise<boolean> {
         try {
+            if (!this.ws) this.ws = new WebSocket("ws://localhost:6969");
             this.registerEvents();
-            await insertCoin(
-                {
-                    maxPlayersPerRoom: 2,
-                    defaultPlayerStates: { ballType: "white" } as Player,
-                },
-                () => {
-                    if (!isHost()) return;
 
-                    const ballTypes = ["red", "yellow"];
+            this.ws.onopen = async () => {
+                await this.insertCoin();
+            };
+            this.ws.onmessage = (e) => {
+                const rawStr = e.data;
+                const parsed = JSON.parse(rawStr) as {
+                    event: TEventKey;
+                    data: EventsData[TEventKey];
+                };
+                const { event, data } = parsed;
+                if (!event) return;
 
-                    const players = Object.values(this.players);
-                    players.forEach((player, i) => {
-                        player.setState("ballType", ballTypes[i]);
-                    });
+                this.eventHandlers.get(event)?.forEach((handler) => handler(data));
+            };
 
-                    RPC.call(
-                        Events.INIT,
-                        {
-                            players: players.map((p) => {
-                                const profile = p.getProfile();
-                                return { ...profile, ...p, ballType: p.getState("ballType") };
-                            }),
-                        },
-                        RPC.Mode.ALL
-                    );
-                }
-            );
+            this.ws.onclose = () => {
+                console.log("WebSocket closed");
+            };
+
             return true;
         } catch (error) {
             console.error(error);
             return false;
         }
     }
+    private register<T extends keyof EventsData>(event: T, callback: (data: EventsData[T]) => void) {
+        if (!this.eventHandlers.has(event)) {
+            this.eventHandlers.set(event, new Set());
+        }
+
+        this.eventHandlers.get(event)!.add(callback);
+    }
+
+    override send<T extends keyof EventsData>(event: T, data: EventsData[T]) {
+        if (!this.ws || !this.ws.OPEN) {
+            console.error("WebSocket is not open");
+            return;
+        }
+        this.ws.send(JSON.stringify({ event, data }));
+    }
 
     override isMyTurn(): boolean {
-        return this.service.whoseTurn() === me()?.getState("ballType");
+        return false;
     }
 
     override hitBalls(powerPercent: number, angle: number): KeyPositions {
         const keyPositions = this.service.hitBalls(powerPercent, angle);
-        RPC.call(Events.HITS, { keyPositions: keyPositions, state: this.service.getState() }, RPC.Mode.ALL);
+        this.send(Events.HITS, { keyPositions: keyPositions, state: this.service.getState() });
         return keyPositions;
     }
 
     override pull(x: number, y: number, angle: number): void {
-        RPC.call(Events.PULL, { x, y, angle }, RPC.Mode.ALL);
+        this.send(Events.PULL, { x, y, angle });
+    }
+
+    private async insertCoin() {
+        const roomId = this.getRoomId();
+        const { userId } = this.getLocalStorage();
+        if (!roomId) {
+            console.log("Creating room with user ID:", userId);
+            this.send(Events.CREATE_ROOM, { userId });
+        } else {
+            this.instanciatePlayer({
+                id: userId,
+                name: "Player 1",
+                photo: "player-1-avatar.jpg",
+                ballType: "yellow",
+                isHost: true,
+                state: "game-start",
+            });
+        }
+    }
+    private getLocalStorage(): {
+        userId: string;
+    } {
+        let userId = localStorage.getItem("userId");
+        if (!userId) {
+            userId = uuid();
+            localStorage.setItem("userId", userId);
+        }
+        return {
+            userId,
+        };
+    }
+
+    private getRoomId(): string | null {
+        const url = new URL(window.location.href);
+        const roomId = url.searchParams.get("room");
+        return roomId;
+    }
+
+    private instanciatePlayer(playerState: PlayerState) {
+        const exists = this.players[playerState.id];
+        if (exists) {
+            return exists;
+        }
+        const player = new MyPlayer(playerState);
+        this.players[player.id] = player;
+        return player;
     }
 
     registerEvents() {
-        RPC.register(Events.INIT, async (data) => {
-            this.send(Events.INIT, data);
+        this.register(Events.CREATE_ROOM_RESPONSE, (data) => {
+            const { roomId } = data;
+            const url = new URL(window.location.href);
+            url.searchParams.set("room", roomId);
+            window.history.replaceState({}, "", url.toString());
         });
 
-        RPC.register(Events.PULL, async (data) => {
+        this.register(Events.PULL, (data) => {
             this.send(Events.PULL, data);
         });
-
-        RPC.register(Events.HITS, async (data) => {
+        this.register(Events.HITS, (data) => {
             this.send(Events.HITS, data);
-        });
-
-        onPlayerJoin((player) => {
-            this.players[player.id] = player as Player;
-            player.onQuit(() => {
-                delete this.players[player.id];
-            });
         });
     }
 }

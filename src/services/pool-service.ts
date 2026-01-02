@@ -1,18 +1,12 @@
 import * as Phaser from "phaser";
 import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
+import type { PoolState } from "../common/server-types";
 
 const MAX_POWER = 30;
 const MAX_STEPS = 150;
 
 const Vector2 = Phaser.Math.Vector2;
-
-export interface PoolState {
-    inHole: Record<number, boolean>;
-    totals: Record<BallType, number>;
-    players: Record<BallType, number>;
-    turnIndex: number;
-}
 
 export class PoolService {
     private balls: Ball[];

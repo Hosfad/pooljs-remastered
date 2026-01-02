@@ -1,7 +1,8 @@
 {
-    "name": "gogoland",
+    "name": "pooljs",
     "version": "0.0.1",
-    "description": "A game of Go but for the land",
+    "description": "A game 8 ball pool",
+    "type": "module",
     "scripts": {
         "dev": "vite",
         "build": "tsc && vite build",
@@ -9,17 +10,23 @@
     },
     "devDependencies": {
         "@tweakpane/core": "2.0.3",
-        "@types/webfontloader": "1.6.38",
         "@types/bun": "latest",
+        "@types/express": "^5.0.6",
+        "@types/react-dom": "^19.2.3",
+        "@types/webfontloader": "1.6.38",
+        "@types/ws": "^8.18.1",
+        "concurrently": "^9.2.1",
         "prettier": "2.6.2",
         "typescript": "5.6.3",
         "vite": "2.9.13"
     },
     "dependencies": {
+        "express": "^5.2.1",
         "phaser": "3.87.0",
         "playroomkit": "0.0.81",
         "react": "18.3.1",
         "react-dom": "18.3.1",
-        "webfontloader": "1.6.28"
+        "webfontloader": "1.6.28",
+        "ws": "^8.18.3"
     }
 }

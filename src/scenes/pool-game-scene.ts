@@ -12,9 +12,9 @@ import {
     POOL_SCENE_KEYS,
 } from "../common/pool-constants";
 import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
+import { Events } from "../common/server-types";
 import { MultiplayerService } from "../services/multiplayer-service";
 import { PoolService } from "../services/pool-service";
-import { Events } from "../services/service";
 import { DebugPanelModal } from "./components/debug-panel-modal";
 import { SettingsModal } from "./components/settings-modal";
 
@@ -178,10 +178,8 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
-            console.log(keyPositions, state);
             this.keyPositions = keyPositions;
             this.service.setState(state);
-
             this.updatePlayerTurn();
 
             this.checkForNewlyPocketedBalls();
@@ -644,7 +642,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private updateCue(): void {
-        if (!this.cue.phaserSprite) return;
+        if (!this.cue.phaserSprite || !this.service.isMyTurn()) return;
 
         const whiteBall = this.balls[this.balls.length - 1]!;
         const { x, y } = whiteBall.phaserSprite!;

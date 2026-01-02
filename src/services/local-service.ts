@@ -1,7 +1,7 @@
-import { me } from "playroomkit";
 import type { BallType, KeyPositions } from "../common/pool-types";
+import { Events } from "../common/server-types";
 import { PoolService } from "./pool-service";
-import { Events, Service } from "./service";
+import { Service } from "./service";
 
 export class LocalService extends Service {
     protected service: PoolService;
@@ -13,15 +13,12 @@ export class LocalService extends Service {
 
     override connect(): Promise<boolean> {
         return new Promise((resolve) => {
-            const localPlayer = me()!;
-            const profile = localPlayer.getProfile();
-
             this.send(Events.INIT, {
                 players: [
                     {
-                        id: localPlayer.id,
-                        name: profile.name,
-                        photo: profile.photo,
+                        id: "1",
+                        name: "Player 1",
+                        photo: "player-1-avatar.jpg",
                         ballType: "yellow",
                     },
                 ],
