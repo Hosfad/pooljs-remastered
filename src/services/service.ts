@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 
 import type { BallType, KeyPositions } from "../common/pool-types";
 import type { EventsData } from "../common/server-types";
+import type { Player } from "../server";
 
 export abstract class Service {
     private events = new Phaser.Events.EventEmitter();
@@ -15,7 +16,7 @@ export abstract class Service {
     public send<T extends keyof EventsData>(event: T, data: EventsData[T]) {
         this.events.emit(event, data);
     }
-
+    abstract getPlayers(): Player[];
     abstract winner(): string | undefined;
     abstract whoseTurn(): BallType;
     abstract isMyTurn(): boolean;

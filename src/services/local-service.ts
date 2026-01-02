@@ -1,5 +1,6 @@
 import type { BallType, KeyPositions } from "../common/pool-types";
 import { Events } from "../common/server-types";
+import type { Player, Room } from "../server";
 import { PoolService } from "./pool-service";
 import { Service } from "./service";
 
@@ -7,6 +8,7 @@ const LOCAL_USER_ID = "1";
 
 export class LocalService extends Service {
     protected service: PoolService;
+    protected room: Room | null = null;
 
     constructor(service: PoolService) {
         super();
@@ -14,26 +16,34 @@ export class LocalService extends Service {
     }
 
     override connect(): Promise<boolean> {
-        return new Promise((resolve) => {
-            this.send(Events.INIT, {
-                userId: LOCAL_USER_ID,
-                roomId: LOCAL_USER_ID,
-                players: [
-                    {
-                        id: LOCAL_USER_ID,
-                        name: "Player 1",
-                        roomId: LOCAL_USER_ID,
-                        photo: "player-1-avatar.jpg",
-                        state: {
-                            ballType: "yellow",
-                            eqippedCue: "basic",
-                        },
-                        isSpectator: false,
+        this.room = {
+            id: LOCAL_USER_ID,
+            currentRound: { round: 0, startTime: Date.now(), userId: LOCAL_USER_ID },
+            timestamp: Date.now(),
+            hostId: LOCAL_USER_ID,
+            players: [
+                {
+                    id: LOCAL_USER_ID,
+                    name: "Player 1",
+                    roomId: LOCAL_USER_ID,
+                    photo: "player-1-avatar.jpg",
+                    state: {
+                        ballType: "yellow",
+                        eqippedCue: "basic",
                     },
-                ],
-            });
+                    isSpectator: false,
+                },
+            ],
+        };
+
+        return new Promise((resolve) => {
+            this.send(Events.INIT, this.room!);
             resolve(true);
         });
+    }
+
+    public override getPlayers(): Player[] {
+        return this.room?.players ?? [];
     }
 
     override winner(): string | undefined {

@@ -1,4 +1,4 @@
-import type { Player, Room } from "../server";
+import type { Room } from "../server";
 import type { BallType, KeyPositions } from "./pool-types";
 
 type MiddlewareResponse<TOutput> =
@@ -75,9 +75,7 @@ export type EventsData = {
 
     [Events.HITS]: RoomEventBodyOptions & { keyPositions: KeyPositions; state: PoolState };
     [Events.PULL]: RoomEventBodyOptions & { x: number; y: number; angle: number };
-    [Events.INIT]: RoomEventBodyOptions & {
-        players: Player[];
-    };
+    [Events.INIT]: Room;
 
     // ERRORS
     [Events.ERROR_ROOM_FULL]: WebsocketRespone<RoomId>;

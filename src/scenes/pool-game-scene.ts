@@ -13,7 +13,6 @@ import {
 } from "../common/pool-constants";
 import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
 import { Events } from "../common/server-types";
-import type { Player } from "../server";
 import { MultiplayerService } from "../services/multiplayer-service.tsx";
 import { PoolService } from "../services/pool-service";
 import type { Service } from "../services/service";
@@ -89,8 +88,6 @@ export class PoolGameScene extends Phaser.Scene {
         animationTweens: Phaser.Tweens.Tween[];
     };
 
-    private players: Player[] = [];
-
     constructor() {
         super({ key: POOL_SCENE_KEYS.POOL_GAME });
     }
@@ -142,19 +139,13 @@ export class PoolGameScene extends Phaser.Scene {
 
         const turn = this.service.whoseTurn();
 
-        let currentPlayer = this.players?.findIndex((p) => p.state.ballType === turn);
-
         this.gameInfoHeader.roundNumber++;
         this.gameInfoHeader.roundCounter.setText(
             `Round: ${this.gameInfoHeader.roundNumber}\n\nTurn:\n${turn.toUpperCase()}`
         );
-
-        currentPlayer = currentPlayer ?? -1;
-
-        if (currentPlayer === -1) currentPlayer = turn === "red" ? 0 : 1;
-
-        const avatar = currentPlayer === 0 ? this.gameInfoHeader.player1Avatar : this.gameInfoHeader.player2Avatar;
-        const otherBorder = currentPlayer === 0 ? this.gameInfoHeader.player2Avatar : this.gameInfoHeader.player1Avatar;
+        // change this
+        const avatar = turn === "red" ? this.gameInfoHeader.player1Avatar : this.gameInfoHeader.player2Avatar;
+        const otherBorder = turn === "yellow" ? this.gameInfoHeader.player2Avatar : this.gameInfoHeader.player1Avatar;
 
         otherBorder.startBlinking();
         this.time.delayedCall(200, () => otherBorder.stopBlinking());
@@ -164,10 +155,7 @@ export class PoolGameScene extends Phaser.Scene {
 
     private registerEvents() {
         this.service.subscribe(Events.INIT, ({ players }) => {
-            this.players = players;
-
             this.loadAvatarsAndCreateInfoHeader();
-
             this.isGameStarted = true;
             console.log("Pool game initialized with", this.balls.length, "balls");
         });
@@ -185,14 +173,14 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
     private loadAvatarsAndCreateInfoHeader(): void {
-        if (this.players) {
-            this.load.image("player1Avatar", this.players[0]?.photo);
-            this.load.image("player2Avatar", this.players[1]?.photo);
-        }
+        // if (this.players) {
+        //     this.load.image("player1Avatar", this.players[0]?.photo);
+        //     this.load.image("player2Avatar", this.players[1]?.photo);
+        // }
 
         this.load.once(Phaser.Loader.Events.COMPLETE, () => {
             this.createGameInfoHeader();
-            this.updatePlayerTurn();
+            // this.updatePlayerTurn();
         });
         this.load.start();
     }
@@ -572,12 +560,12 @@ export class PoolGameScene extends Phaser.Scene {
             };
             this.holes.push(hole);
         });
-
-        console.log("Created", this.holes.length, "holes");
     }
 
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+            console.log("POINTER MOVE");
+
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
             this.mousePosition.set(pointer.x, pointer.y);
 
@@ -770,8 +758,9 @@ export class PoolGameScene extends Phaser.Scene {
         const spectatorAvatarSize = 40;
         const spectatorSpacing = 30;
 
-        const players = this.players;
-        const spectators = this.players;
+        const players = this.service.getPlayers();
+
+        const spectators = players;
 
         const rightPadding = canvasWidth - padding;
         const centerY = headerY + headerHeight / 2;
@@ -789,7 +778,7 @@ export class PoolGameScene extends Phaser.Scene {
         const player1 = players?.[0];
 
         if (player1) {
-            avatar = "player1Avatar";
+            // avatar = "player1Avatar";
             pname = player1.name;
             ptype = player1.state.ballType ?? "red";
         }
@@ -882,7 +871,7 @@ export class PoolGameScene extends Phaser.Scene {
         const player2 = players?.[1];
 
         if (player2) {
-            avatar = "player2Avatar";
+            //     avatar = "player2Avatar";
             pname = player2.name;
             ptype = player2.state.ballType ?? "yellow";
         }

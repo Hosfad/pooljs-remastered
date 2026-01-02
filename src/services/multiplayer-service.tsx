@@ -1,25 +1,21 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { v4 as uuid } from "uuid";
-import { type KeyPositions } from "../common/pool-types";
+import { type BallType, type KeyPositions } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
 import { PoolLobby } from "../scenes/components/react/lobby";
 import type { Player, Room } from "../server";
 import { LocalService } from "./local-service";
 
 export class MultiplayerService extends LocalService {
-    private players: { [key: string]: Player } = {};
-    private room: Room | null = null;
-
     private ws: WebSocket | null = null;
-
     private eventHandlers = new Map<keyof EventsData, Set<(data: any) => void>>();
 
     override async connect(): Promise<boolean> {
         try {
             if (!this.ws) this.ws = new WebSocket("ws://localhost:6969");
 
-            // Render React
+            //   Render React
             const reactRoot = document.getElementById("react-root");
             if (reactRoot) {
                 const root = createRoot(reactRoot);
@@ -73,8 +69,22 @@ export class MultiplayerService extends LocalService {
         this.ws.send(JSON.stringify({ event, data }));
     }
 
+    public override getPlayers(): Player[] {
+        return this.room?.players ?? [];
+    }
+
     override isMyTurn(): boolean {
-        return false;
+        const me = this.me();
+        const myTurn = this.room?.currentRound.userId === me?.userId;
+        return myTurn;
+    }
+    override winner(): string | undefined {
+        return this.room?.winner;
+    }
+    override whoseTurn(): BallType {
+        const players = this.room?.players;
+        const currentPlayer = players?.find((p) => p.id === this.room?.currentRound.userId);
+        return currentPlayer!.state.ballType!;
     }
 
     override hitBalls(powerPercent: number, angle: number): KeyPositions {
@@ -139,12 +149,9 @@ export class MultiplayerService extends LocalService {
         const roomId = url.searchParams.get("room");
         return roomId;
     }
-    public instanciatePlayers(room: Room) {
-        const players = room.players;
-        console.log("Instanciating players", players);
-        players.forEach((p) => {
-            this.players[p.id] = p;
-        });
+
+    public instanciateRoom(room: Room) {
+        this.room = room;
     }
 
     private generateRandomName() {

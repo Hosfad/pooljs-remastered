@@ -25,6 +25,7 @@ type ServerRoom = {
         startTime: number;
         userId: string;
     };
+    winner?: string;
     hostId: string;
     timestamp: number;
 };
@@ -40,7 +41,7 @@ export type Client = {
     photo: string;
     roomId: string;
     isSpectator: boolean;
-    state: { ballType?: BallType; eqippedCue?: CueId };
+    state: { ballType: BallType; eqippedCue?: CueId };
     ws: WebSocket;
 };
 export type Player = Omit<Client, "ws">;
@@ -85,17 +86,14 @@ wss.on("connection", (ws) => {
                 ws,
                 photo: POOL_ASSETS.AVATAR,
                 roomId: room.id,
-                state: {},
+                state: {
+                    ballType: room.clients.length % 2 === 0 ? "yellow" : "red",
+                },
                 isSpectator,
             });
             rooms[room.id] = room;
         }
 
-        console.log(
-            room.clients.map((c) => {
-                return { ...c, ws: c.ws?.readyState };
-            })
-        );
         broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.JOIN_ROOM_RESPONSE, {
             type: "success",
             data: reshapeRoom(room),
@@ -109,19 +107,18 @@ wss.on("connection", (ws) => {
         const { roomId, userId: senderId } = data;
         const room = getRoom(roomId);
         if (!room) return;
+        const random = Math.floor(Math.random() * room.clients.length);
+
+        room.currentRound = { round: 0, startTime: Date.now(), userId: room.clients[random]!.id ?? senderId };
+
+        console.log(
+            "ROOM",
+            room.currentRound,
+            room.clients.map((c) => ({ name: c.name, state: c.state }))
+        );
         broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.INIT, {
             type: "success",
-            ...{
-                roomId: room.id,
-                userId: senderId,
-                players: room.clients.map((c, idx) => ({
-                    ...reshapePlayer(c),
-                    state: {
-                        ...c.state,
-                        ballType: idx % 2 === 0 ? "yellow" : "red",
-                    },
-                })),
-            },
+            ...reshapeRoom(room),
         });
     });
 
@@ -147,6 +144,7 @@ wss.on("connection", (ws) => {
 const createNewRoom = (user: { userId: string; name: string }, ws: WebSocket, roomId?: string | null) => {
     const finalId = roomId ?? uuid();
     const { userId, name: username } = user;
+
     const room = {
         id: finalId,
         clients: [] as Client[],
@@ -161,9 +159,12 @@ const createNewRoom = (user: { userId: string; name: string }, ws: WebSocket, ro
         photo: POOL_ASSETS.AVATAR,
         ws,
         roomId: finalId,
-        state: {},
+        state: {
+            ballType: room.clients.length % 2 === 0 ? "yellow" : "red",
+        },
         isSpectator: false,
     };
+
     room.clients.push(client);
 
     rooms[finalId] = room;

@@ -26,7 +26,7 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
             }
 
             const room = input.data;
-            service.instanciatePlayers(room);
+            service.instanciateRoom(room);
             setRoom(room);
 
             if (roomIdFromUrl !== room.id) {
