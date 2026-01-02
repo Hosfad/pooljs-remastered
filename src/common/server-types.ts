@@ -1,3 +1,4 @@
+import type { Room } from "../server";
 import type { BallType, KeyPositions } from "./pool-types";
 
 export type TEventKey = keyof EventsData;
@@ -8,13 +9,19 @@ export type TEventListener = {
 };
 
 export enum Events {
+    // Create room
     CREATE_ROOM = "create-room",
     CREATE_ROOM_RESPONSE = "create-room-response",
+    // Join room
     JOIN_ROOM = "join-room",
+    JOIN_ROOM_RESPONSE = "join-room-response",
+
     INIT = "game-start",
     ENDS = "game-end",
     PULL = "pull",
     HITS = "hit",
+
+    ERROR_ROOM_FULL = "error-room-full",
 }
 
 type RoomEventData = {
@@ -23,13 +30,16 @@ type RoomEventData = {
 };
 
 export type EventsData = {
-    [Events.CREATE_ROOM]: { userId: string };
+    [Events.CREATE_ROOM]: { userId: string; name: string };
     [Events.CREATE_ROOM_RESPONSE]: { roomId: string };
 
-    [Events.JOIN_ROOM]: RoomEventData;
-    [Events.HITS]: Partial<RoomEventData> & { keyPositions: KeyPositions; state: PoolState };
-    [Events.PULL]: Partial<RoomEventData> & { x: number; y: number; angle: number };
-    [Events.INIT]: Partial<RoomEventData> & {
+    [Events.JOIN_ROOM]: RoomEventData & { name: string };
+    [Events.JOIN_ROOM_RESPONSE]: Room;
+    [Events.ERROR_ROOM_FULL]: { roomId: string; error: string };
+
+    [Events.HITS]: RoomEventData & { keyPositions: KeyPositions; state: PoolState };
+    [Events.PULL]: RoomEventData & { x: number; y: number; angle: number };
+    [Events.INIT]: RoomEventData & {
         players: {
             id: string;
             name: string;

@@ -3,6 +3,8 @@ import { Events } from "../common/server-types";
 import { PoolService } from "./pool-service";
 import { Service } from "./service";
 
+const LOCAL_USER_ID = "1";
+
 export class LocalService extends Service {
     protected service: PoolService;
 
@@ -14,9 +16,11 @@ export class LocalService extends Service {
     override connect(): Promise<boolean> {
         return new Promise((resolve) => {
             this.send(Events.INIT, {
+                userId: LOCAL_USER_ID,
+                roomId: LOCAL_USER_ID,
                 players: [
                     {
-                        id: "1",
+                        id: LOCAL_USER_ID,
                         name: "Player 1",
                         photo: "player-1-avatar.jpg",
                         ballType: "yellow",
@@ -48,12 +52,17 @@ export class LocalService extends Service {
     }
 
     override pull(x: number, y: number, angle: number): void {
-        this.send(Events.PULL, { x, y, angle });
+        this.send(Events.PULL, { x, y, angle, userId: LOCAL_USER_ID, roomId: LOCAL_USER_ID });
     }
 
     override hitBalls(powerPercent: number, angle: number): KeyPositions {
         const keyPositions = this.service.hitBalls(powerPercent, angle);
-        this.send(Events.HITS, { keyPositions, state: this.service.getState() });
+        this.send(Events.HITS, {
+            keyPositions,
+            state: this.service.getState(),
+            userId: LOCAL_USER_ID,
+            roomId: LOCAL_USER_ID,
+        });
         return keyPositions;
     }
 }

@@ -1,20 +1,34 @@
 import express from "express";
 import { v4 as uuid } from "uuid";
 import WebSocket, { WebSocketServer } from "ws";
-import type { BallType } from "./common/pool-types";
+import type { BallType, CueId } from "./common/pool-types";
 import { Events, type EventsData, type TEventKey, type TEventListener } from "./common/server-types";
+
+const MAX_ROOM_SIZE = 4;
+
+const MAX_PLAYERS_PER_ROOM = 2;
 
 export type Room = {
     id: string;
     clients: Client[];
+    currentRound: {
+        round: number;
+        startTime: number;
+        userId: string;
+    };
+    timestamp: number;
 };
+
 export type Client = {
     id: string;
-    ws: WebSocket;
+    name: string;
     roomId: string;
     isHost: boolean;
-    state: { ballType?: BallType };
+    isSpectator: boolean;
+    state: { ballType?: BallType; eqippedCue?: CueId };
+    ws: WebSocket;
 };
+export type Player = Omit<Client, "ws">;
 
 const app = express();
 const server = app.listen(6969, () => console.log("Multiplayer server running on :6969"));
@@ -31,30 +45,48 @@ wss.on("connection", (ws) => {
         const { userId } = data;
         if (!userId) return console.error("User ID is required");
         const roomId = uuid();
-        const room = (rooms[roomId] = { id: roomId, clients: [] as Client[] });
+
+        // Create room
+        const room = (rooms[roomId] = {
+            id: roomId,
+            clients: [] as Client[],
+            currentRound: { round: 0, startTime: Date.now(), userId: userId! },
+            timestamp: Date.now(),
+        });
+
         const client: Client = {
             id: userId,
+            name: userId,
             ws,
             roomId,
             isHost: true,
             state: {},
+            isSpectator: false,
         };
         room.clients.push(client);
-        sendEvent(client, Events.CREATE_ROOM_RESPONSE, { roomId });
+        sendEvent(client.ws, Events.CREATE_ROOM_RESPONSE, { roomId });
     });
 
     // Broadcast events
     eventListener.on(Events.JOIN_ROOM, (data) => {
-        const { roomId, userId: senderId } = data;
+        const { roomId, userId: senderId, name } = data;
         const room = getRoom(roomId);
         if (!room) return;
 
+        if (room.clients.length >= MAX_ROOM_SIZE) {
+            return sendEvent(ws, Events.ERROR_ROOM_FULL, { roomId, error: "This room is full" });
+        }
+
+        const isSpectator = room.clients.length >= MAX_PLAYERS_PER_ROOM;
+
         room.clients.push({
             id: senderId,
+            name,
             ws,
             roomId,
             isHost: false,
             state: {},
+            isSpectator,
         });
 
         brodcastEvent({ roomId: room.id, senderId: senderId! }, Events.JOIN_ROOM, data);
@@ -71,6 +103,8 @@ wss.on("connection", (ws) => {
         const { roomId, userId: senderId } = data;
         const room = getRoom(roomId);
         if (!room) return;
+        // update the game state
+
         brodcastEvent({ roomId: room.id, senderId: senderId! }, Events.HITS, data);
     });
 
@@ -84,7 +118,7 @@ function brodcastEvent<T extends TEventKey>(options: { roomId: string; senderId:
     const room = getRoom(roomId);
     if (!room) return;
     const clients = room.clients.filter((c) => c.id !== senderId);
-    clients.forEach((c) => sendEvent(c, event, data));
+    clients.forEach((c) => sendEvent(c.ws, event, data));
 }
 
 function getRoom(roomId?: string) {
@@ -93,7 +127,11 @@ function getRoom(roomId?: string) {
     if (!rooms[roomId]) {
         return null;
     }
-    return rooms[roomId];
+
+    const room = rooms[roomId];
+    const filteredClients = room.clients.filter((c) => c.ws.readyState === WebSocket.OPEN);
+
+    return { ...room, clients: filteredClients };
 }
 
 function createEventListener(ws: WebSocket): TEventListener {
@@ -124,8 +162,7 @@ function createEventListener(ws: WebSocket): TEventListener {
     };
 }
 
-function sendEvent<T extends TEventKey>(client: Client, event: T, data: EventsData[T]) {
+function sendEvent<T extends TEventKey>(ws: WebSocket, event: T, data: EventsData[T]) {
     const str = JSON.stringify({ event, data });
-    console.log("Sending event to client:", client.id, str);
-    client.ws.send(str);
+    ws.send(str);
 }

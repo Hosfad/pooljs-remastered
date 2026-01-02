@@ -1,6 +1,7 @@
 import { v4 as uuid } from "uuid";
-import { MyPlayer, type KeyPositions, type Player, type PlayerState } from "../common/pool-types";
+import { type KeyPositions } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
+import type { Player } from "../server";
 import { LocalService } from "./local-service";
 
 export class MultiplayerService extends LocalService {
@@ -61,43 +62,56 @@ export class MultiplayerService extends LocalService {
     }
 
     override hitBalls(powerPercent: number, angle: number): KeyPositions {
+        const { userId, roomId } = this.getConfig();
+        if (!roomId) return [];
         const keyPositions = this.service.hitBalls(powerPercent, angle);
-        this.send(Events.HITS, { keyPositions: keyPositions, state: this.service.getState() });
+        this.send(Events.HITS, { keyPositions: keyPositions, state: this.service.getState(), userId, roomId });
         return keyPositions;
     }
 
     override pull(x: number, y: number, angle: number): void {
-        this.send(Events.PULL, { x, y, angle });
+        const { userId, roomId } = this.getConfig();
+        if (!roomId) return;
+
+        this.send(Events.PULL, { x, y, angle, userId, roomId });
     }
 
     private async insertCoin() {
-        const roomId = this.getRoomId();
-        const { userId } = this.getLocalStorage();
+        const { userId, roomId, name } = this.getConfig();
         if (!roomId) {
-            console.log("Creating room with user ID:", userId);
-            this.send(Events.CREATE_ROOM, { userId });
+            this.send(Events.CREATE_ROOM, { userId, name });
         } else {
-            this.instanciatePlayer({
-                id: userId,
-                name: "Player 1",
-                photo: "player-1-avatar.jpg",
-                ballType: "yellow",
-                isHost: true,
-                state: "game-start",
-            });
+            this.send(Events.JOIN_ROOM, { roomId, userId, name });
         }
     }
+
+    private getConfig() {
+        const localStorage = this.getLocalStorage();
+        return {
+            roomId: this.getRoomId(),
+            ...localStorage,
+        };
+    }
+
     private getLocalStorage(): {
         userId: string;
+        name: string;
     } {
-        let userId = localStorage.getItem("userId");
-        if (!userId) {
-            userId = uuid();
-            localStorage.setItem("userId", userId);
+        let user = localStorage.getItem("user");
+
+        if (!user) {
+            const newUser = {
+                userId: uuid(),
+                name: this.generateRandomName(),
+            };
+            localStorage.setItem("user", JSON.stringify(newUser));
+            return newUser;
         }
-        return {
-            userId,
+        const parsed = JSON.parse(user) as {
+            userId: string;
+            name: string;
         };
+        return parsed;
     }
 
     private getRoomId(): string | null {
@@ -106,14 +120,43 @@ export class MultiplayerService extends LocalService {
         return roomId;
     }
 
-    private instanciatePlayer(playerState: PlayerState) {
-        const exists = this.players[playerState.id];
-        if (exists) {
-            return exists;
-        }
-        const player = new MyPlayer(playerState);
-        this.players[player.id] = player;
-        return player;
+    private generateRandomName() {
+        const prefixes = [
+            "Eldrin",
+            "Morwen",
+            "Alistair",
+            "Lyra",
+            "Valerius",
+            "Seraphina",
+            "Zephyrus",
+            "Isolde",
+            "Theron",
+            "Morgana",
+        ] as const;
+
+        const suffixes = [
+            "hammer",
+            "blade",
+            "fire",
+            "shadow",
+            "stone",
+            "heart",
+            "bane",
+            "wind",
+            "mourn",
+            "fury",
+            "ward",
+            "weaver",
+            "caller",
+            "walker",
+            "speaker",
+        ] as const;
+
+        const name = `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${
+            suffixes[Math.floor(Math.random() * suffixes.length)]
+        }`;
+
+        return name;
     }
 
     registerEvents() {
@@ -123,6 +166,8 @@ export class MultiplayerService extends LocalService {
             url.searchParams.set("room", roomId);
             window.history.replaceState({}, "", url.toString());
         });
+
+        this.register(Events.JOIN_ROOM_RESPONSE, (data) => {});
 
         this.register(Events.PULL, (data) => {
             this.send(Events.PULL, data);
