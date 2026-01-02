@@ -43,6 +43,7 @@ wss.on("connection", (ws) => {
         sendEvent(client, Events.CREATE_ROOM_RESPONSE, { roomId });
     });
 
+    // Broadcast events
     eventListener.on(Events.JOIN_ROOM, (data) => {
         const { roomId, userId: senderId } = data;
         const room = getRoom(roomId);
@@ -58,8 +59,6 @@ wss.on("connection", (ws) => {
 
         brodcastEvent({ roomId: room.id, senderId: senderId! }, Events.JOIN_ROOM, data);
     });
-
-    // TODO : Add middleware for roomId and senderId
 
     eventListener.on(Events.PULL, (data) => {
         const { roomId, userId: senderId } = data;
@@ -84,8 +83,8 @@ function brodcastEvent<T extends TEventKey>(options: { roomId: string; senderId:
     const { roomId, senderId } = options;
     const room = getRoom(roomId);
     if (!room) return;
-
-    room.clients.forEach((c) => sendEvent(c, event, data));
+    const clients = room.clients.filter((c) => c.id !== senderId);
+    clients.forEach((c) => sendEvent(c, event, data));
 }
 
 function getRoom(roomId?: string) {
