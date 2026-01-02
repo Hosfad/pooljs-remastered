@@ -17,16 +17,18 @@ type DebugPanelCommand = {
 };
 
 export class DebugPanelModal extends Modal {
-    private logs: string[] = [];
+    private readonly COLLAPSED_VISIBLE_LOGS = 8;
+    private readonly EXPANDED_VISIBLE_LOGS = 18;
+    private readonly COLUMN_WIDTH = 80;
+
     private readonly MAX_LOGS = 100;
+    private readonly CURSOR_BLINK_INTERVAL = 500;
+
+    private logs: string[] = [];
     private scrollOffset = 0;
 
     private text!: Phaser.GameObjects.Text;
     private scrollIndicator!: Phaser.GameObjects.Text;
-
-    private readonly COLLAPSED_VISIBLE_LOGS = 8;
-    private readonly EXPANDED_VISIBLE_LOGS = 18;
-    private readonly COLUMN_WIDTH = 80;
 
     private visibleLogs = this.COLLAPSED_VISIBLE_LOGS;
 
@@ -41,7 +43,6 @@ export class DebugPanelModal extends Modal {
     private inputText = "";
     private cursorVisible = true;
     private cursorTimer = 0;
-    private readonly CURSOR_BLINK_INTERVAL = 500;
     private closeButton!: Phaser.GameObjects.Text;
     private keyboardPlugin!: Phaser.Input.Keyboard.KeyboardPlugin;
 
@@ -57,10 +58,7 @@ export class DebugPanelModal extends Modal {
     private scrollDownButton!: Phaser.GameObjects.Text;
     private isExpanded = false;
 
-    private originalPosition = { x: 0, y: 0 };
     private originalSize = { width: 0, height: 0 };
-
-    private buttons: Phaser.GameObjects.Text[] = [];
 
     private startX!: number;
     private startY!: number;
@@ -90,11 +88,11 @@ export class DebugPanelModal extends Modal {
             disableBackgroundClicks: true,
             drawGrid: false,
         };
-        super(scene, x, y, finalConfig);
-        this.debugConfig = config;
 
+        super(scene, x, y, finalConfig);
+
+        this.debugConfig = config;
         this.originalSize = { width: finalConfig.width!, height: finalConfig.height! };
-        this.originalPosition = { x, y };
 
         this.createUI();
         this.createInputUI();
@@ -257,8 +255,6 @@ export class DebugPanelModal extends Modal {
             .setInteractive({ useHandCursor: true })
             .on("pointerdown", () => (this.scrollOffset = this.getMaxScroll()));
         container.add(this.scrollDownButton);
-
-        this.buttons = [this.expandButton, this.clearButton, this.scrollUpButton, this.scrollDownButton];
     }
 
     private toggleExpand() {
@@ -269,7 +265,6 @@ export class DebugPanelModal extends Modal {
 
         // Update modal size
         const newHeight = this.isExpanded ? this.originalSize.height * 2 : this.originalSize.height;
-
         this.expandModal(this.originalSize.width, newHeight);
 
         // Recalculate content dimensions
@@ -734,11 +729,6 @@ export class DebugPanelModal extends Modal {
         this.updateInputDisplay();
     }
 
-    private updateTextPosition(): void {
-        this.text.setWordWrapWidth(this.contentWidth - 20);
-        this.text.setPosition(this.startX - this.contentWidth / 2 + 10, this.startY + 10);
-    }
-
     public override update() {
         if (!this.isOpen()) return;
         if (this.inputVisible) {
@@ -762,7 +752,7 @@ export class DebugPanelModal extends Modal {
         const rawLogs = this.logs.slice(start, end).reverse();
 
         // Process logs with wrapping
-        const wrappedLogLines: string[] = ["=== CONSOLE ==="];
+        const wrappedLogLines = ["=== CONSOLE ==="];
 
         // Define your wrap width (adjust as needed)
         const LOG_WRAP_WIDTH = this.COLUMN_WIDTH - 3; // Reserve some space for UI elements

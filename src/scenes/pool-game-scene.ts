@@ -145,7 +145,7 @@ export class PoolGameScene extends Phaser.Scene {
         );
         // change this
         const avatar = turn === "red" ? this.gameInfoHeader.player1Avatar : this.gameInfoHeader.player2Avatar;
-        const otherBorder = turn === "yellow" ? this.gameInfoHeader.player2Avatar : this.gameInfoHeader.player1Avatar;
+        const otherBorder = turn === "red" ? this.gameInfoHeader.player2Avatar : this.gameInfoHeader.player1Avatar;
 
         otherBorder.startBlinking();
         this.time.delayedCall(200, () => otherBorder.stopBlinking());
@@ -180,7 +180,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         this.load.once(Phaser.Loader.Events.COMPLETE, () => {
             this.createGameInfoHeader();
-            // this.updatePlayerTurn();
+            this.updatePlayerTurn();
         });
 
         this.load.start();
@@ -262,7 +262,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createBalls() {
-        const ROWS = 3;
+        const ROWS = 5;
         const r = BALL_RADIUS;
         const DIAMETER = r * 2;
         const ROW_SPACING = DIAMETER * 0.8;
@@ -741,6 +741,7 @@ export class PoolGameScene extends Phaser.Scene {
         let player1Name: Phaser.GameObjects.Text;
         let player1BlinkTween: Phaser.Tweens.Tween;
 
+        const scale = 0.4;
         let avatar: string = POOL_ASSETS.AVATAR;
         let pname = "Player 1";
         let ptype = "red";
@@ -753,7 +754,7 @@ export class PoolGameScene extends Phaser.Scene {
             ptype = player1.state.ballType ?? "red";
         }
 
-        player1Avatar = this.add.sprite(padding, centerY, avatar).setScale(0.8).setOrigin(0.5, 0.5).setVisible(true);
+        player1Avatar = this.add.sprite(padding, centerY, avatar).setScale(scale).setOrigin(0.5, 0.5).setVisible(true);
 
         player1Name = this.add
             .text(player1Avatar.x, player1Avatar.y + nameOffset, `${pname} (${ptype})`, {
@@ -766,7 +767,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         player1BlinkTween = this.tweens.add({
             targets: [player1Avatar, player1Name],
-            scale: { from: 0.8, to: 0.85 },
+            scale: { from: scale, to: scale + 0.05 },
             alpha: { from: 0.75, to: 0.95 },
             duration: 800,
             ease: "Sine.easeInOut",
@@ -846,7 +847,7 @@ export class PoolGameScene extends Phaser.Scene {
             ptype = player2.state.ballType ?? "yellow";
         }
 
-        player2Avatar = this.add.sprite(rightPadding, centerY, avatar).setScale(0.8).setOrigin(0.5, 0.5).setVisible(true);
+        player2Avatar = this.add.sprite(rightPadding, centerY, avatar).setScale(scale).setOrigin(0.5, 0.5).setVisible(true);
 
         player2Name = this.add
             .text(player2Avatar.x, player2Avatar.y + nameOffset, `${pname} (${ptype})`, {
@@ -859,7 +860,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         player2BlinkTween = this.tweens.add({
             targets: [player2Avatar, player2Name],
-            scale: { from: 0.8, to: 0.85 },
+            scale: { from: scale, to: scale + 0.05 },
             alpha: { from: 0.75, to: 0.95 },
             duration: 800,
             ease: "Sine.easeInOut",

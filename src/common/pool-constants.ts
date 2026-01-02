@@ -2,15 +2,10 @@
  * Pool game specific constants
  */
 export let DEBUG_GRAPHICS = true;
-
-export function setDebugGraphics(debug: boolean) {
-    DEBUG_GRAPHICS = debug;
-}
+export function setDebugGraphics(debug: boolean) { DEBUG_GRAPHICS = debug; }
 
 export let MODAL_OPEN: boolean = false;
-export function setGlobalModalOpenVariable(open: boolean) {
-    MODAL_OPEN = open;
-}
+export function setGlobalModalOpenVariable(open: boolean) { MODAL_OPEN = open; }
 
 export const POOL_ASSETS = {
     BACKGROUND: "background",

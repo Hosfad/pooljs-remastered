@@ -1,11 +1,15 @@
 import type { Player, Room } from "../server";
-import { createRoot } from "react-dom/client";
-import { v4 as uuid } from "uuid";
 import { type BallType, type KeyPositions } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
 import { PoolLobby } from "../scenes/components/react/lobby";
 import { LocalService } from "./local-service";
+import { createRoot } from "react-dom/client";
+import { v4 as uuid } from "uuid";
 import React from "react";
+
+interface Preferences {
+    ballType: BallType;
+}
 
 export class MultiplayerService extends LocalService {
     private ws: WebSocket | null = null;
@@ -40,8 +44,10 @@ export class MultiplayerService extends LocalService {
                     event: TEventKey;
                     data: EventsData[TEventKey];
                 };
+
                 const { event, data } = parsed;
                 if (!event) return;
+
                 this.eventHandlers.get(event)?.forEach((handler) => handler(data));
             };
 
@@ -76,10 +82,9 @@ export class MultiplayerService extends LocalService {
     }
 
     override isMyTurn(): boolean {
-        const me = this.me();
-        const myTurn = this.room?.currentRound.userId === me?.userId;
-        console.log(this.room, me)
-        return myTurn;
+        const imHost = this.room?.hostId === this.me()?.userId;
+        const index = this.service.turnIndex;
+        return imHost ? index == 0 : index == 1;
     }
 
     override winner(): string | undefined {
@@ -87,21 +92,22 @@ export class MultiplayerService extends LocalService {
     }
 
     override whoseTurn(): BallType {
-        const players = this.room?.players;
-        const currentPlayer = players?.find((p) => p.id === this.room?.currentRound.userId);
-        return currentPlayer!.state.ballType!;
+        return this.service.whoseTurn();
     }
 
     override hitBalls(powerPercent: number, angle: number): KeyPositions {
         const { userId, roomId } = this.getConfig();
         if (!roomId) return [];
+
         const keyPositions = this.service.hitBalls(powerPercent, angle);
         this.call(Events.HITS, { keyPositions: keyPositions, state: this.service.getState(), userId, roomId });
+
         return keyPositions;
     }
 
     override pull(x: number, y: number, angle: number): void {
         const { userId, roomId } = this.getConfig();
+
         if (!roomId) return;
 
         this.call(Events.PULL, { x, y, angle, userId, roomId });
@@ -113,8 +119,7 @@ export class MultiplayerService extends LocalService {
 
     public me(): { userId: string; name: string } | undefined {
         const { userId } = this.getConfig();
-        if (!userId) return undefined;
-        return { userId, name: this.getStorage().name, };
+        return userId ? { userId, name: this.getStorage().name, } : undefined;
     }
 
     private async insertCoin() {
@@ -124,8 +129,22 @@ export class MultiplayerService extends LocalService {
     }
 
     private getConfig() {
-        const storage = this.getStorage();
-        return { roomId: this.getRoomId(), ...storage };
+        return { roomId: this.getRoomId(), ...this.getStorage() };
+    }
+
+    private getPreferences(): Partial<Preferences> {
+        const preferences = sessionStorage.getItem("preferences");
+        return preferences ? JSON.parse(preferences) : {};
+    }
+
+    public setPref<T extends keyof Preferences>(key: T, value: any) {
+        const prefs = this.getPreferences();
+        prefs[key] = value;
+        sessionStorage.setItem("preferences", JSON.stringify(prefs));
+    }
+
+    public getPref<T extends keyof Preferences>(key: T): any {
+        return this.getPreferences()[key];
     }
 
     private getStorage(): { userId: string; name: string } {
@@ -150,9 +169,7 @@ export class MultiplayerService extends LocalService {
         return roomId;
     }
 
-    public instanciateRoom(room: Room) {
-        this.room = room;
-    }
+    public instanciateRoom(room: Room) { this.room = room; }
 
     private generateRandomName() {
         const prefixes = [

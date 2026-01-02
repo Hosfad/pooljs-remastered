@@ -27,7 +27,7 @@ export class PoolService {
     private collisions: Collision[] = [];
 
     private turns: BallType[];
-    private turnIndex = 0;
+    public turnIndex = 0;
 
     constructor(balls: Ball[], colliders: Collider[], holes: Hole[]) {
         this.balls = balls;
@@ -160,7 +160,7 @@ export class PoolService {
 
                         const distSq = dx * dx + dy * dy;
 
-                        const minDist = BALL_RADIUS * 1.25;
+                        const minDist = BALL_RADIUS * 1.5;
                         const minDistSq = minDist * minDist;
 
                         if (distSq < minDistSq && distSq > 0) {
