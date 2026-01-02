@@ -7,7 +7,7 @@
         "dev": "vite",
         "build": "tsc && vite build",
         "serve": "vite --host",
-        "multi": "bun run src/server.ts"
+        "multi": "bun run--watch src/server.ts"
     },
     "devDependencies": {
         "@tweakpane/core": "2.0.3",
