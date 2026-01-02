@@ -1,17 +1,20 @@
 import type { Room } from "../server";
 import type { BallType, KeyPositions } from "./pool-types";
 
-type MiddlewareResponse =
+type MiddlewareResponse<TOutput> =
     | {
           success: true;
+          data: TOutput;
           error?: null;
       }
     | {
           error: string;
       };
 
-export type Middleware<T> = (data: T) => MiddlewareResponse | Promise<MiddlewareResponse>;
-export type MiddlewareInput<T> = Middleware<T> | Middleware<T>[];
+export type Middleware<TInput, TOutput = unknown> = (
+    data: TInput
+) => MiddlewareResponse<TOutput> | Promise<MiddlewareResponse<TOutput>>;
+export type MiddlewareInput<TInput, TOutput = unknown> = Middleware<TInput, TOutput> | Middleware<TInput, TOutput>[];
 
 export type TEventKey = keyof EventsData;
 
@@ -20,7 +23,11 @@ type THandler<T extends TEventKey> = (data: EventsData[T]) => void | Promise<voi
 export type TEventListener = {
     on<T extends TEventKey>(event: T, handler: THandler<T>): void;
 
-    on<T extends TEventKey>(event: T, middleware: MiddlewareInput<EventsData[T]>, handler: THandler<T>): void;
+    on<T extends TEventKey, TOutput = unknown>(
+        event: T,
+        middleware: MiddlewareInput<EventsData[T], TOutput>,
+        handler: THandler<T>
+    ): void;
 
     send<T extends TEventKey>(event: T, data: EventsData[T]): void;
 };
@@ -50,7 +57,8 @@ export type RoomEventBodyOptions = RoomId & {
 
 export type WebsocketError = {
     type: "error";
-    error: string;
+    message: string;
+    code: "bad-request" | "room-not-found" | "user-not-found" | (string & {});
 };
 export type WebsocketRespone<T> =
     | WebsocketError
@@ -60,8 +68,8 @@ export type WebsocketRespone<T> =
       };
 
 export type EventsData = {
-    [Events.CREATE_ROOM]: { userId: string; name: string };
-    [Events.JOIN_ROOM]: RoomEventBodyOptions & { name: string };
+    [Events.JOIN_ROOM]: { userId: string; name: string; roomId?: string };
+    [Events.JOIN_ROOM_RESPONSE]: WebsocketRespone<Room>;
 
     [Events.HITS]: RoomEventBodyOptions & { keyPositions: KeyPositions; state: PoolState };
     [Events.PULL]: RoomEventBodyOptions & { x: number; y: number; angle: number };
@@ -74,9 +82,7 @@ export type EventsData = {
         }[];
     };
 
-    // Responses
-    [Events.CREATE_ROOM_RESPONSE]: WebsocketRespone<RoomId>;
-    [Events.JOIN_ROOM_RESPONSE]: WebsocketRespone<Room>;
+    // ERRORS
     [Events.ERROR_ROOM_FULL]: WebsocketRespone<RoomId>;
 };
 

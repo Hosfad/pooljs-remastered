@@ -1,6 +1,7 @@
 import express from "express";
 import { v4 as uuid } from "uuid";
 import WebSocket, { WebSocketServer } from "ws";
+import { POOL_ASSETS } from "./common/pool-constants";
 import type { BallType, CueId } from "./common/pool-types";
 import {
     Events,
@@ -10,15 +11,13 @@ import {
     type RoomEventBodyOptions,
     type TEventKey,
     type TEventListener,
-    type WebsocketError,
-    type WebsocketRespone,
 } from "./common/server-types";
 
 const MAX_ROOM_SIZE = 4;
 
 const MAX_PLAYERS_PER_ROOM = 2;
 
-export type Room = {
+type ServerRoom = {
     id: string;
     clients: Client[];
     currentRound: {
@@ -26,14 +25,20 @@ export type Room = {
         startTime: number;
         userId: string;
     };
+    hostId: string;
     timestamp: number;
 };
+type Prettify<T> = {
+    [K in keyof T]: T[K];
+} & {};
+
+export type Room = Prettify<Omit<ServerRoom, "clients"> & { players: Player[] }>;
 
 export type Client = {
     id: string;
     name: string;
+    photo: string;
     roomId: string;
-    isHost: boolean;
     isSpectator: boolean;
     state: { ballType?: BallType; eqippedCue?: CueId };
     ws: WebSocket;
@@ -44,91 +49,73 @@ const app = express();
 const server = app.listen(6969, () => console.log("Multiplayer server running on :6969"));
 
 const wss = new WebSocketServer({ server });
-const rooms: Record<string, Room> = {};
+const rooms: Record<string, ServerRoom> = {};
 
 wss.on("connection", (ws) => {
     let client: Client | null = null;
 
     const eventListener = createEventListener(ws);
 
-    eventListener.on(Events.CREATE_ROOM, [], (input) => {
-        const { userId, name } = input;
-        if (!userId) return sendError(ws, Events.CREATE_ROOM, "User ID is required");
-        const roomId = uuid();
-        // Create room
-        const room = (rooms[roomId] = {
-            id: roomId,
-            clients: [] as Client[],
-            currentRound: { round: 0, startTime: Date.now(), userId: userId! },
-            timestamp: Date.now(),
-        });
-
-        const client: Client = {
-            id: userId,
-            name,
-            ws,
-            roomId,
-            isHost: true,
-            state: {},
-            isSpectator: false,
-        };
-        room.clients.push(client);
-        sendEvent(client.ws, Events.CREATE_ROOM_RESPONSE, { type: "success", data: { roomId } });
-    });
+    // This only allows existing users through
 
     // Broadcast events
-    eventListener.on(Events.JOIN_ROOM, withRoomAuthMiddleware, (data) => {
+    // Dont check for existing user for joining
+    eventListener.on(Events.JOIN_ROOM, (data) => {
         const { roomId, userId: senderId, name } = data;
-        console.log("Joining room", roomId, senderId, name);
         const room = getRoom(roomId);
-        if (!room) return sendError(ws, Events.JOIN_ROOM, "Room not found");
-
-        if (room.clients.length >= MAX_ROOM_SIZE) {
-            return sendError(ws, Events.ERROR_ROOM_FULL, "This room is full");
+        if (!room) {
+            const finalId = roomId ?? uuid();
+            const newRoom = createNewRoom({ userId: senderId, name }, ws, finalId);
+            sendEvent(ws, Events.JOIN_ROOM_RESPONSE, {
+                type: "success",
+                data: reshapeRoom(newRoom),
+            });
+            return;
         }
 
         const isSpectator = room.clients.length >= MAX_PLAYERS_PER_ROOM;
 
         const existingClient = room.clients.find((c) => c.id === senderId);
 
-        if (existingClient && ws.readyState !== WebSocket.OPEN) {
-            existingClient.ws = ws;
-        }
-
         if (!existingClient) {
             room.clients.push({
                 id: senderId,
                 name,
                 ws,
-                roomId,
-                isHost: false,
+                photo: POOL_ASSETS.AVATAR,
+                roomId: room.id,
                 state: {},
                 isSpectator,
             });
+            rooms[room.id] = room;
         }
 
-        brodcastEvent({ roomId: room.id, senderId: senderId! }, Events.JOIN_ROOM_RESPONSE, {
+        console.log(
+            room.clients.map((c) => {
+                return { ...c, ws: c.ws?.readyState };
+            })
+        );
+        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.JOIN_ROOM_RESPONSE, {
             type: "success",
-            data: {
-                type: "success",
-                data: room,
-            },
+            data: reshapeRoom(room),
         });
     });
+
+    // make sure there is userId and roomId
+    const withRoomAuthMiddleware = roomAuthMiddleware();
 
     eventListener.on(Events.PULL, withRoomAuthMiddleware, (data) => {
         const { roomId, userId: senderId } = data;
         const room = getRoom(roomId);
         if (!room) return;
-        brodcastEvent({ roomId: room.id, senderId: senderId! }, Events.PULL, { type: "success", data });
+        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.PULL, { type: "success", ...data });
     });
 
     eventListener.on(Events.HITS, withRoomAuthMiddleware, (data) => {
         const { roomId, userId: senderId } = data;
-        const room = getRoom(roomId);
-        if (!room) return;
-        // update the game state
-        brodcastEvent({ roomId: room.id, senderId: senderId! }, Events.HITS, { type: "success", data });
+        const room = getRoom(roomId)!;
+
+        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.HITS, { type: "success", ...data });
     });
 
     ws.on("close", () => {
@@ -136,33 +123,43 @@ wss.on("connection", (ws) => {
     });
 });
 
-const withRoomAuthMiddleware: Middleware<RoomEventBodyOptions> = (data) => {
-    const { roomId, userId } = data;
+const createNewRoom = (user: { userId: string; name: string }, ws: WebSocket, roomId?: string | null) => {
+    const finalId = roomId ?? uuid();
+    const { userId, name: username } = user;
+    const room = {
+        id: finalId,
+        clients: [] as Client[],
+        currentRound: { round: 0, startTime: Date.now(), userId: userId! },
+        timestamp: Date.now(),
+        hostId: userId,
+    };
 
-    if (!roomId) return { error: "Room ID is required" };
-    if (!userId) return { error: "User ID is required" };
+    const client: Client = {
+        id: userId,
+        name: username,
+        photo: POOL_ASSETS.AVATAR,
+        ws,
+        roomId: finalId,
+        state: {},
+        isSpectator: false,
+    };
+    room.clients.push(client);
 
-    const room = getRoom(roomId);
+    rooms[finalId] = room;
 
-    if (!room) return { error: "Room not found" };
-    if (room.clients.find((c) => c.id === userId)) return { error: "User already in room" };
-
-    return { success: true };
+    return room;
 };
 
-function brodcastEvent<T extends TEventKey>(
-    options: { roomId: string; senderId: string },
-    event: T,
-    body: WebsocketRespone<EventsData[T]>
-) {
-    const { roomId, senderId } = options;
-    const room = getRoom(roomId);
-    if (!room) return;
-    const clients = room.clients.filter((c) => c.id !== senderId);
-    const resObj = body.type === "success" ? (body.data as EventsData[T]) : (body as unknown as WebsocketError).error;
+function roomAuthMiddleware<TInput extends RoomEventBodyOptions>(existigUserOnly = true) {
+    const middleware: Middleware<TInput> = (data) => {
+        const { roomId, userId } = data;
+        const room = getRoom(roomId);
+        if (existigUserOnly && !room) return { error: "Room not found" };
+        if (existigUserOnly && !room?.clients.find((c) => c.id === userId)) return { error: "User not found" };
 
-    const sendThisShit = body.type === "success" ? sendEvent : sendError;
-    clients.forEach((c) => sendThisShit(c.ws, event, resObj as any));
+        return { success: true, data: { yoooo: "yoooo" } };
+    };
+    return middleware;
 }
 
 function getRoom(roomId?: string) {
@@ -177,6 +174,21 @@ function getRoom(roomId?: string) {
     const filteredClients = room.clients.filter((c) => c.ws.readyState === WebSocket.OPEN);
 
     return { ...room, clients: filteredClients };
+}
+
+function reshapeRoom(room: ServerRoom): Room {
+    const players = room.clients.map((c) => {
+        const newC = { ...c, ws: undefined };
+        delete newC.ws;
+        const player: Player = {
+            ...newC,
+        };
+        return player;
+    });
+    return {
+        ...room,
+        players,
+    };
 }
 
 function createEventListener(ws: WebSocket): TEventListener {
@@ -224,7 +236,12 @@ function createEventListener(ws: WebSocket): TEventListener {
                 const result = await promise;
                 if (result.error) {
                     console.error("Error in middleware", result.error);
-                    sendError(ws, event, result.error);
+                    sendEvent(ws, event, {
+                        type: "error",
+                        message: result.error,
+                        code: "middleware-error",
+                    });
+
                     break;
                 }
             }
@@ -262,13 +279,19 @@ function createEventListener(ws: WebSocket): TEventListener {
     };
 }
 
-function sendEvent<T extends TEventKey>(ws: WebSocket, event: T, data: EventsData[T]) {
-    const str = JSON.stringify({ type: "success", event, data });
+function sendEvent<T extends TEventKey>(ws: WebSocket, event: T, data: EventsData[T] & { type: "success" | "error" }) {
+    const str = JSON.stringify({ type: data.type, event, data });
     ws.send(str);
 }
 
-function sendError<T extends TEventKey>(ws: WebSocket, event: T, error: string) {
-    const str = JSON.stringify({ event, data: { type: "error", error } });
-    console.error("Error event", str);
-    ws.send(str);
+function broadcastEvent<T extends TEventKey>(
+    options: { roomId: string; senderId: string },
+    event: T,
+    body: EventsData[T] & { type: "success" | "error" }
+) {
+    const { roomId, senderId } = options;
+    const room = getRoom(roomId);
+    if (!room) return;
+
+    room.clients.forEach((c) => sendEvent(c.ws, event, body));
 }

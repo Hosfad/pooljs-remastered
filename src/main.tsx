@@ -40,7 +40,7 @@ window.onload = () => {
         const root = createRoot(reactRoot);
         root.render(
             <React.StrictMode>
-                <PoolLobby />
+                <PoolLobby service={service} />
             </React.StrictMode>
         );
     }

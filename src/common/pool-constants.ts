@@ -35,6 +35,14 @@ export const POOL_ASSETS = {
         SWORD_WOOD: "cue-wooden-sword",
     },
     AVATAR: "avatar",
+    AVATARS: {
+        PLAYER_1: "player-1-avatar",
+        PLAYER_2: "player-2-avatar",
+        PLAYER_3: "player-3-avatar",
+        PLAYER_4: "player-4-avatar",
+        PLAYER_5: "player-5-avatar",
+        PLAYER_6: "player-6-avatar",
+    },
 } as const;
 
 export const POOL_SCENE_KEYS = {

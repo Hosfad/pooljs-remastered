@@ -1,4 +1,7 @@
 import React from "react";
+import { Events } from "../../../common/server-types";
+import type { Room } from "../../../server";
+import type { MultiplayerService } from "../../../services/multiplayer-service";
 
 type Player = {
     id: string;
@@ -6,20 +9,45 @@ type Player = {
     initial: string;
 };
 
-export function PoolLobby() {
-    const [hostName, setHostName] = React.useState("");
-    const [players, setPlayers] = React.useState<Player[]>([{ id: "2", name: "Player 2", initial: "P2" }]);
+export function PoolLobby({ service }: { service: MultiplayerService }) {
+    const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
+
+    React.useEffect(() => {
+        service.subscribe(Events.JOIN_ROOM_RESPONSE, (input) => {
+            const { type } = input;
+            const roomIdFromUrl = service.getRoomId();
+            console.log("Room ID from URL", roomIdFromUrl);
+            if (type === "error") {
+                const { code: errCode, message: errMessage } = input;
+                return console.error("Error joining room", errCode, errMessage);
+            }
+
+            const room = input.data;
+            service.instanciatePlayers(room);
+            setRoom(room);
+
+            if (roomIdFromUrl !== room.id) {
+                // redirect to room
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set("room", room.id);
+                window.history.replaceState({}, "", newUrl.toString());
+            }
+        });
+    }, [service]);
 
     const handleInvite = () => {
         navigator.clipboard.writeText(window.location.href);
         alert("Invite link copied to clipboard!");
     };
 
-    const handleStart = () => {
-        if (hostName.trim()) {
-            console.log("[v0] Starting game with host:", hostName, "and players:", players);
-        }
-    };
+    const handleStart = () => {};
+
+    if (!room) return null;
+    const hostId = room.hostId;
+    const players = room.players ?? [];
+
+    const currentPlayer = service.me();
+    const currentPlayerIsHost = currentPlayer?.userId === room.hostId;
 
     const maxPlayers = 2;
     const emptySlots = maxPlayers - players.length;
@@ -110,20 +138,8 @@ export function PoolLobby() {
                                     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
                                 }}
                             >
-                                {hostName.charAt(0).toUpperCase() || "H"}
+                                {currentPlayer?.name.charAt(0).toUpperCase() || "H"}
                             </div>
-                            <span
-                                style={{
-                                    fontSize: "0.75rem",
-                                    fontWeight: "600",
-                                    padding: "0.25rem 0.75rem",
-                                    borderRadius: "9999px",
-                                    backgroundColor: colors.dark,
-                                    color: colors.accent,
-                                }}
-                            >
-                                HOST
-                            </span>
                         </div>
 
                         {/* Name Input */}
@@ -144,8 +160,7 @@ export function PoolLobby() {
                                 id="host-name"
                                 type="text"
                                 placeholder="Enter your name"
-                                value={hostName}
-                                onChange={(e) => setHostName(e.target.value)}
+                                defaultValue={currentPlayer?.name}
                                 style={{
                                     width: "90%",
                                     padding: "0.75rem 1rem",
@@ -221,7 +236,7 @@ export function PoolLobby() {
                                             color: colors.primary,
                                         }}
                                     >
-                                        {player.initial}
+                                        {player.name}
                                     </div>
                                     <span
                                         style={{
@@ -300,7 +315,7 @@ export function PoolLobby() {
                     </button>
                     <button
                         onClick={handleStart}
-                        disabled={!hostName.trim()}
+                        disabled={currentPlayer?.userId !== room.hostId}
                         style={{
                             flex: "1",
                             minWidth: "200px",
@@ -308,16 +323,16 @@ export function PoolLobby() {
                             borderRadius: "0.5rem",
                             fontWeight: "600",
                             fontSize: "1rem",
-                            cursor: hostName.trim() ? "pointer" : "not-allowed",
+                            cursor: currentPlayerIsHost ? "pointer" : "not-allowed",
                             transition: "transform 0.2s",
                             backgroundColor: colors.accent,
                             color: colors.primary,
                             border: `2px solid ${colors.dark}`,
                             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-                            opacity: hostName.trim() ? "1" : "0.5",
+                            opacity: currentPlayerIsHost ? "1" : "0.5",
                         }}
                         onMouseEnter={(e) => {
-                            if (hostName.trim()) e.currentTarget.style.transform = "scale(1.05)";
+                            if (currentPlayerIsHost) e.currentTarget.style.transform = "scale(1.05)";
                         }}
                         onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                     >

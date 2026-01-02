@@ -1,11 +1,12 @@
 import { v4 as uuid } from "uuid";
 import { type KeyPositions } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
-import type { Player } from "../server";
+import type { Player, Room } from "../server";
 import { LocalService } from "./local-service";
 
 export class MultiplayerService extends LocalService {
     private players: { [key: string]: Player } = {};
+    private room: Room | null = null;
 
     private ws: WebSocket | null = null;
 
@@ -28,9 +29,6 @@ export class MultiplayerService extends LocalService {
                 };
                 const { event, data } = parsed;
                 if (!event) return;
-
-                console.log("Received event", event, data);
-
                 this.eventHandlers.get(event)?.forEach((handler) => handler(data));
             };
 
@@ -44,7 +42,8 @@ export class MultiplayerService extends LocalService {
             return false;
         }
     }
-    private register<T extends keyof EventsData>(event: T, callback: (data: EventsData[T]) => void) {
+
+    override subscribe<T extends keyof EventsData>(event: T, callback: (data: EventsData[T]) => void) {
         if (!this.eventHandlers.has(event)) {
             this.eventHandlers.set(event, new Set());
         }
@@ -78,13 +77,30 @@ export class MultiplayerService extends LocalService {
         this.send(Events.PULL, { x, y, angle, userId, roomId });
     }
 
+    public isConnected(): boolean {
+        return this.ws?.readyState === WebSocket.OPEN;
+    }
+
+    public me():
+        | {
+              userId: string;
+              name: string;
+          }
+        | undefined {
+        const { userId } = this.getConfig();
+        if (!userId) return undefined;
+        const localStorage = this.getLocalStorage();
+
+        return {
+            userId,
+            name: localStorage.name,
+        };
+    }
+
     private async insertCoin() {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return await this.connect();
         const { userId, roomId, name } = this.getConfig();
-        if (!roomId) {
-            this.send(Events.CREATE_ROOM, { userId, name });
-        } else {
-            this.send(Events.JOIN_ROOM, { roomId, userId, name });
-        }
+        this.send(Events.JOIN_ROOM, { roomId: roomId ?? undefined, userId, name });
     }
 
     private getConfig() {
@@ -116,10 +132,21 @@ export class MultiplayerService extends LocalService {
         return parsed;
     }
 
-    private getRoomId(): string | null {
+    public getCurrentRoom(): Room | null {
+        return this.room;
+    }
+
+    public getRoomId(): string | null {
         const url = new URL(window.location.href);
         const roomId = url.searchParams.get("room");
         return roomId;
+    }
+    public instanciatePlayers(room: Room) {
+        const players = room.players;
+        console.log("Instanciating players", players);
+        players.forEach((p) => {
+            this.players[p.id] = p;
+        });
     }
 
     private generateRandomName() {
@@ -164,25 +191,10 @@ export class MultiplayerService extends LocalService {
     registerEvents() {
         // TODO: Handle errors inseread of logging
 
-        this.register(Events.CREATE_ROOM_RESPONSE, (input) => {
-            if (input.type === "error") return console.error("Error creating room", input.error);
-            const { roomId } = input.data;
-
-            const url = new URL(window.location.href);
-            url.searchParams.set("room", roomId);
-            window.history.replaceState({}, "", url.toString());
-        });
-
-        this.register(Events.JOIN_ROOM_RESPONSE, (data) => {
-            if (data.type === "error") return console.error("Error joining room", data.error);
-            const roomData = data;
-            console.log("Reviewing room", roomData);
-        });
-
-        this.register(Events.PULL, (data) => {
+        this.subscribe(Events.PULL, (data) => {
             this.send(Events.PULL, data);
         });
-        this.register(Events.HITS, (data) => {
+        this.subscribe(Events.HITS, (data) => {
             this.send(Events.HITS, data);
         });
     }
