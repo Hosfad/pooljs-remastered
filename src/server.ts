@@ -13,8 +13,6 @@ import {
     type TEventListener,
 } from "./common/server-types";
 
-const MAX_ROOM_SIZE = 4;
-
 const MAX_PLAYERS_PER_ROOM = 2;
 
 type ServerRoom = {
@@ -29,9 +27,8 @@ type ServerRoom = {
     hostId: string;
     timestamp: number;
 };
-type Prettify<T> = {
-    [K in keyof T]: T[K];
-} & {};
+
+type Prettify<T> = { [K in keyof T]: T[K]; } & {};
 
 export type Room = Prettify<Omit<ServerRoom, "clients"> & { players: Player[] }>;
 
@@ -116,6 +113,7 @@ wss.on("connection", (ws) => {
             room.currentRound,
             room.clients.map((c) => ({ name: c.name, state: c.state }))
         );
+
         broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.INIT, {
             type: "success",
             ...reshapeRoom(room),

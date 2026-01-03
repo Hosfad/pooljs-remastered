@@ -1,9 +1,11 @@
 <!DOCTYPE html>
+
 <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PoolJS</title>
-        <style>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PoolJS</title>
+
+    <style>
             html,
             body {
                 margin: 0;
@@ -31,14 +33,21 @@
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                pointer-events: none;
+            }
+
+            #react-root > * {
+              pointer-events: auto;
             }
         </style>
-    </head>
-    <body>
-        <div id="app">
-            <div id="game-container"></div>
-            <div id="react-root"></div>
-        </div>
-        <script type="module" src="/src/main.tsx"></script>
-    </body>
+  </head>
+
+  <body>
+    <div id="app">
+      <div id="game-container"></div>
+      <div id="react-root"></div>
+    </div>
+
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
