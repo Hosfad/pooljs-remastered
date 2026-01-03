@@ -84,7 +84,7 @@ export class MultiplayerService extends LocalService {
 
     override isMyTurn(): boolean {
         const imHost = this.room?.hostId === this.me()?.userId;
-        const index = this.service.turnIndex;
+        const index = this.service.getState().turnIndex;
         return imHost ? index == 0 : index == 1;
     }
 

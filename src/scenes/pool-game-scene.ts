@@ -29,10 +29,10 @@ export class PoolGameScene extends Phaser.Scene {
     private isGameStarted = false;
 
     // Game state
-    private balls: Ball[] = [];
-    private holes: Hole[] = [];
+    public balls: Ball[] = [];
+    public holes: Hole[] = [];
+    public colliders: Collider[] = [];
     private cue!: Cue;
-    private colliders: Collider[] = [];
 
     // Dynamic dimensions based on device scale
     private tableWidth!: number;
@@ -54,8 +54,6 @@ export class PoolGameScene extends Phaser.Scene {
     private background!: Phaser.GameObjects.Image;
     private holeBalls: Phaser.GameObjects.Sprite[] = [];
     private playedSounds: (number | undefined)[] = [];
-
-    private settingsButton: Phaser.GameObjects.Text | undefined;
 
     // Input state
     private mousePosition = new Vector2();
@@ -108,7 +106,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.createColliders();
         this.createBalls();
 
-        this.service = new MultiplayerService(new PoolService(this.balls, this.colliders, this.holes));
+        this.service = new MultiplayerService(new PoolService(this));
 
         // Create UI
         this.createPowerMeter();
@@ -136,14 +134,10 @@ export class PoolGameScene extends Phaser.Scene {
             this.input.once("pointerdown", () => this.scene.restart());
             return;
         }
-
-        const turn = this.service.whoseTurn();
-        const room = this.service.getCurrentRoom();
-        if (!room) return;
     }
 
     private registerEvents() {
-        this.service.subscribe(Events.INIT, ({ players }) => {
+        this.service.subscribe(Events.INIT, () => {
             this.loadAvatarsAndCreateInfoHeader();
             this.isGameStarted = true;
             console.log("Pool game initialized with", this.balls.length, "balls");

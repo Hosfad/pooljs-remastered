@@ -1,6 +1,7 @@
 import * as Phaser from "phaser";
 import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
+import type { PoolGameScene } from "../scenes/pool-game-scene";
 
 const MAX_POWER = 30;
 const MAX_STEPS = 500;
@@ -18,8 +19,8 @@ export interface PoolState {
 }
 
 export class PoolService {
-    private balls: Ball[];
     private colliders: Collider[];
+    private balls: Ball[];
     private holes: Hole[];
 
     private inHole: Record<number, boolean> = {};
@@ -27,14 +28,14 @@ export class PoolService {
     private players: Scores;
     private collisions: Collision[] = [];
 
+    private timer: Phaser.Time.TimerEvent;
     private turns: BallType[];
-    public turnIndex = 0;
-    private roundStart: number = Date.now();
+    private turnIndex = 0;
 
-    constructor(balls: Ball[], colliders: Collider[], holes: Hole[]) {
-        this.balls = balls;
-        this.colliders = colliders;
-        this.holes = holes;
+    constructor(scene: PoolGameScene) {
+        this.balls = scene.balls;
+        this.colliders = scene.colliders;
+        this.holes = scene.holes;
 
         this.totals = { solid: 0, striped: 0, white: 0, black: 0, red: 0, yellow: 0 };
         this.players = { solid: 0, striped: 0, white: 0, black: 0, red: 0, yellow: 0 };
@@ -42,11 +43,18 @@ export class PoolService {
         for (const ball of this.balls) this.totals[ball.ballType]++;
         this.turns = Object.keys(this.totals).filter((t) => this.totals[t as BallType] > 1) as BallType[];
 
-        console.log(
-            Object.keys(this.totals)
-                .map((t) => `${t}: ${this.totals[t as BallType]}`)
-                .join(", ")
-        );
+        this.timer = scene.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                if (this.timer.repeatCount >= 30) {
+                    this.timerStop();
+                    console.log("Timer finished");
+                }
+            },
+            loop: true,
+        });
+
+        console.log(Object.keys(this.totals).map((t) => `${t}: ${this.totals[t as BallType]}`).join(", "));
         console.log("Players", Object.values(this.turns).join(", "));
     }
 
@@ -106,7 +114,18 @@ export class PoolService {
             this.turnIndex = (this.turnIndex + 1) % this.turns.length;
         }
 
+        this.timerStop();
+
         return keyPositions;
+    }
+
+    public timerStart() {
+        this.timer.paused = false;
+        this.timer.repeatCount = 0;
+    }
+
+    public timerStop() {
+        this.timer.paused = true;
     }
 
     private getKeyPosition() {
