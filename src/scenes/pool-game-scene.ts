@@ -107,7 +107,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.service.connect();
     }
 
-    private checkWinner() {
+    private checkWinner(): void {
         const winner = this.service.winner();
         if (!winner) return;
 
@@ -121,7 +121,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.input.once("pointerdown", () => window.location.reload());
     }
 
-    private registerEvents() {
+    private registerEvents(): void {
         this.service.subscribe(Events.INIT, () => {
             this.loadAvatarsAndCreateInfoHeader();
             this.service.timerStart();
@@ -207,7 +207,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.debugPanel?.update();
     }
 
-    private createBalls() {
+    private createBalls(): void {
         const ROWS = 5;
         const r = BALL_RADIUS;
         const DIAMETER = r * 2;
@@ -425,7 +425,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
 
-    private createBall(x: number, y: number, ballType: Ball["ballType"], texture: string) {
+    private createBall(x: number, y: number, ballType: Ball["ballType"], texture: string): void {
         const r = BALL_RADIUS;
         const position = this.toTableCoordinates(x, y);
 
@@ -533,7 +533,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
 
-    private updateCueBullback(x: number, y: number, angle: number) {
+    private updateCueBullback(x: number, y: number, angle: number): void {
         // Pullback cue based on power
         const maxPullback = 200;
         const pullbackDistance = BALL_RADIUS + this.powerMeter.power * maxPullback;
@@ -614,7 +614,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.aimLine.strokePath();
     }
 
-    private setupDebugPanel() {
+    private setupDebugPanel(): void {
         this.debugPanel = new DebugPanelModal(this, 0, 0, {
             INPUT_STATE: () => {
                 const draggingPowerMeter = this.powerMeter.isDragging;
@@ -708,7 +708,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
 
-    private animateBallToRail(ball: Ball, ballIndex: number): void {
+    private animateBallToRail(ball: Ball): void {
         const positionIndex = this.pocketedBallsRail.ballPositions.length - 1 - this.pocketedBallsRail.pocketedBalls.length;
 
         if (positionIndex < 0) {
