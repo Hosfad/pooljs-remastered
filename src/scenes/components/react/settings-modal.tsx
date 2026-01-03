@@ -21,7 +21,7 @@ export function SettingsModal({ isOpen, onClose, settings: initialSettings, onSa
         setSettings({ ...settings, [key]: value });
     };
 
-    const cueImages = CUES.map((cue) => `${import.meta.env.VITE_API_URL}/assets/game/cues/${cue.replace("_", "-")}.svg`);
+    const cueImages = CUES.map((cue) => `/assets/game/cues/${cue.replace("_", "-")}.svg`);
     console.log(cueImages);
     const handlePreviousCue = () => {
         setSettings({
