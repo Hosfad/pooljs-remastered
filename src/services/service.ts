@@ -119,4 +119,10 @@ export abstract class Service {
         const suf = Math.floor(Math.random() * suffixes.length);
         return `${prefixes[pre]} ${suffixes[suf]}`;
     }
+
+    abstract timerStart(): void;
+
+    abstract timerLeft(): number;
+
+    abstract timerStop(): void;
 }

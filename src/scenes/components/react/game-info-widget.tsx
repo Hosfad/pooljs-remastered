@@ -13,32 +13,27 @@ const COLORS = {
     text: "#ffffff",
 };
 
+const ROUND_TIME = 30;
+
 export function GameInfoWidget({ service }: { service: MultiplayerService | LocalService }) {
-    const roundTimeMs = 30000;
     const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
-    const state = service.getState();
 
     React.useEffect(() => {
-        service.subscribe(Events.INIT, (data) => {
-            setRoom(data);
-        });
+        service.subscribe(Events.INIT, (data) => setRoom(data));
     }, []);
 
-    const [timeLeft, setTimeLeft] = React.useState(Date.now() + roundTimeMs - Date.now());
+    const [timeLeft, setTimeLeft] = React.useState(ROUND_TIME);
 
     React.useEffect(() => {
         if (!room) return;
-        setTimeLeft(roundTimeMs);
 
-        const interval = setInterval(() => {
-            const remaining = state.roundStart + roundTimeMs - Date.now();
-            setTimeLeft(remaining);
-        }, 200);
+        setTimeLeft(ROUND_TIME);
+        const interval = setInterval(() => { setTimeLeft(service.timerLeft()); }, 200);
 
         return () => clearInterval(interval);
     }, [room]);
 
-    const progress = (timeLeft / roundTimeMs) * 100;
+    const progress = (timeLeft / ROUND_TIME) * 100;
     const players = room?.players ?? [];
 
     const player1 = players[0];
@@ -80,7 +75,7 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
                         marginBottom: "0.25rem",
                     }}
                 >
-                    {String((timeLeft / 1000).toFixed(0)).padStart(2, "0")}s
+                    {String(timeLeft).padStart(2, "0")}s
                 </div>
                 <div
                     style={{

@@ -64,19 +64,6 @@ export class PoolGameScene extends Phaser.Scene {
     private aimLine!: Phaser.GameObjects.Graphics;
     private isMobile = false;
 
-    private gameInfoHeader!: {
-        player1Avatar: Phaser.GameObjects.Sprite & { startBlinking: () => void; stopBlinking: () => void };
-        player1Name: Phaser.GameObjects.Text;
-
-        player2Avatar: Phaser.GameObjects.Sprite & { startBlinking: () => void; stopBlinking: () => void };
-        player2Name: Phaser.GameObjects.Text;
-
-        roundCounter: Phaser.GameObjects.Text;
-        roundNumber: number;
-        spectatorAvatars: Phaser.GameObjects.Sprite[] | null;
-        spectatorNames: Phaser.GameObjects.Text[] | null;
-    };
-
     private pocketedBallsRail!: {
         background: Phaser.GameObjects.Graphics;
         ballPositions: Array<{ x: number; y: number }>;
@@ -120,25 +107,24 @@ export class PoolGameScene extends Phaser.Scene {
         this.service.connect();
     }
 
-    private updatePlayerTurn() {
+    private checkWinner() {
         const winner = this.service.winner();
+        if (!winner) return;
 
-        if (winner) {
-            const midw = this.scale.width / 2;
-            const midh = this.scale.height / 2;
+        const midw = this.scale.width / 2;
+        const midh = this.scale.height / 2;
 
-            this.add.rectangle(midw, midh, this.tableWidth - 40, 140, 0x1f326e, 0.8);
-            this.add.text(midw, midh - 20, `${winner} WINS!`, { fontSize: "64px" }).setOrigin(0.5);
-            this.add.text(midw, midh + 40, "Click to play again!", { fontSize: "32px" }).setOrigin(0.5);
+        this.add.rectangle(midw, midh, this.tableWidth - 40, 140, 0x1f326e, 0.8);
+        this.add.text(midw, midh - 20, `${winner} WINS!`, { fontSize: "64px" }).setOrigin(0.5);
+        this.add.text(midw, midh + 40, "Click to play again!", { fontSize: "32px" }).setOrigin(0.5);
 
-            this.input.once("pointerdown", () => this.scene.restart());
-            return;
-        }
+        this.input.once("pointerdown", () => this.scene.restart());
     }
 
     private registerEvents() {
         this.service.subscribe(Events.INIT, () => {
             this.loadAvatarsAndCreateInfoHeader();
+            this.service.timerStart();
             this.isGameStarted = true;
             console.log("Pool game initialized with", this.balls.length, "balls");
         });
@@ -150,7 +136,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
             this.keyPositions.push.apply(this.keyPositions, keyPositions);
             this.service.setState(state);
-            this.updatePlayerTurn();
+            this.checkWinner();
 
             this.checkForNewlyPocketedBalls();
         });
@@ -162,8 +148,7 @@ export class PoolGameScene extends Phaser.Scene {
         // }
 
         this.load.once(Phaser.Loader.Events.COMPLETE, () => {
-            //        this.createGameInfoHeader();
-            this.updatePlayerTurn();
+            this.checkWinner();
         });
 
         this.load.start();
@@ -266,7 +251,6 @@ export class PoolGameScene extends Phaser.Scene {
         const selectedCue = CUES[config.selectedCueIndex % CUES.length];
         const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUES.BASIC);
         cueSprite.setOrigin(1, 0.5);
-        cueSprite.setScale(0.6);
         cueSprite.setFlipX(true);
 
         this.cue = { phaserSprite: cueSprite, rotation: 0, power: 0 };
@@ -647,200 +631,6 @@ export class PoolGameScene extends Phaser.Scene {
             "DEVICE SCALE": () => `${this.game.scale.canvas.width}x${this.game.scale.canvas.height}`,
             WINNER: () => (this.service.winner() ? "WINNER" : ""),
         });
-    }
-
-    // GAME INFO HEADER
-
-    private createGameInfoHeader(): void {
-        const canvasWidth = this.game.scale.canvas.width;
-        const headerHeight = 100;
-        const headerY = 80;
-
-        const padding = 500;
-        const nameOffset = 10;
-        const spectatorAvatarSize = 40;
-        const spectatorSpacing = 30;
-
-        const players = this.service.getPlayers();
-
-        const spectators = players;
-
-        const rightPadding = canvasWidth - padding;
-        const centerY = headerY + headerHeight / 2;
-
-        const headerContainer = this.add.container(0, 0);
-
-        let player1Avatar: Phaser.GameObjects.Sprite & { startBlinking?: () => void; stopBlinking?: () => void };
-        let player1Name: Phaser.GameObjects.Text;
-        let player1BlinkTween: Phaser.Tweens.Tween;
-
-        const scale = 0.4;
-        let avatar: string = POOL_ASSETS.AVATAR;
-        let pname = "Player 1";
-        let ptype = "red";
-
-        const player1 = players?.[0];
-
-        if (player1) {
-            // avatar = "player1Avatar";
-            pname = player1.name;
-            ptype = player1.state.ballType ?? "red";
-            console.log(player1.state);
-        }
-
-        player1Avatar = this.add.sprite(padding, centerY, avatar).setScale(scale).setOrigin(0.5, 0.5).setVisible(true);
-
-        player1Name = this.add
-            .text(player1Avatar.x, player1Avatar.y + nameOffset, `${pname} (${ptype})`, {
-                fontFamily: "Arial",
-                fontSize: "20px",
-                color: "#ffffff",
-                fontStyle: "bold",
-            })
-            .setOrigin(0.5, 0);
-
-        player1BlinkTween = this.tweens.add({
-            targets: [player1Avatar, player1Name],
-            scale: { from: scale, to: scale + 0.05 },
-            alpha: { from: 0.75, to: 0.95 },
-            duration: 800,
-            ease: "Sine.easeInOut",
-            yoyo: true,
-            repeat: -1,
-            paused: true,
-        });
-
-        player1Avatar.startBlinking = () => player1BlinkTween.play();
-
-        player1Avatar.stopBlinking = function () {
-            player1BlinkTween.pause();
-            player1BlinkTween.seek(0);
-            this.setAlpha(0.2);
-        };
-
-        headerContainer.add([player1Avatar, player1Name]);
-
-        let spectatorAvatars: Phaser.GameObjects.Sprite[] = [];
-        let spectatorNames: Phaser.GameObjects.Text[] = [];
-
-        if (spectators && spectators.length > 0) {
-            const spectatorsStartX = canvasWidth / 2;
-            const spectatorsY = headerY;
-
-            const totalSpectatorsWidth =
-                spectators.length * spectatorAvatarSize + (spectators.length - 1) * spectatorSpacing;
-
-            let currentX = spectatorsStartX - totalSpectatorsWidth / 2 + spectatorAvatarSize / 2;
-
-            spectators.forEach((spectator, index) => {
-                const avatarTexture = index === 0 ? "player1Avatar" : "player2Avatar";
-
-                const spectatorAvatar = this.add
-                    .sprite(currentX, spectatorsY, avatarTexture)
-                    .setScale(spectatorAvatarSize / 100)
-                    .setOrigin(0.5, 0.5)
-                    .setAlpha(0.7)
-                    .setInteractive({ useHandCursor: true });
-
-                spectatorAvatar
-                    .on("pointerover", () => spectatorAvatar.setAlpha(1))
-                    .on("pointerout", () => spectatorAvatar.setAlpha(0.7));
-
-                spectatorAvatars.push(spectatorAvatar);
-                headerContainer.add([spectatorAvatar]);
-
-                currentX += spectatorAvatarSize + spectatorSpacing;
-            });
-        }
-
-        const roundCounter = this.add
-            .text(canvasWidth / 2, centerY, "Round: 1", {
-                fontFamily: "Arial",
-                fontSize: "24px",
-                color: "#ffd700",
-                fontStyle: "bold",
-            })
-            .setOrigin(0.5, 0.5);
-
-        headerContainer.add(roundCounter);
-
-        let player2Avatar: (Phaser.GameObjects.Sprite & { startBlinking?: () => void; stopBlinking?: () => void }) | null =
-            null;
-        let player2Name: Phaser.GameObjects.Text | null = null;
-        let player2BlinkTween: Phaser.Tweens.Tween | null = null;
-
-        avatar = POOL_ASSETS.AVATAR;
-        pname = "Player 2";
-        ptype = "yellow";
-
-        const player2 = players?.[1];
-
-        if (player2) {
-            //     avatar = "player2Avatar";
-            pname = player2.name;
-            ptype = player2.state.ballType ?? "yellow";
-        }
-
-        player2Avatar = this.add.sprite(rightPadding, centerY, avatar).setScale(scale).setOrigin(0.5, 0.5).setVisible(true);
-
-        player2Name = this.add
-            .text(player2Avatar.x, player2Avatar.y + nameOffset, `${pname} (${ptype})`, {
-                fontFamily: "Arial",
-                fontSize: "20px",
-                color: "#ffffff",
-                fontStyle: "bold",
-            })
-            .setOrigin(0.5, 0);
-
-        player2BlinkTween = this.tweens.add({
-            targets: [player2Avatar, player2Name],
-            scale: { from: scale, to: scale + 0.05 },
-            alpha: { from: 0.75, to: 0.95 },
-            duration: 800,
-            ease: "Sine.easeInOut",
-            yoyo: true,
-            repeat: -1,
-            paused: true,
-        });
-
-        player2Avatar.startBlinking = () => player2BlinkTween!.play();
-
-        player2Avatar.stopBlinking = function () {
-            player2BlinkTween!.pause();
-            player2BlinkTween!.seek(0);
-            this.setAlpha(0.3);
-        };
-
-        headerContainer.add([player2Avatar, player2Name]);
-
-        if (spectators && spectators.length === 0) {
-            const waitingText = this.add
-                .text(rightPadding, centerY, "Waiting for Player 2...", {
-                    fontFamily: "Arial",
-                    fontSize: "18px",
-                    color: "#888888",
-                    fontStyle: "italic",
-                })
-                .setOrigin(0.5, 0.5);
-            headerContainer.add(waitingText);
-        }
-
-        this.gameInfoHeader = {
-            player1Avatar: player1Avatar! as Phaser.GameObjects.Sprite & {
-                startBlinking: () => void;
-                stopBlinking: () => void;
-            },
-            player1Name: player1Name!,
-            player2Avatar: player2Avatar as Phaser.GameObjects.Sprite & {
-                startBlinking: () => void;
-                stopBlinking: () => void;
-            },
-            player2Name: player2Name!,
-            spectatorAvatars: spectatorAvatars,
-            spectatorNames: spectatorNames,
-            roundCounter,
-            roundNumber: 0,
-        };
     }
 
     // POCKETED BALLS RAIL

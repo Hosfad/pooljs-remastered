@@ -16,10 +16,10 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.load.image(POOL_ASSETS.LOADING_BACKGROUND, "/images/loading-background.png");
 
         // Load all the assets
-        this.load.image(POOL_ASSETS.WHITE_BALL, "/game/balls/white.svg");
-        this.load.image(POOL_ASSETS.BLACK_BALL, "/game/balls/black.svg");
-        this.load.image(POOL_ASSETS.STRIPED_BALL, "/game/balls/11.svg");
-        this.load.image(POOL_ASSETS.SOLID_BALL, "/game/balls/1.svg");
+        this.load.svg(POOL_ASSETS.WHITE_BALL, "/game/balls/white.svg");
+        this.load.svg(POOL_ASSETS.BLACK_BALL, "/game/balls/black.svg");
+        this.load.svg(POOL_ASSETS.STRIPED_BALL, "/game/balls/11.svg");
+        this.load.svg(POOL_ASSETS.SOLID_BALL, "/game/balls/1.svg");
 
         // Create animation AFTER assets are loaded
         this.createLoadingAnimation();
@@ -33,21 +33,23 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.load.audio(POOL_ASSETS.SOUND_EFFECTS.BALL_FALLING_INTO_POCKET, "/sounds/ball-falling-into-pocket.mp3");
         this.load.audio(POOL_ASSETS.SOUND_EFFECTS.BALL_HITTING_TABLE_EDGE, "/sounds/ball-hitting-table-edge.mp3");
 
-        // Cues
-        this.load.image(POOL_ASSETS.CUES.BASIC, "/game/cues/baisic.svg");
-        this.load.image(POOL_ASSETS.CUES.ADVANCED, "/game/cues/advanced.svg");
+        const cueSize = { width: 600, height: 300 };
 
-        this.load.image(POOL_ASSETS.CUES.EXPERT, "/game/cues/expert.svg");
-        this.load.image(POOL_ASSETS.CUES.SWORD, "/game/cues/sword.svg");
-        this.load.image(POOL_ASSETS.CUES.SWORD_WOOD, "/game/cues/wodden-sword.svg");
-        this.load.image(POOL_ASSETS.CUES.PALESTINE, "/game/cues/palestine.svg");
+        // Cues
+        this.load.svg(POOL_ASSETS.CUES.BASIC, "/game/cues/basic.svg", cueSize);
+        this.load.svg(POOL_ASSETS.CUES.ADVANCED, "/game/cues/advanced.svg", cueSize);
+
+        this.load.svg(POOL_ASSETS.CUES.EXPERT, "/game/cues/expert.svg", cueSize);
+        this.load.svg(POOL_ASSETS.CUES.SWORD, "/game/cues/sword.svg", cueSize);
+        this.load.svg(POOL_ASSETS.CUES.SWORD_WOOD, "/game/cues/wodden-sword.svg", cueSize);
+        this.load.svg(POOL_ASSETS.CUES.PALESTINE, "/game/cues/palestine.svg", cueSize);
 
         this.load.on("complete", () => this.transitionToGame());
     }
 
     create(): void {
-        const { width, height } = this.cameras.main;
-        this.add.image(width / 2, height / 2, "loading-background").setDisplaySize(width, height);
+        // const { width, height } = this.cameras.main;
+        // this.add.image(width / 2, height / 2, "loading-background").setDisplaySize(width, height);
     }
 
     private transitionToGame(): void {

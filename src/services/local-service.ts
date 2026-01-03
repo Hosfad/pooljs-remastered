@@ -39,6 +39,18 @@ export class LocalService extends Service {
         });
     }
 
+    override timerStart(): void {
+        this.service.timerStart();
+    }
+
+    override timerLeft(): number {
+        return this.service.timerLeft();
+    }
+
+    override timerStop(): void {
+        this.service.timerStop()
+    }
+
     public override getPlayers(): Player[] {
         return this.room?.players ?? [];
     }
