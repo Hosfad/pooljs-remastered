@@ -40,11 +40,7 @@ export class PoolService {
         for (const ball of this.balls) this.totals[ball.ballType]++;
         this.turns = Object.keys(this.totals).filter((t) => this.totals[t as BallType] > 1) as BallType[];
 
-        console.log(
-            Object.keys(this.totals)
-                .map((t) => `${t}: ${this.totals[t as BallType]}`)
-                .join(", ")
-        );
+        console.log(Object.keys(this.totals).map((t) => `${t}: ${this.totals[t as BallType]}`).join(", "));
         console.log("Players", Object.values(this.turns).join(", "));
     }
 
@@ -260,14 +256,7 @@ export class PoolService {
         return keyPositions;
     }
 
-    private getNormal(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): { x: number; y: number } {
+    private getNormal(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): { x: number; y: number } {
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -292,14 +281,7 @@ export class PoolService {
         return closestNormal;
     }
 
-    private isPointInPolygon(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): boolean {
+    private isPointInPolygon(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): boolean {
         const { x, y } = b;
 
         let inside = false;
