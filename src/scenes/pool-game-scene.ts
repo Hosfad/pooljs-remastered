@@ -5,6 +5,7 @@
 import * as Phaser from "phaser";
 import {
     BALL_RADIUS,
+    CUES,
     DEBUG_GRAPHICS,
     HOLE_RADIUS,
     MODAL_OPEN,
@@ -110,14 +111,13 @@ export class PoolGameScene extends Phaser.Scene {
         this.service = new MultiplayerService(new PoolService(this.balls, this.colliders, this.holes));
 
         // Create UI
-        this.createCue();
         this.createPowerMeter();
-        this.createUI();
         this.createPocketedBallsRail();
 
         // Setup input
         this.registerEvents();
         this.setupInput();
+        this.createCue();
 
         this.service.connect();
     }
@@ -138,19 +138,8 @@ export class PoolGameScene extends Phaser.Scene {
         }
 
         const turn = this.service.whoseTurn();
-
-        this.gameInfoHeader.roundNumber++;
-        this.gameInfoHeader.roundCounter.setText(
-            `Round: ${this.gameInfoHeader.roundNumber}\n\nTurn:\n${turn.toUpperCase()}`
-        );
-        // change this
-        const avatar = turn === "red" ? this.gameInfoHeader.player1Avatar : this.gameInfoHeader.player2Avatar;
-        const otherBorder = turn === "red" ? this.gameInfoHeader.player2Avatar : this.gameInfoHeader.player1Avatar;
-
-        otherBorder.startBlinking();
-        this.time.delayedCall(200, () => otherBorder.stopBlinking());
-
-        avatar.startBlinking();
+        const room = this.service.getCurrentRoom();
+        if (!room) return;
     }
 
     private registerEvents() {
@@ -179,7 +168,7 @@ export class PoolGameScene extends Phaser.Scene {
         // }
 
         this.load.once(Phaser.Loader.Events.COMPLETE, () => {
-            this.createGameInfoHeader();
+            //        this.createGameInfoHeader();
             this.updatePlayerTurn();
         });
 
@@ -238,29 +227,6 @@ export class PoolGameScene extends Phaser.Scene {
         this.debugPanel?.update();
     }
 
-    private createUI() {
-        //  this.settingsModal = new SettingsModal(this, this.cameras.main.centerX, this.cameras.main.centerY);
-
-        const buttonStyle = {
-            fontFamily: '"Courier New", monospace',
-            fontSize: "20px",
-            color: "#ffd700",
-            backgroundColor: "#4a3520",
-            padding: { x: 15, y: 10 },
-            stroke: "#8b4513",
-            strokeThickness: 2,
-        };
-
-        // const buttonPosition = this.toTableCoordinates(this.tableWidth + 200, -50);
-        // this.settingsButton = this.add
-        //     .text(buttonPosition.x, buttonPosition.y, "⚙️ SETTINGS", buttonStyle)
-        //     .setOrigin(0.5)
-        //     .setInteractive({ useHandCursor: true })
-        //     .setDepth(100);
-
-        // this.setupButtonHover(this.settingsButton, () => this.settingsModal.show());
-    }
-
     private createBalls() {
         const ROWS = 5;
         const r = BALL_RADIUS;
@@ -295,8 +261,6 @@ export class PoolGameScene extends Phaser.Scene {
         const cueY = rackOrigin.y;
 
         this.createBall(cueX, cueY, "white", POOL_ASSETS.WHITE_BALL);
-
-        console.log("Created", this.balls.length, "balls");
     }
 
     private createCue(): void {
@@ -304,7 +268,9 @@ export class PoolGameScene extends Phaser.Scene {
 
         const whiteBall = this.balls[this.balls.length - 1]!;
         const { x, y } = this.toTableCoordinates(whiteBall.phaserSprite.x, whiteBall.phaserSprite.y);
-        const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUE_STICK);
+        const config = this.service.getSettings();
+        const selectedCue = CUES[config.selectedCueIndex % CUES.length];
+        const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUES.BASIC);
         cueSprite.setOrigin(1, 0.5);
         cueSprite.setScale(0.6);
         cueSprite.setFlipX(true);
@@ -689,33 +655,6 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
 
-    private setupButtonHover(button: Phaser.GameObjects.Text, onClick: () => void): void {
-        button.on("pointerover", () => {
-            button.setStyle({
-                color: "#ffff00",
-                backgroundColor: "#5a4530",
-                stroke: "#deb887",
-            });
-        });
-
-        button.on("pointerout", () => {
-            button.setStyle({
-                color: "#ffd700",
-                backgroundColor: "#4a3520",
-                stroke: "#8b4513",
-            });
-        });
-
-        button.on("pointerdown", () => {
-            button.setStyle({
-                color: "#000000",
-                backgroundColor: "#ffd700",
-                stroke: "#000000",
-            });
-            onClick();
-        });
-    }
-
     // GAME INFO HEADER
 
     private createGameInfoHeader(): void {
@@ -752,6 +691,7 @@ export class PoolGameScene extends Phaser.Scene {
             // avatar = "player1Avatar";
             pname = player1.name;
             ptype = player1.state.ballType ?? "red";
+            console.log(player1.state);
         }
 
         player1Avatar = this.add.sprite(padding, centerY, avatar).setScale(scale).setOrigin(0.5, 0.5).setVisible(true);

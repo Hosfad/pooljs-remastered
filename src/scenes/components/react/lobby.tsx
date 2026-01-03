@@ -6,13 +6,6 @@ import type { MultiplayerService } from "../../../services/multiplayer-service.t
 import { Button } from "./button.tsx";
 import { SettingsModal } from "./settings-modal.tsx";
 
-type GameSettings = {
-    masterVolume: number;
-    sfxVolume: number;
-    musicVolume: number;
-    selectedCueIndex: number;
-};
-
 export function PoolLobby({ service }: { service: MultiplayerService }) {
     const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
 

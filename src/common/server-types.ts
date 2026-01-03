@@ -86,4 +86,5 @@ export interface PoolState {
     totals: Record<BallType, number>;
     players: Record<BallType, number>;
     turnIndex: number;
+    roundStart: number;
 }

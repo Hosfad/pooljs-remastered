@@ -1,11 +1,11 @@
-import type { Player, Room } from "../server";
+import React from "react";
+import { createRoot } from "react-dom/client";
 import { type BallType, type KeyPositions } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
+import { GameInfoWidget } from "../scenes/components/react/game-info-widget";
 import { PoolLobby } from "../scenes/components/react/lobby";
+import type { Player } from "../server";
 import { LocalService } from "./local-service";
-import { createRoot } from "react-dom/client";
-import { v4 as uuid } from "uuid";
-import React from "react";
 
 interface Preferences {
     ballType: BallType;
@@ -28,6 +28,7 @@ export class MultiplayerService extends LocalService {
                 root.render(
                     <React.StrictMode>
                         <PoolLobby service={this} />
+                        <GameInfoWidget service={this} />
                     </React.StrictMode>
                 );
             }
@@ -117,19 +118,10 @@ export class MultiplayerService extends LocalService {
         return this.ws?.readyState === WebSocket.OPEN;
     }
 
-    public me(): { userId: string; name: string } | undefined {
-        const { userId } = this.getConfig();
-        return userId ? { userId, name: this.getStorage().name, } : undefined;
-    }
-
     private async insertCoin() {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return await this.connect();
         const { userId, roomId, name } = this.getConfig();
         this.call(Events.JOIN_ROOM, { roomId: roomId ?? undefined, userId, name });
-    }
-
-    private getConfig() {
-        return { roomId: this.getRoomId(), ...this.getStorage() };
     }
 
     private getPreferences(): Partial<Preferences> {
@@ -145,67 +137,6 @@ export class MultiplayerService extends LocalService {
 
     public getPref<T extends keyof Preferences>(key: T): any {
         return this.getPreferences()[key];
-    }
-
-    private getStorage(): { userId: string; name: string } {
-        let user = sessionStorage.getItem("user");
-
-        if (!user) {
-            const newUser = { userId: uuid(), name: this.generateRandomName() };
-            sessionStorage.setItem("user", JSON.stringify(newUser));
-            return newUser;
-        }
-        const parsed = JSON.parse(user) as { userId: string; name: string };
-        return parsed;
-    }
-
-    public getCurrentRoom(): Room | null {
-        return this.room;
-    }
-
-    public getRoomId(): string | null {
-        const url = new URL(window.location.href);
-        const roomId = url.searchParams.get("room");
-        return roomId;
-    }
-
-    public instanciateRoom(room: Room) { this.room = room; }
-
-    private generateRandomName() {
-        const prefixes = [
-            "Eldrin",
-            "Morwen",
-            "Alistair",
-            "Lyra",
-            "Valerius",
-            "Seraphina",
-            "Zephyrus",
-            "Isolde",
-            "Theron",
-            "Morgana",
-        ] as const;
-
-        const suffixes = [
-            "hammer",
-            "blade",
-            "fire",
-            "shadow",
-            "stone",
-            "heart",
-            "bane",
-            "wind",
-            "mourn",
-            "fury",
-            "ward",
-            "weaver",
-            "caller",
-            "walker",
-            "speaker",
-        ] as const;
-
-        const pre = Math.floor(Math.random() * prefixes.length);
-        const suf = Math.floor(Math.random() * suffixes.length);
-        return `${prefixes[pre]} ${suffixes[suf]}`;
     }
 
     registerEvents() {

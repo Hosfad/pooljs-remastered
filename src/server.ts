@@ -1,13 +1,13 @@
 import express from "express";
 import { v4 as uuid } from "uuid";
 import WebSocket, { WebSocketServer } from "ws";
-import { POOL_ASSETS, type CueId } from "./common/pool-constants";
 import type { BallType } from "./common/pool-types";
 import {
     Events,
     type EventsData,
     type Middleware,
     type MiddlewareInput,
+    type PoolState,
     type RoomEventBodyOptions,
     type TEventKey,
     type TEventListener,
@@ -18,11 +18,7 @@ const MAX_PLAYERS_PER_ROOM = 2;
 type ServerRoom = {
     id: string;
     clients: Client[];
-    currentRound: {
-        round: number;
-        startTime: number;
-        userId: string;
-    };
+    state?: PoolState;
     winner?: string;
     hostId: string;
     timestamp: number;
@@ -38,7 +34,7 @@ export type Client = {
     photo: string;
     roomId: string;
     isSpectator: boolean;
-    state: { ballType: BallType; eqippedCue?: CueId };
+    state: { ballType: BallType };
     ws: WebSocket;
 };
 export type Player = Omit<Client, "ws">;
@@ -48,10 +44,10 @@ const server = app.listen(6969, () => {
     console.log("Multiplayer server running on :6969", process.cwd());
 });
 
-app.use("/assets", express.static(process.cwd() + "/public/assets"));
-
 const wss = new WebSocketServer({ server });
 const rooms: Record<string, ServerRoom> = {};
+
+const NUM_AVATARS = 6;
 
 wss.on("connection", (ws) => {
     let client: Client | null = null;
@@ -85,7 +81,7 @@ wss.on("connection", (ws) => {
                 id: senderId,
                 name,
                 ws,
-                photo: POOL_ASSETS.AVATAR,
+                photo: `/assets/avatars/${Math.floor(Math.random() * NUM_AVATARS)}.png`,
                 roomId: room.id,
                 state: {
                     ballType: room.clients.length % 2 === 0 ? "yellow" : "red",
@@ -107,16 +103,8 @@ wss.on("connection", (ws) => {
     eventListener.on(Events.START_GAME, withRoomAuthMiddleware, (data) => {
         const { roomId, userId: senderId } = data;
         const room = getRoom(roomId);
+
         if (!room) return;
-        const random = Math.floor(Math.random() * room.clients.length);
-
-        room.currentRound = { round: 0, startTime: Date.now(), userId: room.clients[random]!.id ?? senderId };
-
-        console.log(
-            "ROOM",
-            room.currentRound,
-            room.clients.map((c) => ({ name: c.name, state: c.state }))
-        );
 
         broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.INIT, {
             type: "success",
@@ -158,7 +146,7 @@ const createNewRoom = (user: { userId: string; name: string }, ws: WebSocket, ro
     const client: Client = {
         id: userId,
         name: username,
-        photo: POOL_ASSETS.AVATAR,
+        photo: `/assets/avatars/${Math.floor(Math.random() * 6)}.png`,
         ws,
         roomId: finalId,
         state: {

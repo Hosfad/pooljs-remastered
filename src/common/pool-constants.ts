@@ -2,10 +2,14 @@
  * Pool game specific constants
  */
 export let DEBUG_GRAPHICS = true;
-export function setDebugGraphics(debug: boolean) { DEBUG_GRAPHICS = debug; }
+export function setDebugGraphics(debug: boolean) {
+    DEBUG_GRAPHICS = debug;
+}
 
 export let MODAL_OPEN: boolean = false;
-export function setGlobalModalOpenVariable(open: boolean) { MODAL_OPEN = open; }
+export function setGlobalModalOpenVariable(open: boolean) {
+    MODAL_OPEN = open;
+}
 
 export const POOL_ASSETS = {
     BACKGROUND: "background",
@@ -13,7 +17,6 @@ export const POOL_ASSETS = {
     SOLID_BALL: "spr_yellowBall2",
     STRIPED_BALL: "spr_redBall2",
     BLACK_BALL: "spr_blackBall2",
-    CUE_STICK: "spr_stick",
     DRAG_ICON: "drag",
     LOADING_BACKGROUND: "loading-background",
     SOUND_EFFECTS: {
@@ -30,6 +33,7 @@ export const POOL_ASSETS = {
         SWORD_WOOD: "cue-wooden-sword",
         PALESTINE: "cue-palestine",
     },
+
     AVATAR: "avatar",
     AVATARS: {
         PLAYER_1: "player-1-avatar",

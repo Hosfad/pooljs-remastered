@@ -1,6 +1,6 @@
 import type { BallType, KeyPositions } from "../common/pool-types";
 import { Events } from "../common/server-types";
-import type { Player, Room } from "../server";
+import type { Player } from "../server";
 import { PoolService } from "./pool-service";
 import { Service } from "./service";
 
@@ -8,7 +8,6 @@ const LOCAL_USER_ID = "1";
 
 export class LocalService extends Service {
     protected service: PoolService;
-    protected room: Room | null = null;
 
     constructor(service: PoolService) {
         super();
@@ -18,7 +17,6 @@ export class LocalService extends Service {
     override connect(): Promise<boolean> {
         this.room = {
             id: LOCAL_USER_ID,
-            currentRound: { round: 0, startTime: Date.now(), userId: LOCAL_USER_ID },
             timestamp: Date.now(),
             hostId: LOCAL_USER_ID,
             players: [
@@ -29,7 +27,6 @@ export class LocalService extends Service {
                     photo: "player-1-avatar.jpg",
                     state: {
                         ballType: "yellow",
-                        eqippedCue: "basic",
                     },
                     isSpectator: false,
                 },
@@ -74,7 +71,7 @@ export class LocalService extends Service {
         const keyPositions = this.service.hitBalls(powerPercent, angle);
         this.send(Events.HITS, {
             keyPositions,
-            state: this.service.getState(),
+            state: { ...this.service.getState(), roundStart: Date.now() },
             userId: LOCAL_USER_ID,
             roomId: LOCAL_USER_ID,
         });

@@ -25,7 +25,6 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.createLoadingAnimation();
 
         this.load.image(POOL_ASSETS.BACKGROUND, "/game/background.png");
-        this.load.image(POOL_ASSETS.CUE_STICK, "/game/cues/expert.svg");
         this.load.image(POOL_ASSETS.DRAG_ICON, "/game/drag.png");
         this.load.image(POOL_ASSETS.AVATAR, "/images/man.png");
 
@@ -35,8 +34,9 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.load.audio(POOL_ASSETS.SOUND_EFFECTS.BALL_HITTING_TABLE_EDGE, "/sounds/ball-hitting-table-edge.mp3");
 
         // Cues
-        this.load.image(POOL_ASSETS.CUES.BASIC, "/game/cues/basic.svg");
+        this.load.image(POOL_ASSETS.CUES.BASIC, "/game/cues/baisic.svg");
         this.load.image(POOL_ASSETS.CUES.ADVANCED, "/game/cues/advanced.svg");
+
         this.load.image(POOL_ASSETS.CUES.EXPERT, "/game/cues/expert.svg");
         this.load.image(POOL_ASSETS.CUES.SWORD, "/game/cues/sword.svg");
         this.load.image(POOL_ASSETS.CUES.SWORD_WOOD, "/game/cues/wodden-sword.svg");

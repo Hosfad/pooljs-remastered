@@ -3,7 +3,7 @@ import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 
 const MAX_POWER = 30;
-const MAX_STEPS = 250;
+const MAX_STEPS = 500;
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -14,6 +14,7 @@ export interface PoolState {
     totals: Scores;
     players: Scores;
     turnIndex: number;
+    roundStart: number;
 }
 
 export class PoolService {
@@ -28,6 +29,7 @@ export class PoolService {
 
     private turns: BallType[];
     public turnIndex = 0;
+    private roundStart: number = Date.now();
 
     constructor(balls: Ball[], colliders: Collider[], holes: Hole[]) {
         this.balls = balls;
@@ -40,7 +42,11 @@ export class PoolService {
         for (const ball of this.balls) this.totals[ball.ballType]++;
         this.turns = Object.keys(this.totals).filter((t) => this.totals[t as BallType] > 1) as BallType[];
 
-        console.log(Object.keys(this.totals).map((t) => `${t}: ${this.totals[t as BallType]}`).join(", "));
+        console.log(
+            Object.keys(this.totals)
+                .map((t) => `${t}: ${this.totals[t as BallType]}`)
+                .join(", ")
+        );
         console.log("Players", Object.values(this.turns).join(", "));
     }
 
@@ -64,6 +70,7 @@ export class PoolService {
             totals: this.totals,
             players: this.players,
             turnIndex: this.turnIndex,
+            roundStart: this.roundStart,
         };
     }
 
@@ -72,6 +79,7 @@ export class PoolService {
         this.totals = state.totals;
         this.players = state.players;
         this.turnIndex = state.turnIndex;
+        this.roundStart = state.roundStart;
     }
 
     public whoseTurn(): BallType {
@@ -110,9 +118,9 @@ export class PoolService {
     }
 
     private simulate(velocities: Phaser.Math.Vector2[]): KeyPositions {
-        const friction = 0.98;
-        const minVelocity = 0.1;
-        const collisionDamping = 0.95;
+        const friction = 0.99;
+        const minVelocity = 0.01;
+        const collisionDamping = 0.98;
 
         const keyPositions: KeyPositions = [this.getKeyPosition()];
 
@@ -256,7 +264,14 @@ export class PoolService {
         return keyPositions;
     }
 
-    private getNormal(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): { x: number; y: number } {
+    private getNormal(
+        b: Phaser.Math.Vector2,
+        {
+            sprite: {
+                size: { points },
+            },
+        }: Collider
+    ): { x: number; y: number } {
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -281,7 +296,14 @@ export class PoolService {
         return closestNormal;
     }
 
-    private isPointInPolygon(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): boolean {
+    private isPointInPolygon(
+        b: Phaser.Math.Vector2,
+        {
+            sprite: {
+                size: { points },
+            },
+        }: Collider
+    ): boolean {
         const { x, y } = b;
 
         let inside = false;
