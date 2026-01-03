@@ -1,8 +1,8 @@
 import express from "express";
 import { v4 as uuid } from "uuid";
 import WebSocket, { WebSocketServer } from "ws";
-import { POOL_ASSETS } from "./common/pool-constants";
-import type { BallType, CueId } from "./common/pool-types";
+import { POOL_ASSETS, type CueId } from "./common/pool-constants";
+import type { BallType } from "./common/pool-types";
 import {
     Events,
     type EventsData,
@@ -28,7 +28,7 @@ type ServerRoom = {
     timestamp: number;
 };
 
-type Prettify<T> = { [K in keyof T]: T[K]; } & {};
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
 
 export type Room = Prettify<Omit<ServerRoom, "clients"> & { players: Player[] }>;
 
@@ -44,7 +44,11 @@ export type Client = {
 export type Player = Omit<Client, "ws">;
 
 const app = express();
-const server = app.listen(6969, () => console.log("Multiplayer server running on :6969"));
+const server = app.listen(6969, () => {
+    console.log("Multiplayer server running on :6969", process.cwd());
+});
+
+app.use("/assets", express.static(process.cwd() + "/public/assets"));
 
 const wss = new WebSocketServer({ server });
 const rooms: Record<string, ServerRoom> = {};

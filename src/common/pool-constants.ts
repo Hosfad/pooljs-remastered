@@ -33,6 +33,7 @@ export const POOL_ASSETS = {
         EXPERT: "cue-expert",
         SWORD: "cue-sword",
         SWORD_WOOD: "cue-wooden-sword",
+        PALESTINE: "cue-palestine",
     },
     AVATAR: "avatar",
     AVATARS: {
@@ -76,3 +77,38 @@ export const COLORS = {
     accent: "#92cf04ff",
     text: "#ffffff",
 };
+
+export const CUE_DATA = {
+    basic: {
+        id: "basic",
+        power: 70,
+        accuracy: 80,
+    },
+    advanced: {
+        id: "advanced",
+        power: 90,
+        accuracy: 65,
+    },
+    expert: {
+        id: "expert",
+        power: 60,
+        accuracy: 95,
+    },
+    sword: {
+        id: "sword",
+        power: 60,
+        accuracy: 95,
+    },
+    wodden_sword: {
+        id: "wodden_sword",
+        power: 60,
+        accuracy: 95,
+    },
+    palestine: {
+        id: "palestine",
+        power: 60,
+        accuracy: 95,
+    },
+} as const;
+export const CUES = Object.keys(CUE_DATA) as CueId[];
+export type CueId = keyof typeof CUE_DATA;

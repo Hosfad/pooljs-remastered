@@ -40,6 +40,7 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.load.image(POOL_ASSETS.CUES.EXPERT, "/game/cues/expert.svg");
         this.load.image(POOL_ASSETS.CUES.SWORD, "/game/cues/sword.svg");
         this.load.image(POOL_ASSETS.CUES.SWORD_WOOD, "/game/cues/wodden-sword.svg");
+        this.load.image(POOL_ASSETS.CUES.PALESTINE, "/game/cues/palestine.svg");
 
         this.load.on("complete", () => this.transitionToGame());
     }

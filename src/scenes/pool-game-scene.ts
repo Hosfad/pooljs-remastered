@@ -17,7 +17,6 @@ import { MultiplayerService } from "../services/multiplayer-service.tsx";
 import { PoolService } from "../services/pool-service";
 import type { Service } from "../services/service";
 import { DebugPanelModal } from "./components/debug-panel-modal";
-import { SettingsModal } from "./components/settings-modal";
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -56,7 +55,6 @@ export class PoolGameScene extends Phaser.Scene {
     private playedSounds: (number | undefined)[] = [];
 
     private settingsButton: Phaser.GameObjects.Text | undefined;
-    private settingsModal!: SettingsModal;
 
     // Input state
     private mousePosition = new Vector2();
@@ -241,7 +239,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createUI() {
-        this.settingsModal = new SettingsModal(this, this.cameras.main.centerX, this.cameras.main.centerY);
+        //  this.settingsModal = new SettingsModal(this, this.cameras.main.centerX, this.cameras.main.centerY);
 
         const buttonStyle = {
             fontFamily: '"Courier New", monospace',
@@ -253,14 +251,14 @@ export class PoolGameScene extends Phaser.Scene {
             strokeThickness: 2,
         };
 
-        const buttonPosition = this.toTableCoordinates(this.tableWidth + 200, -50);
-        this.settingsButton = this.add
-            .text(buttonPosition.x, buttonPosition.y, "⚙️ SETTINGS", buttonStyle)
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor: true })
-            .setDepth(100);
+        // const buttonPosition = this.toTableCoordinates(this.tableWidth + 200, -50);
+        // this.settingsButton = this.add
+        //     .text(buttonPosition.x, buttonPosition.y, "⚙️ SETTINGS", buttonStyle)
+        //     .setOrigin(0.5)
+        //     .setInteractive({ useHandCursor: true })
+        //     .setDepth(100);
 
-        this.setupButtonHover(this.settingsButton, () => this.settingsModal.show());
+        // this.setupButtonHover(this.settingsButton, () => this.settingsModal.show());
     }
 
     private createBalls() {
@@ -360,7 +358,7 @@ export class PoolGameScene extends Phaser.Scene {
             };
 
             const rightCushion = {
-                points: leftCushion.points.map((p) => ({ x: this.tableWidth - p.x, y: p.y, })),
+                points: leftCushion.points.map((p) => ({ x: this.tableWidth - p.x, y: p.y })),
                 normal: new Vector2(-1, 0),
             };
 

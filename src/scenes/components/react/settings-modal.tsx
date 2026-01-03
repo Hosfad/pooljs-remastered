@@ -1,6 +1,6 @@
 import React from "react";
-import { COLORS } from "../../../common/pool-constants.ts";
-import { CUES, type GameSettings } from "../../../common/pool-types.ts";
+import { COLORS, CUES } from "../../../common/pool-constants.ts";
+import { type GameSettings } from "../../../common/pool-types.ts";
 import { Button } from "./button.tsx";
 import { Slider } from "./slider.tsx";
 
@@ -21,6 +21,8 @@ export function SettingsModal({ isOpen, onClose, settings: initialSettings, onSa
         setSettings({ ...settings, [key]: value });
     };
 
+    const cueImages = CUES.map((cue) => `${import.meta.env.VITE_API_URL}/assets/game/cues/${cue.replace("_", "-")}.svg`);
+    console.log(cueImages);
     const handlePreviousCue = () => {
         setSettings({
             ...settings,
@@ -33,10 +35,6 @@ export function SettingsModal({ isOpen, onClose, settings: initialSettings, onSa
             selectedCueIndex: settings.selectedCueIndex + 1 >= CUES.length ? 0 : settings.selectedCueIndex + 1,
         });
     };
-    const setSettingValue = (key: keyof GameSettings, value: number) => {
-        setSettings({ ...settings, [key]: value });
-    };
-
     const resetSettings = () => {
         setSettings(initialSettings);
     };
@@ -170,9 +168,9 @@ export function SettingsModal({ isOpen, onClose, settings: initialSettings, onSa
                         <div
                             style={{
                                 width: "full",
-                                padding: "2rem",
+                                padding: "1.5rem",
                                 backgroundColor: `${COLORS.primary}30`,
-                                border: `3px solid ${COLORS.dark}`,
+                                border: `3px solid ${COLORS.accent}`,
                                 borderRadius: "0.75rem",
                                 display: "flex",
                                 alignItems: "center",
@@ -182,10 +180,9 @@ export function SettingsModal({ isOpen, onClose, settings: initialSettings, onSa
                             }}
                         >
                             <img
-                                src={`/assets/games/basic.svg`}
+                                src={cueImages[settings.selectedCueIndex]}
                                 style={{
                                     maxWidth: "100%",
-                                    maxHeight: "120px",
                                     objectFit: "contain",
                                 }}
                             />
