@@ -135,12 +135,13 @@ export class PoolGameScene extends Phaser.Scene {
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
             this.keyPositions.push.apply(this.keyPositions, keyPositions);
+            this.service.timerStop();
             this.service.setState(state);
-            this.checkWinner();
-
             this.checkForNewlyPocketedBalls();
+            this.checkWinner();
         });
     }
+
     private loadAvatarsAndCreateInfoHeader(): void {
         // if (this.players) {
         //     this.load.image("player1Avatar", this.players[0]?.photo);
@@ -390,6 +391,10 @@ export class PoolGameScene extends Phaser.Scene {
         if (!this.keyPositions.length) return;
 
         const frame = this.keyPositions.shift()!;
+
+        if (!this.keyPositions.length) {
+            this.service.timerStart();
+        }
 
         frame.forEach((key, i) => {
             const sprite = this.balls[i]!.phaserSprite;

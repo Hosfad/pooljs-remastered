@@ -116,8 +116,6 @@ export class PoolService {
             this.turnIndex = (this.turnIndex + 1) % this.turns.length;
         }
 
-        this.timerStop();
-
         return keyPositions;
     }
 

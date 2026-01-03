@@ -39,9 +39,14 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
     const player1 = players[0];
     const player2 = players[1];
 
-    const imHost = room?.hostId === service.me()?.userId;
     if (!player1 || !player2) return null;
-    const currentPlayerId = imHost ? player1.id : player2.id;
+
+    const imHost = room?.hostId === service.me()?.userId;
+    const whenHost = [player2.id, player1.id];
+    const whenGuest = [player1.id, player2.id];
+
+    const turn = +service.isMyTurn();
+    const currentPlayerId = imHost ? whenHost[turn] : whenGuest[turn];
 
     return (
         <div
