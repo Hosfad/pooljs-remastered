@@ -42,7 +42,7 @@ export const CUE_DATA = {
         accuracy: 95,
     },
 } as const;
-
+export const CUES = Object.keys(CUE_DATA) as CueId[];
 export type CueId = keyof typeof CUE_DATA;
 
 export interface Ball {
@@ -77,3 +77,10 @@ export interface Collider {
     };
     phaserGraphics?: Phaser.GameObjects.Graphics;
 }
+
+export type GameSettings = {
+    masterVolume: number;
+    sfxVolume: number;
+    musicVolume: number;
+    selectedCueIndex: number;
+};

@@ -1,18 +1,23 @@
 import React from "react";
+import { COLORS } from "../../../common/pool-constants.ts";
 import { Events } from "../../../common/server-types";
 import type { Room } from "../../../server";
 import type { MultiplayerService } from "../../../services/multiplayer-service.tsx";
+import { Button } from "./button.tsx";
+import { SettingsModal } from "./settings-modal.tsx";
 
-type Player = {
-    id: string;
-    name: string;
-    initial: string;
+type GameSettings = {
+    masterVolume: number;
+    sfxVolume: number;
+    musicVolume: number;
+    selectedCueIndex: number;
 };
 
 export function PoolLobby({ service }: { service: MultiplayerService }) {
     const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
 
-    const [visable, setVisable] = React.useState(false);
+    const [visable, setVisable] = React.useState(true);
+    const [settingsOpen, setSettingsOpen] = React.useState(false);
 
     React.useEffect(() => {
         service.listen(Events.JOIN_ROOM_RESPONSE, (input) => {
@@ -47,24 +52,15 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
         alert("Invite link copied to clipboard!");
     };
 
-    if (!room) return null;
-
-    const players = room.players ?? [];
+    const players = room?.players ?? [];
     const currentPlayer = service.me();
-    const currentPlayerIsHost = currentPlayer?.userId === room.hostId;
+    const currentPlayerIsHost = currentPlayer?.userId === room?.hostId;
 
     const maxPlayers = 2;
     const emptySlots = maxPlayers - players.length;
 
-    // Color palette
-    const colors = {
-        primary: "#2C5530", // Dark green
-        dark: "#1A1A1A", // Brown
-        accent: "#ffffff", // Light brown
-        text: "#ffffff", // Cream
-    };
-
     const handleStart = () => {
+        if (!room) return;
         if (currentPlayer?.userId !== room.hostId) return alert("Only the host can start the game");
         if (players.length < 2) return alert("At least 2 players are required");
 
@@ -80,7 +76,7 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                     margin: "0 auto",
                     padding: "1.5rem",
                     borderRadius: "1rem",
-                    backgroundColor: colors.dark,
+                    backgroundColor: COLORS.dark,
                     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
                 }}
             >
@@ -88,10 +84,38 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                     style={{
                         borderRadius: "0.75rem",
                         padding: "2rem",
-                        backgroundColor: colors.primary,
-                        border: `3px solid ${colors.dark}`,
+                        backgroundColor: COLORS.primary,
+                        border: `3px solid ${COLORS.dark}`,
+                        position: "relative",
                     }}
                 >
+                    <button
+                        onClick={() => setSettingsOpen(true)}
+                        style={{
+                            position: "absolute",
+                            top: "1rem",
+                            right: "1rem",
+                            width: "2.5rem",
+                            height: "2.5rem",
+                            borderRadius: "0.5rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            transition: "transform 0.2s",
+                            backgroundColor: COLORS.dark,
+                            color: COLORS.text,
+                            border: `2px solid ${COLORS.dark}`,
+                            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+                            fontSize: "1.25rem",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                        title="Settings"
+                    >
+                        ⚙️
+                    </button>
+
                     {/* Header */}
                     <div style={{ textAlign: "center", marginBottom: "2rem" }}>
                         <h1
@@ -99,12 +123,12 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                 fontSize: "2.25rem",
                                 fontWeight: "bold",
                                 marginBottom: "0.5rem",
-                                color: colors.text,
+                                color: COLORS.text,
                             }}
                         >
                             Pool Game Lobby
                         </h1>
-                        <p style={{ fontSize: "1.125rem", color: colors.accent }}>Set up your game and invite players</p>
+                        <p style={{ fontSize: "1.125rem", color: COLORS.accent }}>Set up your game and invite players</p>
                     </div>
 
                     {/* Host Setup */}
@@ -113,8 +137,8 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                             marginBottom: "2rem",
                             padding: "1.5rem",
                             borderRadius: "0.5rem",
-                            backgroundColor: `${colors.dark}30`, // 30 hex for opacity
-                            border: `2px solid ${colors.dark}`,
+                            backgroundColor: `${COLORS.dark}30`,
+                            border: `2px solid ${COLORS.dark}`,
                         }}
                     >
                         <div
@@ -145,8 +169,8 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                         justifyContent: "center",
                                         fontSize: "1.5rem",
                                         fontWeight: "bold",
-                                        backgroundColor: colors.dark,
-                                        color: colors.accent,
+                                        backgroundColor: COLORS.dark,
+                                        color: COLORS.accent,
                                         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
                                     }}
                                 >
@@ -163,7 +187,7 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                         fontSize: "0.875rem",
                                         fontWeight: "500",
                                         marginBottom: "0.5rem",
-                                        color: colors.accent,
+                                        color: COLORS.accent,
                                     }}
                                 >
                                     Your Name
@@ -180,9 +204,9 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                         fontSize: "1.125rem",
                                         fontWeight: "500",
                                         outline: "none",
-                                        backgroundColor: colors.dark,
-                                        color: colors.text,
-                                        border: `2px solid ${colors.dark}`,
+                                        backgroundColor: COLORS.dark,
+                                        color: COLORS.text,
+                                        border: `2px solid ${COLORS.dark}`,
                                         boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.3)",
                                     }}
                                 />
@@ -198,7 +222,7 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                 fontWeight: "600",
                                 marginBottom: "1rem",
                                 textAlign: "center",
-                                color: colors.text,
+                                color: COLORS.text,
                             }}
                         >
                             Players ({players.length}/{maxPlayers})
@@ -230,8 +254,8 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                             gap: "0.5rem",
                                             padding: "0.75rem",
                                             borderRadius: "0.5rem",
-                                            backgroundColor: `${colors.dark}40`,
-                                            border: `2px solid ${colors.dark}`,
+                                            backgroundColor: `${COLORS.dark}40`,
+                                            border: `2px solid ${COLORS.dark}`,
                                         }}
                                     >
                                         <div
@@ -244,8 +268,8 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                                 justifyContent: "center",
                                                 fontSize: "0.875rem",
                                                 fontWeight: "bold",
-                                                backgroundColor: colors.dark,
-                                                color: colors.primary,
+                                                backgroundColor: COLORS.dark,
+                                                color: COLORS.primary,
                                             }}
                                         >
                                             {player.name}
@@ -255,7 +279,7 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                                 fontSize: "0.75rem",
                                                 fontWeight: "500",
                                                 textAlign: "center",
-                                                color: `${colors.text}90`,
+                                                color: `${COLORS.text}90`,
                                                 overflow: "hidden",
                                                 textOverflow: "ellipsis",
                                                 whiteSpace: "nowrap",
@@ -278,7 +302,7 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                             gap: "0.5rem",
                                             padding: "0.75rem",
                                             borderRadius: "0.5rem",
-                                            border: `2px dashed ${colors.dark}80`,
+                                            border: `2px dashed ${COLORS.dark}80`,
                                         }}
                                     >
                                         <div
@@ -289,13 +313,13 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                                 display: "flex",
                                                 alignItems: "center",
                                                 justifyContent: "center",
-                                                backgroundColor: `${colors.dark}60`,
-                                                border: `2px dashed ${colors.dark}60`,
+                                                backgroundColor: `${COLORS.dark}60`,
+                                                border: `2px dashed ${COLORS.dark}60`,
                                             }}
                                         >
-                                            <span style={{ fontSize: "1.5rem", color: `${colors.text}60` }}>?</span>
+                                            <span style={{ fontSize: "1.5rem", color: `${COLORS.text}60` }}>?</span>
                                         </div>
-                                        <span style={{ fontSize: "0.75rem", color: `${colors.text}60` }}>Waiting...</span>
+                                        <span style={{ fontSize: "0.75rem", color: `${COLORS.text}60` }}>Waiting...</span>
                                     </div>
                                 ))}
                             </div>
@@ -304,54 +328,26 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
 
                     {/* Action Buttons */}
                     <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                        <button
-                            onClick={handleInvite}
-                            style={{
-                                flex: "1",
-                                minWidth: "200px",
-                                padding: "0.75rem 1.5rem",
-                                borderRadius: "0.5rem",
-                                fontWeight: "600",
-                                fontSize: "1rem",
-                                cursor: "pointer",
-                                transition: "transform 0.2s",
-                                backgroundColor: colors.dark,
-                                color: colors.text,
-                                border: `2px solid ${colors.dark}`,
-                                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-                        >
+                        <Button onClick={handleInvite} variant="primary" style={{ flex: "1", minWidth: "200px" }}>
                             Copy Invite Link
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             onClick={handleStart}
-                            disabled={currentPlayer?.userId !== room.hostId}
-                            style={{
-                                flex: "1",
-                                minWidth: "200px",
-                                padding: "0.75rem 1.5rem",
-                                borderRadius: "0.5rem",
-                                fontWeight: "600",
-                                fontSize: "1rem",
-                                cursor: currentPlayerIsHost ? "pointer" : "not-allowed",
-                                transition: "transform 0.2s",
-                                backgroundColor: colors.accent,
-                                color: colors.primary,
-                                border: `2px solid ${colors.dark}`,
-                                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-                                opacity: currentPlayerIsHost ? "1" : "0.5",
-                            }}
-                            onMouseEnter={(e) => {
-                                if (currentPlayerIsHost) e.currentTarget.style.transform = "scale(1.05)";
-                            }}
-                            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                            disabled={!currentPlayerIsHost}
+                            variant="dark"
+                            style={{ flex: "1", minWidth: "200px" }}
                         >
                             Start Game
-                        </button>
+                        </Button>
                     </div>
                 </div>
+
+                <SettingsModal
+                    isOpen={settingsOpen}
+                    onClose={() => setSettingsOpen(false)}
+                    settings={service.getSettings()}
+                    onSave={(data) => service.setSettings(data)}
+                />
             </div>
         )
     );

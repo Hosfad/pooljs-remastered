@@ -1,7 +1,7 @@
 /**
  * Pool game specific constants
  */
-export let DEBUG_GRAPHICS = false;
+export let DEBUG_GRAPHICS = true;
 
 export function setDebugGraphics(debug: boolean) {
     DEBUG_GRAPHICS = debug;
@@ -68,4 +68,11 @@ export const SCORED_BALL_AREA = {
     START_X: 100,
     SPACING: 45,
     SCALE: 0.7,
+};
+
+export const COLORS = {
+    primary: "#2C5530",
+    dark: "#1A1A1A",
+    accent: "#92cf04ff",
+    text: "#ffffff",
 };

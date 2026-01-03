@@ -18,6 +18,7 @@ export class MultiplayerService extends LocalService {
             //   Render React
             const reactRoot = document.getElementById("react-root");
             if (reactRoot) {
+                console.log("Rendering React");
                 const root = createRoot(reactRoot);
                 root.render(
                     <React.StrictMode>
