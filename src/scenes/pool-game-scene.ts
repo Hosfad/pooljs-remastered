@@ -118,7 +118,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.add.text(midw, midh - 20, `${winner} WINS!`, { fontSize: "64px" }).setOrigin(0.5);
         this.add.text(midw, midh + 40, "Click to play again!", { fontSize: "32px" }).setOrigin(0.5);
 
-        this.input.once("pointerdown", () => this.scene.restart());
+        this.input.once("pointerdown", () => window.location.reload());
     }
 
     private registerEvents() {

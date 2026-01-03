@@ -89,7 +89,7 @@ export class MultiplayerService extends LocalService {
     }
 
     override winner(): string | undefined {
-        return this.room?.winner;
+        return this.service.winner();
     }
 
     override whoseTurn(): BallType {
