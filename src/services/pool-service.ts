@@ -1,5 +1,6 @@
 import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
+import type { PoolState } from "../common/server-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
 import * as Phaser from "phaser";
 
@@ -11,13 +12,6 @@ const TIMER_DURATION = 30;
 const Vector2 = Phaser.Math.Vector2;
 
 type Scores = Record<BallType, number>;
-
-export interface PoolState {
-    inHole: Record<number, boolean>;
-    totals: Scores;
-    players: Scores;
-    turnIndex: number;
-}
 
 export class PoolService {
     private scene: PoolGameScene;

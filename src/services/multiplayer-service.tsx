@@ -105,7 +105,7 @@ export class MultiplayerService extends LocalService {
         if (!roomId) return [];
 
         const keyPositions = this.service.hitBalls(powerPercent, angle);
-        //   this.call(Events.HITS, { keyPositions: keyPositions, state: this.service.getState(), userId, roomId });
+        this.call(Events.HITS, { keyPositions: keyPositions, state: this.service.getState(), userId, roomId });
 
         return keyPositions;
     }

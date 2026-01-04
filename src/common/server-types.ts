@@ -3,13 +3,13 @@ import type { BallType, KeyPositions } from "./pool-types";
 
 type MiddlewareResponse<TOutput> =
     | {
-          success: true;
-          data: TOutput;
-          error?: null;
-      }
+        success: true;
+        data: TOutput;
+        error?: null;
+    }
     | {
-          error: string;
-      };
+        error: string;
+    };
 
 export type Middleware<TInput, TOutput = unknown> = (
     data: TInput
@@ -72,9 +72,9 @@ export type WebsocketError = {
 export type WebsocketRespone<T> =
     | WebsocketError
     | {
-          type: "success";
-          data: T;
-      };
+        type: "success";
+        data: T;
+    };
 
 export type EventsData = {
     [Events.JOIN_ROOM]: { userId: string; name: string; roomId?: string };
@@ -103,5 +103,4 @@ export interface PoolState {
     totals: Record<BallType, number>;
     players: Record<BallType, number>;
     turnIndex: number;
-    roundStart: number;
 }
