@@ -1,7 +1,7 @@
-import * as Phaser from "phaser";
 import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
+import * as Phaser from "phaser";
 
 const MAX_POWER = 30;
 const MAX_STEPS = 500;
@@ -20,6 +20,7 @@ export interface PoolState {
 }
 
 export class PoolService {
+    private scene: PoolGameScene;
     private colliders: Collider[];
     private balls: Ball[];
     private holes: Hole[];
@@ -36,6 +37,7 @@ export class PoolService {
     private turnIndex = 0;
 
     constructor(scene: PoolGameScene) {
+        this.scene = scene;
         this.balls = scene.balls;
         this.colliders = scene.colliders;
         this.holes = scene.holes;
@@ -133,8 +135,11 @@ export class PoolService {
     }
 
     private getKeyPosition() {
+        const mwidth = this.scene.marginX;
+        const mheight = this.scene.marginY;
+
         return this.balls.map((b, i) => ({
-            position: new Vector2(b.phaserSprite.x, b.phaserSprite.y),
+            position: new Vector2(b.phaserSprite.x - mwidth, b.phaserSprite.y - mheight),
             hidden: this.inHole[i] === true,
             collision: this.collisions[i],
         }));
@@ -280,10 +285,13 @@ export class PoolService {
 
         if (this.inHole[whiteball] || !hitBallType) {
             this.inHole[whiteball] = this.inHole[blackball] === true;
-            const wb = this.balls[whiteball]!;
-            wb.phaserSprite.setPosition(window.innerWidth / 2, window.innerHeight / 2);
+            this.balls[whiteball]!.phaserSprite.setPosition(
+                window.innerWidth / 2,
+                window.innerHeight / 2,
+            );
             keyPositions.push(this.getKeyPosition());
         }
+
         return keyPositions;
     }
 

@@ -35,10 +35,10 @@ export class PoolGameScene extends Phaser.Scene {
     private cue!: Cue;
 
     // Dynamic dimensions based on device scale
-    private tableWidth!: number;
-    private tableHeight!: number;
-    private marginX!: number;
-    private marginY!: number;
+    public tableWidth!: number;
+    public tableHeight!: number;
+    public marginX!: number;
+    public marginY!: number;
 
     private powerMeter!: {
         background: Phaser.GameObjects.Graphics;
@@ -171,7 +171,7 @@ export class PoolGameScene extends Phaser.Scene {
         const availableHeight = canvasHeight - 2 * this.marginY;
 
         // Maintain the original table aspect ratio
-        const originalAspectRatio = 16 / 10;
+        const originalAspectRatio = 16 / 9;
         const availableAspectRatio = availableWidth / availableHeight;
 
         if (availableAspectRatio > originalAspectRatio) {
@@ -392,15 +392,14 @@ export class PoolGameScene extends Phaser.Scene {
 
         const frame = this.keyPositions.shift()!;
 
-        if (!this.keyPositions.length) {
-            this.service.timerStart();
-        }
+        if (!this.keyPositions.length) this.service.timerStart();
 
         frame.forEach((key, i) => {
             const sprite = this.balls[i]!.phaserSprite;
             if (!sprite.visible && i < this.balls.length - 1) return;
 
-            const pos = key.position;
+            const pos = this.toTableCoordinates(key.position.x, key.position.y);
+
             // increment rotation angle of sprite
             if (pos.x + pos.y != sprite.x + sprite.y) sprite.rotation += 0.1;
             sprite.setPosition(pos.x, pos.y);
