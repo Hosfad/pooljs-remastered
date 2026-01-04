@@ -37,7 +37,10 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
             if (type === "error") {
                 const { code: errCode, message: errMessage } = input;
                 setVisible(false);
-                return console.error("Error joining room", errCode, errMessage);
+                return service.showErrorModal({
+                    title: "Error joining room",
+                    description: errMessage,
+                });
             }
 
             const room = input.data;
@@ -54,7 +57,11 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
         service.listen(Events.MATCH_MAKE_START_RESPONSE, (input) => {
             const { type } = input;
             if (type === "error") {
-                return console.error("Error starting matchmaking", input);
+                const { code: errCode, message: errMessage } = input;
+                return service.showErrorModal({
+                    title: "Error starting matchmaking",
+                    description: errMessage,
+                });
             }
             setLobbyState("matchmaking");
         });
@@ -62,9 +69,35 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
         service.listen(Events.MATCH_MAKE_CANCEL_RESPONSE, (input) => {
             const { type } = input;
             if (type === "error") {
-                return console.error("Error cancelling matchmaking", input);
+                const { code: errCode, message: errMessage } = input;
+                return service.showErrorModal({
+                    title: "Error cancelling matchmaking",
+                    description: errMessage,
+                });
             }
             setLobbyState("lobby");
+        });
+
+        service.listen(Events.KICK_PLAYER, (input) => {
+            const { kickTargetId } = input;
+            if (kickTargetId === currentPlayer?.userId) {
+                service.showErrorModal({
+                    title: "You were kicked from the lobby",
+                });
+                setTimeout(() => window.location.replace("/"), 3000);
+                return;
+            }
+
+            // filter out the kicked player
+            setRoom((prev) => {
+                if (!prev) return prev;
+                const newPlayers = prev!.players.filter((p) => p.id !== kickTargetId);
+                return { ...prev, players: newPlayers };
+            });
+            service.showErrorModal({
+                title: "Player was kicked from the lobby",
+                description: `Player ${kickTargetId} was kicked from the lobby`,
+            });
         });
 
         service.listen(Events.INIT, (input) => {
@@ -74,8 +107,12 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
 
     const handleInvite = () => {
         navigator.clipboard.writeText(window.location.href);
-        alert("Invite link copied to clipboard!");
+        service.showErrorModal({
+            title: "Invite link copied to clipboard!",
+            closeAfter: 1500,
+        });
     };
+
     const players = room?.players ?? [];
     const currentPlayer = service.me();
 
@@ -103,6 +140,10 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
         if (players.length < 2) return alert("At least 2 players are required");
 
         service.call(Events.START_GAME, { userId: currentPlayer.userId, roomId: room.id });
+    };
+    const handleKickPlayer = (id: string) => {
+        if (!currentPlayerIsHost || !currentPlayer || !room) return;
+        service.call(Events.KICK_PLAYER, { userId: currentPlayer.userId, roomId: room.id, kickTargetId: id });
     };
 
     return (
@@ -147,7 +188,7 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                                 {players.map((player) => (
                                                     <div
                                                         key={player.id}
-                                                        className="flex flex-col h-full items-center justify-center gap-0.5 p-1 rounded-lg bg-dark/40 border border-dark"
+                                                        className="relative flex flex-col h-full items-center justify-center gap-0.5 p-1 rounded-lg bg-dark/40 border border-dark"
                                                     >
                                                         <div className="w-10 h-10   rounded-full flex items-center justify-center text-[8px] sm:text-[10px] font-bold bg-dark text-pri">
                                                             {player.name.charAt(0).toUpperCase()}
@@ -155,6 +196,14 @@ export function PoolLobby({ service }: { service: MultiplayerService }) {
                                                         <span className="text-[8px] sm:text-[9px] font-medium text-center text-text/90 truncate w-full">
                                                             {player.name}
                                                         </span>
+                                                        {currentPlayerIsHost && player.id !== room?.hostId && (
+                                                            <Button
+                                                                onClick={() => handleKickPlayer(player.id)}
+                                                                className="absolute top-1 right-1 w-4 h-4"
+                                                            >
+                                                                x
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 ))}
 

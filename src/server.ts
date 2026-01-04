@@ -23,6 +23,7 @@ type ServerRoom = {
     hostId: string;
     timestamp: number;
     isMatchMaking: boolean;
+    kickedPlayers?: string[];
 };
 
 type Prettify<T> = { [K in keyof T]: T[K] } & {};
@@ -81,6 +82,14 @@ wss.on("connection", (ws) => {
             });
         }
 
+        if (room.kickedPlayers?.includes(senderId)) {
+            return sendEvent(ws, Events.JOIN_ROOM_RESPONSE, {
+                type: "error",
+                message: "You were kicked from the lobby",
+                code: "kicked-from-lobby",
+            });
+        }
+
         const isSpectator = room.clients.length >= MAX_PLAYERS_PER_ROOM;
 
         // Update existing client (Should close the old ws connection here)
@@ -124,8 +133,8 @@ wss.on("connection", (ws) => {
         if (room.clients.length === 2)
             return sendEvent(ws, Events.MATCH_MAKE_START_RESPONSE, {
                 type: "error",
-                message: "Room is full (match make start)",
-                code: "room-full",
+                message: "Room is full (match make start). Please wait for the current match to end",
+                code: "room-full-match-in-progress",
             });
 
         room.isMatchMaking = true;
@@ -140,6 +149,35 @@ wss.on("connection", (ws) => {
 
         room.isMatchMaking = false;
         sendEvent(ws, Events.MATCH_MAKE_CANCEL_RESPONSE, { type: "success", data: { roomId: room.id } });
+    });
+
+    eventListener.on(Events.KICK_PLAYER, withRoomAuthMiddleware, (data) => {
+        const { roomId, userId: senderId, kickTargetId } = data;
+        const room = getRoom(roomId);
+        if (!room) return console.error("Room not found (kick player)", roomId);
+        if (room.hostId !== senderId) return console.error("Only the host can kick players", roomId);
+        if (room.clients.length < 2) return console.error("Cannot kick player your self", roomId);
+
+        const client = room.clients.find((c) => c.id === kickTargetId);
+        if (!client) return console.error("Client not found", roomId);
+        broadcastEvent(
+            {
+                roomId,
+                senderId,
+            },
+            Events.KICK_PLAYER,
+            {
+                type: "success",
+                roomId,
+                userId: senderId,
+                kickTargetId,
+            }
+        );
+        room.clients = room.clients.filter((c) => c.id !== kickTargetId);
+        room.kickedPlayers = room.kickedPlayers ?? [];
+        room.kickedPlayers.push(kickTargetId);
+        client.ws.close();
+        rooms[room.id] = room;
     });
 
     eventListener.on(Events.PLAYER_DISCONNECT, withRoomAuthMiddleware, (data) => {

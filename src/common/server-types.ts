@@ -44,6 +44,7 @@ export enum Events {
     MATCH_MAKE_START_RESPONSE = "match-make-start-response",
     MATCH_MAKE_CANCEL = "match-make-cancel",
     MATCH_MAKE_CANCEL_RESPONSE = "match-make-cancel-response",
+    KICK_PLAYER = "kick-player",
 
     PLAYER_DISCONNECT = "player-disconnect",
 
@@ -53,6 +54,7 @@ export enum Events {
     HITS = "hit",
 
     ERROR_ROOM_FULL = "error-room-full",
+    SHOW_MODAL = "show-error-modal",
 }
 
 type RoomId = {
@@ -83,6 +85,7 @@ export type EventsData = {
     [Events.MATCH_MAKE_START_RESPONSE]: WebsocketRespone<RoomId>;
     [Events.MATCH_MAKE_CANCEL]: RoomEventBodyOptions;
     [Events.MATCH_MAKE_CANCEL_RESPONSE]: WebsocketRespone<RoomId>;
+    [Events.KICK_PLAYER]: RoomEventBodyOptions & { kickTargetId: string };
 
     [Events.PLAYER_DISCONNECT]: RoomEventBodyOptions;
 
@@ -92,6 +95,7 @@ export type EventsData = {
 
     // ERRORS
     [Events.ERROR_ROOM_FULL]: WebsocketRespone<RoomId>;
+    [Events.SHOW_MODAL]: { title: string; description?: string; closeAfter?: number };
 };
 
 export interface PoolState {

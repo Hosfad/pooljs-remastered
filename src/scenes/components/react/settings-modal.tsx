@@ -82,7 +82,7 @@ export function SettingsModal({ isOpen, onClose, settings: initialSettings, onSa
                     <h3 className="text-xl sm:text-2xl font-semibold text-accent text-center mb-3 sm:mb-4">Cue Selection</h3>
 
                     {/* Cue Display Box */}
-                    <div className="w-full p-4 sm:p-6 bg-primary/30 border-2 sm:border-3 border-accent rounded-xl flex items-center justify-center min-h-[60px] sm:min-h-[80px] mb-4 sm:mb-6">
+                    <div className="w-full p-4 sm:p-6 bg-primary/30 border-2 sm:border-3 border-accent rounded-xl flex items-center justify-center md:min-h-[140px] md:max-h-[140px] min-h-[100px] max-h-[100px] mb-4 sm:mb-6">
                         <img
                             src={cueImages[settings.selectedCueIndex] || "/placeholder.svg"}
                             className="max-w-full object-contain"

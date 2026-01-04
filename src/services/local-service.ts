@@ -31,6 +31,7 @@ export class LocalService extends Service {
                     isSpectator: false,
                 },
             ],
+            isMatchMaking: false,
         };
 
         return new Promise((resolve) => {
@@ -48,7 +49,7 @@ export class LocalService extends Service {
     }
 
     override timerStop(): void {
-        this.service.timerStop()
+        this.service.timerStop();
     }
 
     public override getPlayers(): Player[] {

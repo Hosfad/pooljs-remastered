@@ -2,7 +2,7 @@ import * as Phaser from "phaser";
 
 import { v4 as uuid } from "uuid";
 import type { BallType, GameSettings, KeyPositions } from "../common/pool-types";
-import type { EventsData } from "../common/server-types";
+import { Events, type EventsData } from "../common/server-types";
 import type { Player, Room } from "../server";
 
 export abstract class Service {
@@ -125,4 +125,10 @@ export abstract class Service {
     abstract timerLeft(): number;
 
     abstract timerStop(): void;
+
+    public showErrorModal(data: { title: string; description?: string; closeAfter?: number }) {
+        const { title, description, closeAfter } = data;
+
+        this.send(Events.SHOW_MODAL, { title, description, closeAfter });
+    }
 }
