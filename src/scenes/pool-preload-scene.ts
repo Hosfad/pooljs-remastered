@@ -18,8 +18,13 @@ export class PoolPreLoadScene extends Phaser.Scene {
         // Load all the assets
         this.load.svg(POOL_ASSETS.WHITE_BALL, "/game/balls/white.svg");
         this.load.svg(POOL_ASSETS.BLACK_BALL, "/game/balls/black.svg");
-        this.load.svg(POOL_ASSETS.STRIPED_BALL, "/game/balls/11.svg");
-        this.load.svg(POOL_ASSETS.SOLID_BALL, "/game/balls/1.svg");
+
+        const solid = Object.values(POOL_ASSETS.SOLID);
+        const stripes = Object.values(POOL_ASSETS.STRIPES);
+        for (let i = 0; i < solid.length; i++) {
+            this.load.svg(solid[i]!, `/game/balls/${i + 1}.svg`);
+            this.load.svg(stripes[i]!, `/game/balls/${i + stripes.length + 2}.svg`);
+        }
 
         // Create animation AFTER assets are loaded
         this.createLoadingAnimation();

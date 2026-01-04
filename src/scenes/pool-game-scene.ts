@@ -12,7 +12,7 @@ import {
     POOL_ASSETS,
     POOL_SCENE_KEYS,
 } from "../common/pool-constants";
-import { type Ball, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
+import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
 import { Events } from "../common/server-types";
 import { MultiplayerService } from "../services/multiplayer-service.tsx";
 import { PoolService } from "../services/pool-service";
@@ -215,6 +215,8 @@ export class PoolGameScene extends Phaser.Scene {
         const COL_SPACING = DIAMETER * 0.8;
 
         const rackOrigin = { x: this.tableWidth / 4, y: this.tableHeight / 2 };
+        const solids = Object.values(POOL_ASSETS.SOLID);
+        const stripes = Object.values(POOL_ASSETS.STRIPES);
 
         // --- Create racked balls (triangle) ---
         for (let row = 0; row < ROWS; row++) {
@@ -224,11 +226,11 @@ export class PoolGameScene extends Phaser.Scene {
 
             for (let i = 0; i < ballsInRow; i++) {
                 const isSolid = i % 2 === 0;
-                const ballType = isSolid ? "yellow" : "red";
-                const texture = isSolid ? POOL_ASSETS.SOLID_BALL : POOL_ASSETS.STRIPED_BALL;
+                const ballType: BallType = isSolid ? "solid" : "striped";
+                const texture = isSolid ? solids.shift() : stripes.shift();
 
                 const y = startY + i * ROW_SPACING;
-                this.createBall(x, y, ballType, texture);
+                this.createBall(x, y, ballType, texture || POOL_ASSETS.WHITE_BALL);
             }
         }
 

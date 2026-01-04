@@ -13,10 +13,26 @@ export function setGlobalModalOpenVariable(open: boolean) {
 
 export const POOL_ASSETS = {
     BACKGROUND: "background",
-    WHITE_BALL: "spr_ball2",
-    SOLID_BALL: "spr_yellowBall2",
-    STRIPED_BALL: "spr_redBall2",
-    BLACK_BALL: "spr_blackBall2",
+    SOLID: {
+        ONE: "yellow-ball-1",
+        TWO: "blue-ball-2",
+        THREE: "red-ball-3",
+        FOUR: "purple-ball-4",
+        FIVE: "orange-ball-5",
+        SIX: "green-ball-6",
+        SEVEN: "red-ball-7",
+    },
+    STRIPES: {
+        NINE: "yellow-ball-9",
+        TEN: "blue-ball-10",
+        ELEVEN: "red-ball-11",
+        TWELVE: "purple-ball-12",
+        THIRTEEN: "orange-ball-13",
+        FOURTEEN: "green-ball-14",
+        FIFTEEN: "red-ball-15",
+    },
+    WHITE_BALL: "white-ball",
+    BLACK_BALL: "black-ball-8",
     DRAG_ICON: "drag",
     LOADING_BACKGROUND: "loading-background",
     SOUND_EFFECTS: {
