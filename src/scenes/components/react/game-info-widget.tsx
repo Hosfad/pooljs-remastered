@@ -28,7 +28,9 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
         if (!room) return;
 
         setTimeLeft(ROUND_TIME);
-        const interval = setInterval(() => { setTimeLeft(service.timerLeft()); }, 200);
+        const interval = setInterval(() => {
+            setTimeLeft(service.timerLeft());
+        }, 200);
 
         return () => clearInterval(interval);
     }, [room]);

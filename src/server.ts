@@ -22,6 +22,7 @@ type ServerRoom = {
     winner?: string;
     hostId: string;
     timestamp: number;
+    isMatchMaking: boolean;
 };
 
 type Prettify<T> = { [K in keyof T]: T[K] } & {};
@@ -36,7 +37,9 @@ export type Client = {
     isSpectator: boolean;
     state: { ballType: BallType };
     ws: WebSocket;
+    disconnectedAt?: number;
 };
+
 export type Player = Omit<Client, "ws">;
 
 const app = express();
@@ -45,6 +48,7 @@ const server = app.listen(6969, () => {
 });
 
 const wss = new WebSocketServer({ server });
+
 const rooms: Record<string, ServerRoom> = {};
 
 const NUM_AVATARS = 6;
@@ -53,15 +57,12 @@ wss.on("connection", (ws) => {
     let client: Client | null = null;
 
     const eventListener = createEventListener(ws);
-
-    // This only allows existing users through
-
-    // Broadcast events
-    // Dont check for existing user for joining
+    const withRoomAuthMiddleware = roomAuthMiddleware();
 
     eventListener.on(Events.JOIN_ROOM, (data) => {
         const { roomId, userId: senderId, name } = data;
-        const room = getRoom(roomId);
+        const room = roomId ? getRoom(roomId) : null;
+
         if (!room) {
             const finalId = roomId ?? uuid();
             const newRoom = createNewRoom({ userId: senderId, name }, ws, finalId);
@@ -72,24 +73,35 @@ wss.on("connection", (ws) => {
             return;
         }
 
+        if (room.isMatchMaking) {
+            return sendEvent(ws, Events.JOIN_ROOM_RESPONSE, {
+                type: "error",
+                message: "Match making is already in progress",
+                code: "match-making-in-progress",
+            });
+        }
+
         const isSpectator = room.clients.length >= MAX_PLAYERS_PER_ROOM;
 
+        // Update existing client (Should close the old ws connection here)
         const existingClient = room.clients.find((c) => c.id === senderId);
-
-        if (!existingClient) {
-            room.clients.push({
-                id: senderId,
-                name,
-                ws,
-                photo: `/assets/avatars/${Math.floor(Math.random() * NUM_AVATARS)}.png`,
-                roomId: room.id,
-                state: {
-                    ballType: room.clients.length % 2 === 0 ? "yellow" : "red",
-                },
-                isSpectator,
-            });
-            rooms[room.id] = room;
+        if (existingClient) {
+            room.clients = room.clients.filter((c) => c.id !== senderId);
         }
+
+        room.clients.push({
+            id: senderId,
+            name,
+            ws,
+            photo: `/assets/avatars/${Math.floor(Math.random() * NUM_AVATARS)}.png`,
+            roomId: room.id,
+            state: {
+                ballType: room.clients.length % 2 === 0 ? "yellow" : "red",
+            },
+            isSpectator,
+        });
+
+        rooms[room.id] = room;
 
         broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.JOIN_ROOM_RESPONSE, {
             type: "success",
@@ -97,8 +109,53 @@ wss.on("connection", (ws) => {
         });
     });
 
-    // make sure there is userId and roomId
-    const withRoomAuthMiddleware = roomAuthMiddleware();
+    eventListener.on(Events.MATCH_MAKE_START, (data) => {
+        const { roomId, userId: senderId } = data;
+        const room = getRoom(roomId);
+        // Room not found
+        if (!room)
+            return sendEvent(ws, Events.MATCH_MAKE_START_RESPONSE, {
+                type: "error",
+                message: "Room not found (match make start)",
+                code: "room-not-found",
+            });
+
+        // Room is full
+        if (room.clients.length === 2)
+            return sendEvent(ws, Events.MATCH_MAKE_START_RESPONSE, {
+                type: "error",
+                message: "Room is full (match make start)",
+                code: "room-full",
+            });
+
+        room.isMatchMaking = true;
+        sendEvent(ws, Events.MATCH_MAKE_START_RESPONSE, { type: "success", data: { roomId: room.id } });
+    });
+
+    eventListener.on(Events.MATCH_MAKE_CANCEL, (data) => {
+        const { roomId, userId: senderId } = data;
+        const room = getRoom(roomId);
+        if (!room) return console.error("Room not found (match make cancel)", roomId);
+        if (room.clients.length === 2) return console.error("Match already found (match make cancel)", roomId);
+
+        room.isMatchMaking = false;
+        sendEvent(ws, Events.MATCH_MAKE_CANCEL_RESPONSE, { type: "success", data: { roomId: room.id } });
+    });
+
+    eventListener.on(Events.PLAYER_DISCONNECT, withRoomAuthMiddleware, (data) => {
+        const { roomId, userId: senderId } = data;
+        const room = getRoom(roomId);
+        if (!room) return;
+        const client = room.clients.find((c) => c.id === senderId);
+        if (!client) return;
+        client.disconnectedAt = Date.now();
+
+        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.PLAYER_DISCONNECT, {
+            roomId: room.id,
+            userId: senderId,
+            type: "success",
+        });
+    });
 
     eventListener.on(Events.START_GAME, withRoomAuthMiddleware, (data) => {
         const { roomId, userId: senderId } = data;
@@ -135,12 +192,12 @@ const createNewRoom = (user: { userId: string; name: string }, ws: WebSocket, ro
     const finalId = roomId ?? uuid();
     const { userId, name: username } = user;
 
-    const room = {
+    const room: ServerRoom = {
         id: finalId,
         clients: [] as Client[],
-        currentRound: { round: 0, startTime: Date.now(), userId: userId! },
         timestamp: Date.now(),
         hostId: userId,
+        isMatchMaking: false,
     };
 
     const client: Client = {
@@ -174,15 +231,15 @@ function roomAuthMiddleware<TInput extends RoomEventBodyOptions>(existigUserOnly
     return middleware;
 }
 
-function getRoom(roomId?: string) {
+function getRoom(roomId: string) {
     if (!roomId) return null;
 
-    if (!rooms[roomId]) {
+    const room = rooms[roomId];
+
+    if (!room) {
         console.error("Room not found", roomId);
         return null;
     }
-
-    const room = rooms[roomId];
     const filteredClients = room.clients.filter((c) => c.ws.readyState === WebSocket.OPEN);
 
     return { ...room, clients: filteredClients };

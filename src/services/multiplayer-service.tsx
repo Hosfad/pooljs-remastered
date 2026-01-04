@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { type BallType, type KeyPositions } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
+import { ActionButtons } from "../scenes/components/react/action-buttons";
 import { GameInfoWidget } from "../scenes/components/react/game-info-widget";
 import { PoolLobby } from "../scenes/components/react/lobby";
 import type { Player } from "../server";
@@ -29,6 +30,7 @@ export class MultiplayerService extends LocalService {
                     <React.StrictMode>
                         <PoolLobby service={this} />
                         <GameInfoWidget service={this} />
+                        <ActionButtons service={this} />
                     </React.StrictMode>
                 );
             }
@@ -51,10 +53,12 @@ export class MultiplayerService extends LocalService {
 
                 this.eventHandlers.get(event)?.forEach((handler) => handler(data));
             };
-
-            this.ws.onclose = () => {
-                console.log("WebSocket closed");
-            };
+            window.addEventListener("beforeunload", () => {
+                this.call(Events.PLAYER_DISCONNECT, { userId: this.me()?.userId!, roomId: this.getRoomId()! });
+                setTimeout(() => {
+                    this.ws?.close();
+                }, 400);
+            });
 
             return true;
         } catch (error) {
@@ -101,7 +105,7 @@ export class MultiplayerService extends LocalService {
         if (!roomId) return [];
 
         const keyPositions = this.service.hitBalls(powerPercent, angle);
-        this.call(Events.HITS, { keyPositions: keyPositions, state: this.service.getState(), userId, roomId });
+        //   this.call(Events.HITS, { keyPositions: keyPositions, state: this.service.getState(), userId, roomId });
 
         return keyPositions;
     }

@@ -40,6 +40,12 @@ export enum Events {
     JOIN_ROOM = "join-room",
     JOIN_ROOM_RESPONSE = "join-room-response",
     START_GAME = "game-start",
+    MATCH_MAKE_START = "match-make-start",
+    MATCH_MAKE_START_RESPONSE = "match-make-start-response",
+    MATCH_MAKE_CANCEL = "match-make-cancel",
+    MATCH_MAKE_CANCEL_RESPONSE = "match-make-cancel-response",
+
+    PLAYER_DISCONNECT = "player-disconnect",
 
     INIT = "game-init",
     ENDS = "game-end",
@@ -72,6 +78,13 @@ export type EventsData = {
     [Events.JOIN_ROOM]: { userId: string; name: string; roomId?: string };
     [Events.JOIN_ROOM_RESPONSE]: WebsocketRespone<Room>;
     [Events.START_GAME]: RoomEventBodyOptions;
+
+    [Events.MATCH_MAKE_START]: RoomEventBodyOptions;
+    [Events.MATCH_MAKE_START_RESPONSE]: WebsocketRespone<RoomId>;
+    [Events.MATCH_MAKE_CANCEL]: RoomEventBodyOptions;
+    [Events.MATCH_MAKE_CANCEL_RESPONSE]: WebsocketRespone<RoomId>;
+
+    [Events.PLAYER_DISCONNECT]: RoomEventBodyOptions;
 
     [Events.HITS]: RoomEventBodyOptions & { keyPositions: KeyPositions; state: PoolState };
     [Events.PULL]: RoomEventBodyOptions & { x: number; y: number; angle: number };

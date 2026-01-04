@@ -1,7 +1,10 @@
+"use client";
+
 import React from "react";
-import { COLORS, CUES } from "../../../common/pool-constants.ts";
-import { type GameSettings } from "../../../common/pool-types.ts";
+import { CUES } from "../../../common/pool-constants.ts";
+import type { GameSettings } from "../../../common/pool-types.ts";
 import { Button } from "./button.tsx";
+import { Modal } from "./modal.tsx";
 import { Slider } from "./slider.tsx";
 
 interface SettingsModalProps {
@@ -12,227 +15,102 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose, settings: initialSettings, onSave }: SettingsModalProps) {
-    if (!isOpen) return null;
-    const [_] = React.useState();
-
     const [settings, setSettings] = React.useState<GameSettings>(initialSettings);
+
+    if (!isOpen) return null;
 
     const changeSetting = (key: keyof GameSettings, value: number) => {
         setSettings({ ...settings, [key]: value });
     };
 
     const cueImages = CUES.map((cue) => `/assets/game/cues/${cue.replace("_", "-")}.svg`);
-    console.log(cueImages);
+
     const handlePreviousCue = () => {
         setSettings({
             ...settings,
             selectedCueIndex: settings.selectedCueIndex === 0 ? CUES.length - 1 : settings.selectedCueIndex - 1,
         });
     };
+
     const handleNextCue = () => {
         setSettings({
             ...settings,
             selectedCueIndex: settings.selectedCueIndex + 1 >= CUES.length ? 0 : settings.selectedCueIndex + 1,
         });
     };
+
     const resetSettings = () => {
         setSettings(initialSettings);
     };
 
     return (
-        <div
-            style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 1000,
-            }}
-        >
-            <div
-                style={{
-                    borderRadius: "3rem",
-                    padding: "2rem",
-                    backgroundColor: COLORS.primary,
-                    border: `30px solid ${COLORS.dark}`,
-                    position: "relative",
-                }}
-            >
-                {/* Header */}
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: "1.5rem",
-                    }}
-                >
-                    <h2
-                        style={{
-                            fontSize: "2rem",
-                            fontWeight: "bold",
-                            color: COLORS.accent,
-                            margin: 0,
-                        }}
-                    >
-                        Game Settings
-                    </h2>
+        <Modal isOpen={isOpen} onClose={onClose} title="Game Settings">
+            <div className="flex flex-col gap-4 p-2 sm:p-4 ">
+                {/* Audio Settings Section */}
+                <div>
+                    <h3 className="text-xl sm:text-2xl font-semibold text-accent text-center mb-3 sm:mb-4">
+                        Audio Settings
+                    </h3>
 
-                    <Button onClick={onClose} variant="dark">
-                        X
-                    </Button>
+                    <Slider
+                        label="Master Volume"
+                        value={settings.masterVolume}
+                        onChange={(value) => changeSetting("masterVolume", value)}
+                        showValue={true}
+                        valueSuffix="%"
+                    />
+
+                    <Slider
+                        label="SFX Volume"
+                        value={settings.sfxVolume}
+                        onChange={(value) => changeSetting("sfxVolume", value)}
+                        showValue={true}
+                        valueSuffix="%"
+                    />
+
+                    <Slider
+                        label="Music Volume"
+                        value={settings.musicVolume}
+                        onChange={(value) => changeSetting("musicVolume", value)}
+                        showValue={true}
+                        valueSuffix="%"
+                    />
                 </div>
 
-                {/* Content */}
-                <div
-                    style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "1rem",
-                        padding: "1rem",
-                    }}
-                >
-                    {/* Audio Settings Section */}
-                    <div>
-                        <h3
-                            style={{
-                                fontSize: "1.5rem",
-                                fontWeight: "600",
-                                color: COLORS.accent,
-                                textAlign: "center",
-                                marginBottom: "1rem",
-                            }}
-                        >
-                            Audio Settings
-                        </h3>
+                {/* Cue Selection Section */}
+                <div>
+                    <h3 className="text-xl sm:text-2xl font-semibold text-accent text-center mb-3 sm:mb-4">Cue Selection</h3>
 
-                        {/* Master Volume Slider */}
-
-                        <Slider
-                            label="Master Volume"
-                            value={settings.masterVolume}
-                            onChange={(value) => changeSetting("masterVolume", value)}
-                            backgroundColor={`${COLORS.primary}30`}
-                            borderColor={COLORS.accent}
-                            textColor={COLORS.accent}
-                            fillColor={COLORS.accent}
-                            showValue={true}
-                            valueSuffix="%"
-                        />
-
-                        <Slider
-                            label="SFX Volume"
-                            value={settings.sfxVolume}
-                            onChange={(value) => changeSetting("sfxVolume", value)}
-                            backgroundColor={`${COLORS.primary}30`}
-                            borderColor={COLORS.accent}
-                            textColor={COLORS.accent}
-                            fillColor={COLORS.accent}
-                            showValue={true}
-                            valueSuffix="%"
-                        />
-
-                        <Slider
-                            label="Music Volume"
-                            value={settings.musicVolume}
-                            onChange={(value) => changeSetting("musicVolume", value)}
-                            backgroundColor={`${COLORS.primary}30`}
-                            borderColor={COLORS.accent}
-                            fillColor={COLORS.accent}
-                            textColor={COLORS.accent}
-                            showValue={true}
-                            valueSuffix="%"
+                    {/* Cue Display Box */}
+                    <div className="w-full p-4 sm:p-6 bg-primary/30 border-2 sm:border-3 border-accent rounded-xl flex items-center justify-center min-h-[60px] sm:min-h-[80px] mb-4 sm:mb-6">
+                        <img
+                            src={cueImages[settings.selectedCueIndex] || "/placeholder.svg"}
+                            className="max-w-full object-contain"
+                            alt="Selected cue"
                         />
                     </div>
 
-                    {/* Cue Selection Section */}
-                    <div>
-                        <h3
-                            style={{
-                                fontSize: "1.5rem",
-                                fontWeight: "600",
-                                color: COLORS.accent,
-                                textAlign: "center",
-                                marginBottom: "1rem",
-                            }}
-                        >
-                            Cue Selection
-                        </h3>
+                    {/* Navigation Arrows */}
+                    <div className="flex justify-center gap-16 sm:gap-32 mb-6 sm:mb-8">
+                        <Button variant="dark" onClick={handlePreviousCue} className="!px-4 !py-3">
+                            <div className="w-0 h-0 border-t-[12px] sm:border-t-[15px] border-t-transparent border-b-[12px] sm:border-b-[15px] border-b-transparent border-r-[16px] sm:border-r-[20px] border-r-accent" />
+                        </Button>
+                        <Button variant="dark" onClick={handleNextCue} className="!px-4 !py-3">
+                            <div className="w-0 h-0 border-t-[12px] sm:border-t-[15px] border-t-transparent border-b-[12px] sm:border-b-[15px] border-b-transparent border-l-[16px] sm:border-l-[20px] border-l-accent" />
+                        </Button>
+                    </div>
 
-                        {/* Cue Display Box */}
-                        <div
-                            style={{
-                                width: "full",
-                                padding: "1.5rem",
-                                backgroundColor: `${COLORS.primary}30`,
-                                border: `3px solid ${COLORS.accent}`,
-                                borderRadius: "0.75rem",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                minHeight: "50px",
-                                marginBottom: "1.5rem",
-                            }}
-                        >
-                            <img
-                                src={cueImages[settings.selectedCueIndex]}
-                                style={{
-                                    maxWidth: "100%",
-                                    objectFit: "contain",
-                                }}
-                            />
-                        </div>
-
-                        {/* Navigation Arrows */}
-                        <div style={{ display: "flex", justifyContent: "center", gap: "8rem" }}>
-                            <Button variant="dark" onClick={handlePreviousCue}>
-                                <div
-                                    style={{
-                                        width: 0,
-                                        height: 0,
-                                        borderTop: "15px solid transparent",
-                                        borderBottom: "15px solid transparent",
-                                        borderRight: `20px solid ${COLORS.accent}`,
-                                    }}
-                                />
-                            </Button>
-                            <Button variant="dark" onClick={handleNextCue}>
-                                <div
-                                    style={{
-                                        width: 0,
-                                        height: 0,
-                                        borderTop: "15px solid transparent",
-                                        borderBottom: "15px solid transparent",
-                                        borderLeft: `20px solid ${COLORS.accent}`,
-                                    }}
-                                />
-                            </Button>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div
-                            style={{
-                                display: "grid",
-                                gridTemplateColumns: "repeat(2, 1fr)",
-                                gap: "1rem",
-                                marginTop: "3rem",
-                            }}
-                        >
-                            <Button onClick={resetSettings} variant="destructive">
-                                Reset
-                            </Button>
-                            <Button variant="dark" onClick={() => onSave(settings)}>
-                                Save
-                            </Button>
-                        </div>
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                        <Button onClick={resetSettings} variant="destructive">
+                            Reset
+                        </Button>
+                        <Button variant="dark" onClick={() => onSave(settings)}>
+                            Save
+                        </Button>
                     </div>
                 </div>
             </div>
-        </div>
+        </Modal>
     );
 }

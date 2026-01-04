@@ -6,7 +6,7 @@
     "scripts": {
         "dev": "vite",
         "build": "tsc && vite build",
-        "serve": "vite --host",
+        "serve": "vite --host --port 3000",
         "multi": "bun run --watch src/server.ts"
     },
     "devDependencies": {
@@ -18,10 +18,12 @@
         "@types/ws": "^8.18.1",
         "concurrently": "^9.2.1",
         "prettier": "2.6.2",
+        "tailwindcss": "^4.1.18",
         "typescript": "5.6.3",
-        "vite": "2.9.13"
+        "vite": "^7.3.0"
     },
     "dependencies": {
+        "@tailwindcss/vite": "^4.1.18",
         "express": "^5.2.1",
         "phaser": "3.87.0",
         "playroomkit": "0.0.81",

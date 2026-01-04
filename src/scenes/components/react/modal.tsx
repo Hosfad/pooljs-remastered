@@ -1,7 +1,4 @@
-"use client";
-
 import React from "react";
-import { COLORS } from "../../../common/pool-constants";
 
 interface PoolModalProps {
     isOpen: boolean;
@@ -14,95 +11,25 @@ export function Modal({ isOpen, onClose, title, children }: PoolModalProps) {
     if (!isOpen) return null;
 
     return (
-        <div
-            style={{
-                position: "fixed",
-                inset: "0",
-                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "1rem",
-                zIndex: 50,
-            }}
-            onClick={onClose}
-        >
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={onClose}>
             <div
-                style={{
-                    width: "100%",
-                    maxWidth: "56rem",
-                    margin: "0 auto",
-                    padding: "1.5rem",
-                    borderRadius: "1rem",
-                    backgroundColor: COLORS.dark,
-                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+                onClick={(e) => {
+                    e.stopPropagation();
                 }}
+                className="w-full max-w-[90vw] h-[70vh] md:h-[80vh] p-8 overflow-y-auto  border-12 bg-primary border-dark mx-auto p-6 rounded-2xl shadow-2xl"
             >
-                <div
-                    style={{
-                        borderRadius: "0.75rem",
-                        padding: "2rem",
-                        backgroundColor: COLORS.primary,
-                        border: `3px solid ${COLORS.dark}`,
-                        position: "relative",
-                    }}
-                >
-                    {/* Header */}
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "1.5rem",
-                        }}
+                {/* Header */}
+                <div className="flex items-center justify-between p-6">
+                    <h2 className=" font-bold text-accent text-4xl">{title}</h2>
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-md flex items-center justify-center cursor-pointer transition-all hover:scale-110 bg-dark text-accent border-none text-xl"
                     >
-                        <h2
-                            style={{
-                                fontSize: "1rem",
-                                fontWeight: "bold",
-                                color: COLORS.dark,
-                            }}
-                        >
-                            {title}
-                        </h2>
-                        <button
-                            onClick={onClose}
-                            style={{
-                                width: "2rem",
-                                height: "2rem",
-                                borderRadius: "0.375rem",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: "pointer",
-                                transition: "transform 0.2s, background-color 0.2s",
-                                backgroundColor: COLORS.dark,
-                                color: COLORS.text,
-                                border: "none",
-                                fontSize: "1.25rem",
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = "scale(1.1)";
-                                e.currentTarget.style.backgroundColor = `${COLORS.dark}dd`;
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = "scale(1)";
-                                e.currentTarget.style.backgroundColor = COLORS.dark;
-                            }}
-                        >
-                            ×
-                        </button>
-                    </div>
-
-                    {/* Content */}
-                    <div
-                        style={{
-                            padding: "1.5rem",
-                        }}
-                    >
-                        {children}
-                    </div>
+                        ×
+                    </button>
                 </div>
+
+                {children}
             </div>
         </div>
     );

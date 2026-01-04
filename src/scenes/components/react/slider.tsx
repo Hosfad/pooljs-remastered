@@ -1,4 +1,3 @@
-// Slider.tsx
 import React from "react";
 import { COLORS } from "../../../common/pool-constants.ts";
 
@@ -33,50 +32,16 @@ export function Slider({
     const [_] = React.useState();
 
     return (
-        <div style={{ marginBottom: "1.5rem" }}>
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "1rem",
-                    flexWrap: "wrap",
-                }}
-            >
-                <label
-                    style={{
-                        color: textColor,
-                        fontSize: "1.125rem",
-                        minWidth: "160px",
-                        fontWeight: "500",
-                    }}
-                >
+        <div className="mb-6">
+            <div className="flex items-center gap-4 flex-wrap">
+                <label className="text-[#92cf04ff] text-base sm:text-lg min-w-[140px] sm:min-w-[160px] font-medium">
                     {label}
                 </label>
-                <div
-                    style={{
-                        position: "relative",
-                        flex: 1,
-                        minWidth: "200px",
-                    }}
-                >
-                    <div
-                        style={{
-                            width: "100%",
-                            height: "36px",
-                            backgroundColor: background,
-                            border: `2px solid ${borderColor}`,
-                            borderRadius: "0.5rem",
-                            position: "relative",
-                            overflow: "hidden",
-                        }}
-                    >
+                <div className="relative flex-1 min-w-[150px] sm:min-w-[200px]">
+                    <div className="w-full h-8 sm:h-9 bg-[#2C5530]/30 border-2 border-[#92cf04ff] rounded-lg relative overflow-hidden">
                         <div
-                            style={{
-                                width: `${((value - min) / (max - min)) * 100}%`,
-                                height: "100%",
-                                backgroundColor: fillColor,
-                                transition: "width 0.2s",
-                            }}
+                            className="h-full bg-[#92cf04ff] transition-[width] duration-200"
+                            style={{ width: `${((value - min) / (max - min)) * 100}%` }}
                         />
                     </div>
                     <input
@@ -85,27 +50,11 @@ export function Slider({
                         max={max}
                         value={value}
                         onChange={(e) => onChange(Number(e.target.value))}
-                        style={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            width: "100%",
-                            height: "36px",
-                            opacity: 0,
-                            cursor: "pointer",
-                        }}
+                        className="absolute top-0 left-0 w-full h-8 sm:h-9 opacity-0 cursor-pointer"
                     />
                 </div>
                 {showValue && (
-                    <span
-                        style={{
-                            color: textColor,
-                            fontSize: "1.125rem",
-                            minWidth: "60px",
-                            textAlign: "right",
-                            fontWeight: "500",
-                        }}
-                    >
+                    <span className="text-[#92cf04ff] text-base sm:text-lg min-w-[50px] sm:min-w-[60px] text-right font-medium">
                         {value}
                         {valueSuffix}
                     </span>
