@@ -1,20 +1,14 @@
-import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 import type { PoolState } from "../common/server-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
+import { BALL_RADIUS, MAX_POWER, MAX_STEPS, TIMER_DURATION } from "../common/pool-constants";
 import * as Phaser from "phaser";
-
-const MAX_POWER = 30;
-const MAX_STEPS = 500;
-
-const TIMER_DURATION = 30;
 
 const Vector2 = Phaser.Math.Vector2;
 
 type Scores = Record<BallType, number>;
 
 export class PoolService {
-    private scene: PoolGameScene;
     private colliders: Collider[];
     private balls: Ball[];
     private holes: Hole[];
@@ -31,7 +25,6 @@ export class PoolService {
     private turnIndex = 0;
 
     constructor(scene: PoolGameScene) {
-        this.scene = scene;
         this.balls = scene.balls;
         this.colliders = scene.colliders;
         this.holes = scene.holes;
@@ -45,7 +38,7 @@ export class PoolService {
         this.timer = scene.time.addEvent({
             delay: 1000,
             callback: () => {
-                if (++this.timerCount >= 30) {
+                if (++this.timerCount >= TIMER_DURATION) {
                     this.timerStop();
                     console.log("Timer finished");
                 }
@@ -129,11 +122,11 @@ export class PoolService {
     }
 
     private getKeyPosition() {
-        const mwidth = this.scene.marginX;
-        const mheight = this.scene.marginY;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
         return this.balls.map((b, i) => ({
-            position: new Vector2(b.phaserSprite.x - mwidth, b.phaserSprite.y - mheight),
+            position: new Vector2(b.phaserSprite.x / width, b.phaserSprite.y / height),
             hidden: this.inHole[i] === true,
             collision: this.collisions[i],
         }));

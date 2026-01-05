@@ -208,6 +208,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createBalls(): void {
+
         const ROWS = 5;
         const r = BALL_RADIUS;
         const DIAMETER = r * 2;
@@ -400,7 +401,7 @@ export class PoolGameScene extends Phaser.Scene {
             const sprite = this.balls[i]!.phaserSprite;
             if (!sprite.visible && i < this.balls.length - 1) return;
 
-            const pos = this.toTableCoordinates(key.position.x, key.position.y);
+            const pos = { x: key.position.x * window.innerWidth, y: key.position.y * window.innerHeight };
 
             // increment rotation angle of sprite
             if (pos.x + pos.y != sprite.x + sprite.y) sprite.rotation += 0.1;
