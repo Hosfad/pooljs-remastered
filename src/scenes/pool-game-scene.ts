@@ -130,7 +130,10 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.service.subscribe(Events.PULL, ({ x, y, angle }) => {
-            this.updateCueBullback(x, y, angle);
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            this.updateCueBullback(x * width, y * height, angle);
         });
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
@@ -561,10 +564,13 @@ export class PoolGameScene extends Phaser.Scene {
             return;
         }
 
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
         if (this.isMobile && this.powerMeter.isDragging) {
             // Still show aim line with current angle
             this.drawAimLine(x, y, this.cue.rotation);
-            this.service.pull(x, y, this.cue.rotation);
+            this.service.pull(x / width, y / height, this.cue.rotation);
             return;
         }
 
@@ -594,7 +600,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         // Aim line
         this.drawAimLine(x, y, angle);
-        this.service.pull(x, y, angle);
+        this.service.pull(x / width, y / height, angle);
     }
 
     private drawAimLine(ballX: number, ballY: number, angle: number): void {
