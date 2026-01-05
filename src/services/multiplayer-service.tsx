@@ -4,7 +4,7 @@ import { type BallType, type KeyPositions } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
 import { ActionButtons } from "../scenes/components/react/action-buttons";
 import { GameInfoWidget } from "../scenes/components/react/game-info-widget";
-import { PoolLobby } from "../scenes/components/react/lobby";
+import { Lobby1 } from "../scenes/components/react/lobby1";
 import type { Player } from "../server";
 import { LocalService } from "./local-service";
 
@@ -28,7 +28,7 @@ export class MultiplayerService extends LocalService {
                 const root = createRoot(reactRoot);
                 root.render(
                     <React.StrictMode>
-                        <PoolLobby service={this} />
+                        <Lobby1 service={this}></Lobby1>
                         <GameInfoWidget service={this} />
                         <ActionButtons service={this} />
                     </React.StrictMode>
@@ -105,7 +105,7 @@ export class MultiplayerService extends LocalService {
         if (!roomId) return [];
 
         const keyPositions = this.service.hitBalls(powerPercent, angle);
-        //   this.call(Events.HITS, { keyPositions: keyPositions, state: this.service.getState(), userId, roomId });
+        this.call(Events.HITS, { keyPositions: keyPositions, state: this.service.getState(), userId, roomId });
 
         return keyPositions;
     }

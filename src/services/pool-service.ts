@@ -1,10 +1,10 @@
+import * as Phaser from "phaser";
 import { BALL_RADIUS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
-import * as Phaser from "phaser";
 
 const MAX_POWER = 30;
-const MAX_STEPS = 500;
+const MAX_STEPS = 300;
 
 const TIMER_DURATION = 30;
 
@@ -60,7 +60,11 @@ export class PoolService {
             loop: true,
         });
 
-        console.log(Object.keys(this.totals).map((t) => `${t}: ${this.totals[t as BallType]}`).join(", "));
+        console.log(
+            Object.keys(this.totals)
+                .map((t) => `${t}: ${this.totals[t as BallType]}`)
+                .join(", ")
+        );
         console.log("Players", Object.values(this.turns).join(", "));
     }
 
@@ -285,17 +289,21 @@ export class PoolService {
 
         if (this.inHole[whiteball] || !hitBallType) {
             this.inHole[whiteball] = this.inHole[blackball] === true;
-            this.balls[whiteball]!.phaserSprite.setPosition(
-                window.innerWidth / 2,
-                window.innerHeight / 2,
-            );
+            this.balls[whiteball]!.phaserSprite.setPosition(window.innerWidth / 2, window.innerHeight / 2);
             keyPositions.push(this.getKeyPosition());
         }
 
         return keyPositions;
     }
 
-    private getNormal(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): { x: number; y: number } {
+    private getNormal(
+        b: Phaser.Math.Vector2,
+        {
+            sprite: {
+                size: { points },
+            },
+        }: Collider
+    ): { x: number; y: number } {
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -320,7 +328,14 @@ export class PoolService {
         return closestNormal;
     }
 
-    private isPointInPolygon(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): boolean {
+    private isPointInPolygon(
+        b: Phaser.Math.Vector2,
+        {
+            sprite: {
+                size: { points },
+            },
+        }: Collider
+    ): boolean {
         const { x, y } = b;
 
         let inside = false;

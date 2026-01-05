@@ -6,7 +6,7 @@ body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #1a472a;
+    background: #2c5530;
 }
 #app {
     position: relative;
@@ -22,7 +22,6 @@ body {
 #react-root {
     position: absolute;
     inset: 0;
-
     display: flex;
     justify-content: center;
     align-items: center;
@@ -39,3 +38,17 @@ body {
     --color-accent: #92cf04;
     --color-text: #ffffff;
 }
+
+@custom-media --tall only screen and (max-height: 960px) and (max-width: 480px);
+
+@custom-media --wide only screen and (max-height: 480px) and (max-width: 960px);
+
+@custom-media --portrait (orientation: portrait);
+
+@custom-media --landscape (orientation: landscape);
+
+@custom-media --tall-or-wide-and-portrait only screen and (((max-height: 960px) and (max-width: 480px)) or
+    ((max-height: 480px) and (max-width: 960px))) and (orientation: portrait);
+
+@custom-media --tall-or-wide-and-landscape only screen and (((max-height: 960px) and (max-width: 480px)) or
+    ((max-height: 480px) and (max-width: 960px))) and (orientation: landscape);
