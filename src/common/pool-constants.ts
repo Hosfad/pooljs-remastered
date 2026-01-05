@@ -66,17 +66,26 @@ export const POOL_SCENE_KEYS = {
     POOL_GAME: "POOL_GAME",
 };
 
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+const targetWidth = 1920;
+const targetHeight = 1080;
+
+const screenRatio = width / targetWidth * height / targetHeight;
+
 // Game dimensions
 export const POOL_TABLE_WIDTH = 1300;
 export const POOL_TABLE_HEIGHT = 768;
-export const BALL_RADIUS = 15;
-export const HOLE_RADIUS = 50;
+export const BALL_RADIUS = 15 * screenRatio;
+export const HOLE_RADIUS = 50 * screenRatio;
 export const CUE_LENGTH = 400;
 export const CUE_HEIGHT = 15;
 
 // Physics constants
-export const FRICTION = 0.98;
-export const MAX_POWER = 500;
+export const MAX_POWER = 30;
+export const MAX_STEPS = 350;
+export const TIMER_DURATION = 30;
 
 // UI Constants
 export const SCORED_BALL_AREA = {

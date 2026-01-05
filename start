@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -e
+
+main() {
+    send dev
+    send server
+    nvim .
+}
+
+# @cmd Start the development environment
+dev() {
+    bun dev
+}
+
+# @cmd Starts the multiplayer server
+server() {
+    bun multi
+}
+
+# See more details at https://github.com/sigoden/argc
+eval "$(start-tool extend)"
+eval "$(argc --argc-eval "$0" "$@")"

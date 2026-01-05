@@ -4,7 +4,7 @@ import { type BallType, type KeyPositions } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
 import { ActionButtons } from "../scenes/components/react/action-buttons";
 import { GameInfoWidget } from "../scenes/components/react/game-info-widget";
-import { Lobby1 } from "../scenes/components/react/lobby1";
+import { Lobby } from "../scenes/components/react/game-lobby";
 import type { Player } from "../server";
 import { LocalService } from "./local-service";
 
@@ -28,7 +28,7 @@ export class MultiplayerService extends LocalService {
                 const root = createRoot(reactRoot);
                 root.render(
                     <React.StrictMode>
-                        <Lobby1 service={this}></Lobby1>
+                        <Lobby service={this}></Lobby>
                         <GameInfoWidget service={this} />
                         <ActionButtons service={this} />
                     </React.StrictMode>
