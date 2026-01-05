@@ -148,6 +148,8 @@ export class PoolService {
             let anyMoving = false;
 
             for (let i = 0; i < this.balls.length; i++) {
+                if (this.inHole[i]) continue;
+
                 const vel = velocities[i]!;
                 if (vel.length() < minVelocity) continue;
 
@@ -190,8 +192,8 @@ export class PoolService {
                             const ny = dy / distance;
 
                             // push each ball half the overlap distance
-                            const overlapOffsetX = overlap * 0.5 * nx;
-                            const overlapOffsetY = overlap * 0.5 * ny;
+                            const overlapOffsetX = overlap * 0.8 * nx;
+                            const overlapOffsetY = overlap * 0.8 * ny;
 
                             sprite1.setPosition(sprite1.x - overlapOffsetX, sprite1.y - overlapOffsetY);
                             sprite2.setPosition(sprite2.x + overlapOffsetX, sprite2.y + overlapOffsetY);
