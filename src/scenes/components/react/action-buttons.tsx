@@ -6,7 +6,6 @@ import { useLocation } from "react-router-dom";
 import { Events } from "../../../common/server-types";
 import type { MultiplayerService } from "../../../services/multiplayer-service";
 import { SettingsModal } from "./settings-modal";
-import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
 
 export function ActionButtons({ service }: { service: MultiplayerService }) {
@@ -135,21 +134,6 @@ export function ActionButtons({ service }: { service: MultiplayerService }) {
     return (
         <>
             <div className="absolute top-2 right-2 p-2 flex gap-2">
-                <Button
-                    className="w-8  h-8 md:h-10 md:w-10 px-4! py-4!"
-                    onClick={() => setModalOpen("how-to-play")}
-                    variant="dark"
-                >
-                    ❓
-                </Button>
-                <Button
-                    className="w-8  h-8 md:h-10 md:w-10 px-4! py-4!"
-                    variant="dark"
-                    onClick={() => setModalOpen("settings")}
-                >
-                    ⚙️
-                </Button>
-
                 {Object.keys(modals).map((key) => {
                     return modals[key as keyof typeof modals]();
                 })}

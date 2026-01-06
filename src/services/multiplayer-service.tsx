@@ -9,6 +9,7 @@ import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { INIT_DISCORD_SDK } from "../common/pool-constants";
 import { ActionButtons } from "../scenes/components/react/action-buttons";
+import { PlayerInfoWidget } from "../scenes/components/react/current-player-widget";
 import { GameInfoWidget } from "../scenes/components/react/game-info-widget";
 import { Lobby } from "../scenes/components/react/game-lobby";
 import MainScreen from "../scenes/components/react/main-screen";
@@ -43,6 +44,8 @@ export class MultiplayerService extends LocalService {
                                     <Route path="/" element={<MainScreen service={this} />}></Route>
                                     <Route path="/lobby" element={<Lobby service={this} />}></Route>
                                 </Routes>
+                                <PlayerInfoWidget service={this} />
+
                                 <GameInfoWidget service={this} />
                                 <ActionButtons service={this} />
                             </BrowserRouter>

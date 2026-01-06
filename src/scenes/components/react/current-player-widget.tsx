@@ -1,59 +1,97 @@
-import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Cog, ShoppingBag, Star, Trophy } from "lucide-react";
 import type { MultiplayerService } from "../../../services/multiplayer-service";
-import { Button } from "./ui/button";
 
 export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
     const me = service.me();
     const { name, photo } = me ?? {};
 
-    const currentXP = 46;
-    const xpToNextLevel = 100;
-    const progress = (currentXP / xpToNextLevel) * 100;
-    const level = 1;
+    const playerData = {
+        score: 0,
+        maxScore: 100,
+        energy: 100,
+        cash: 100,
+        coins: 100,
+        level: 1,
+    };
 
-    const roomId = service.getRoomId();
+    const handleButtonClick = (button: string) => {};
+
+    const room = service.getCurrentRoom();
     return (
-        <div className="fixed top-4 left-4 z-50">
-            <div className="bg-black/40 p-4 backdrop-blur-md rounded-xl p-3 border-2 border-emerald-600/30 shadow-2xl">
-                <div className="flex items-center gap-3">
+        <div className="absolute top-0 right-0 w-full bg-black/40 bg-blur-2xl shadow-lg">
+            <div className="flex items-center justify-between px-4 py-3 gap-4">
+                {/* Player Info Section */}
+                <div className="flex items-center gap-4 min-w-0">
                     <div className="relative flex-shrink-0">
-                        <img src={`${photo}`} className="w-20 h-20 rounded-full border-2 border-emerald-400/50 shadow-lg" />
-                        <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-amber-600 text-amber-950 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-black/50 shadow-lg">
-                            {level}
+                        <img
+                            src={photo}
+                            alt="Player Avatar"
+                            className="w-16 h-16 rounded-lg border-2 border-yellow-500 shadow-md"
+                        />
+                        <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1">
+                            <Star className="w-3 h-3 text-gray-900 fill-gray-900" />
                         </div>
                     </div>
-
-                    <div className="flex-1 min-w-0">
-                        <h3 className="text-emerald-300 font-bold text-sm truncate">{name}</h3>
-
-                        <div className="mt-1">
-                            <div className="flex items-center justify-between text-[10px] text-gray-400 mb-0.5">
-                                <span>Level {level}</span>
-                                <span>
-                                    {currentXP} / {xpToNextLevel} XP
-                                </span>
-                            </div>
-                            <div className="relative w-full h-2 bg-black/50 rounded-full overflow-hidden border border-emerald-600/20">
-                                <div
-                                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-300 ease-out shadow-lg"
-                                    style={{ width: `${Math.min(progress, 100)}%` }}
-                                >
-                                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-                                </div>
-                            </div>
+                    <div className="min-w-0">
+                        <h2 className="text-white font-bold text-lg truncate">{name}</h2>
+                        <div className="flex items-center gap-2">
+                            <span className="text-yellow-500 text-sm font-semibold">
+                                {playerData.score}/{playerData.maxScore}
+                            </span>
+                            <Trophy className="w-4 h-4 text-yellow-500" />
                         </div>
                     </div>
                 </div>
+
+                {/* Navigation Buttons */}
+                <div className="flex gap-2 flex-shrink-0">
+                    <button
+                        onClick={() => handleButtonClick("cues")}
+                        className="flex flex-col items-center justify-center bg-accent/10 hover:bg-accent/20 rounded-lg px-6 py-2 transition-colors min-w-[70px]"
+                    >
+                        <div className="text-2xl mb-1">🎱</div>
+                        <span className="text-white text-sm font-semibold">Cues</span>
+                    </button>
+
+                    <button
+                        onClick={() => handleButtonClick("shop")}
+                        className="flex flex-col items-center justify-center bg-accent/10 hover:bg-accent/20 rounded-lg px-6 py-2 transition-colors min-w-[70px]"
+                    >
+                        <ShoppingBag className="w-6 h-6 text-green-400 mb-1" />
+                        <span className="text-white text-sm font-semibold">Shop</span>
+                    </button>
+
+                    <button className="flex flex-col items-center justify-center bg-accent/10 hover:bg-accent/20 rounded-lg px-6 py-2 transition-colors min-w-[70px]">
+                        <Cog className="w-6 h-6 text-yellow-400 mb-1" />
+                        <span className="text-white text-sm font-semibold">Settings</span>
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
+                        <div className="text-2xl">⚡</div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-24 h-2 bg-accent/20 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400"
+                                    style={{ width: `${playerData.energy}%` }}
+                                />
+                            </div>
+                            <span className="text-white text-xs font-bold ml-1">{playerData.energy}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
+                        <div className="text-2xl">💵</div>
+                        <span className="text-green-400 font-bold">{playerData.cash}</span>
+                    </div>
+                    {/* Coins */}
+                    <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
+                        <div className="text-2xl">🪙</div>
+                        <span className="text-yellow-400 font-bold">{playerData.coins}</span>
+                    </div>
+                </div>
             </div>
-            {roomId && (
-                <Link to={`/lobby?room=${roomId}`}>
-                    <Button className="text-xs h-8 mt-2 w-full flex items-center justify-center gap-2">
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Room
-                    </Button>
-                </Link>
-            )}
         </div>
     );
 }

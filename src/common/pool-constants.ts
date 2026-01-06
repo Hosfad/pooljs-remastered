@@ -84,7 +84,7 @@ export const TIMER_DURATION = 30;
 export const COLORS = {
     primary: "#2C5530",
     dark: "#1A1A1A",
-    accent: "#92cf04ff",
+    accent: "#10b981",
     text: "#ffffff",
 };
 

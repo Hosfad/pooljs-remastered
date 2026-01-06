@@ -34,13 +34,13 @@ export function Slider({
     return (
         <div className="mb-6">
             <div className="flex items-center gap-4 flex-wrap">
-                <label className="text-[#92cf04ff] text-base sm:text-lg min-w-[140px] sm:min-w-[160px] font-medium">
+                <label className={`text-accent text-base sm:text-lg min-w-[140px] sm:min-w-[160px] font-medium`}>
                     {label}
                 </label>
                 <div className="relative flex-1 min-w-[150px] sm:min-w-[200px]">
-                    <div className="w-full h-8 sm:h-9 bg-[#2C5530]/30 border-2 border-[#92cf04ff] rounded-lg relative overflow-hidden">
+                    <div className="w-full h-8 sm:h-9 bg-acceny/30 border-2 border-accent rounded-lg relative overflow-hidden">
                         <div
-                            className="h-full bg-[#92cf04ff] transition-[width] duration-200"
+                            className="h-full bg-accent transition-[width] duration-200"
                             style={{ width: `${((value - min) / (max - min)) * 100}%` }}
                         />
                     </div>
@@ -54,7 +54,7 @@ export function Slider({
                     />
                 </div>
                 {showValue && (
-                    <span className="text-[#92cf04ff] text-base sm:text-lg min-w-[50px] sm:min-w-[60px] text-right font-medium">
+                    <span className="text-accent text-base sm:text-lg min-w-[50px] sm:min-w-[60px] text-right font-medium">
                         {value}
                         {valueSuffix}
                     </span>
