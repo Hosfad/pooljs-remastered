@@ -50,6 +50,7 @@ export class PoolGameScene extends Phaser.Scene {
     };
 
     // Graphics
+    private hand!: Phaser.GameObjects.Sprite;
     private background!: Phaser.GameObjects.Image;
     private holeBalls: Phaser.GameObjects.Sprite[] = [];
     private playedSounds: (number | undefined)[] = [];
@@ -92,18 +93,23 @@ export class PoolGameScene extends Phaser.Scene {
         this.createColliders();
         this.createBalls();
 
-        this.service = new MultiplayerService(new PoolService(this));
-
         // Create UI
         this.createPowerMeter();
         this.createPocketedBallsRail();
+        this.createHand();
 
         // Setup input
-        this.registerEvents();
+        this.registerEvents(new MultiplayerService(new PoolService(this)));
         this.setupInput();
         this.createCue();
 
         this.service.connect();
+    }
+
+    private createHand(): void {
+        this.hand = this.add.sprite(this.scale.width / 2, this.scale.height / 2, POOL_ASSETS.HAND)
+            .setDisplaySize(BALL_RADIUS * 10, BALL_RADIUS * 10)
+            .setVisible(false);
     }
 
     private checkWinner(): void {
@@ -118,11 +124,14 @@ export class PoolGameScene extends Phaser.Scene {
         this.add.text(midw, midh + 40, "Click to play again!", { fontSize: "32px" }).setOrigin(0.5);
 
         this.input.once("pointerdown", () => window.location.reload());
+
+        this.isGameStarted = false;
     }
 
-    private registerEvents(): void {
+    private registerEvents(service: Service): void {
+        this.service = service;
+
         this.service.subscribe(Events.INIT, () => {
-            this.loadAvatarsAndCreateInfoHeader();
             this.service.timerStart();
             this.isGameStarted = true;
             console.log("Pool game initialized with", this.balls.length, "balls");
@@ -142,22 +151,23 @@ export class PoolGameScene extends Phaser.Scene {
             this.keyPositions.push.apply(this.keyPositions, keyPositions);
             this.service.timerStop();
             this.service.setState(state);
-            this.checkForNewlyPocketedBalls();
-            this.checkWinner();
-        });
-    }
-
-    private loadAvatarsAndCreateInfoHeader(): void {
-        // if (this.players) {
-        //     this.load.image("player1Avatar", this.players[0]?.photo);
-        //     this.load.image("player2Avatar", this.players[1]?.photo);
-        // }
-
-        this.load.once(Phaser.Loader.Events.COMPLETE, () => {
             this.checkWinner();
         });
 
-        this.load.start();
+        this.service.subscribe(Events.HAND, ({ x, y, userId }) => {
+            if (userId === this.service.me()?.id) return;
+
+            const width = this.tableWidth;
+            const height = this.tableHeight;
+
+            const mx = this.marginX;
+            const my = this.marginY;
+
+            const whiteBall = this.balls[this.balls.length - 1]!;
+            whiteBall.phaserSprite.setPosition(x * width + mx, y * height + my);
+            whiteBall.phaserSprite.visible = true;
+            whiteBall.isPocketed = false;
+        });
     }
 
     private calculateTableDimensions(): void {
@@ -491,31 +501,55 @@ export class PoolGameScene extends Phaser.Scene {
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
-            this.mousePosition.set(pointer.x, pointer.y);
+
+            const { x: px, y: py } = pointer;
+            this.mousePosition.set(px, py);
+
+            const whiteBall = this.balls[this.balls.length - 1]!;
+
+            if (whiteBall.isPocketed) {
+                const mx = this.marginX;
+                const my = this.marginY;
+
+                this.hand.visible = true;
+                this.hand.setPosition(px, py);
+                this.service.moveHand((px - mx) / this.tableWidth, (py - my) / this.tableHeight);
+                return;
+            }
 
             if (this.isMobile && this.isDraggingShot && !this.powerMeter.isDragging) {
-                const whiteBall = this.balls[this.balls.length - 1]!;
                 const { x, y } = whiteBall.phaserSprite!;
-
-                this.lockedAimAngle = Math.atan2(pointer.y - y, pointer.x - x);
+                this.lockedAimAngle = Math.atan2(py - y, px - x);
             }
         });
 
         this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
 
+            const wb = this.balls.length - 1;
+            const whiteBall = this.balls[wb]!;
+            const { x: px, y: py } = pointer;
+
+            // Hand Stuff
+            if (whiteBall.isPocketed) {
+                whiteBall.phaserSprite.visible = true;
+                whiteBall.phaserSprite.setPosition(px, py);
+                whiteBall.isPocketed = this.hand.visible = false;
+                this.service.setInHole(wb, false);
+                return;
+            }
+
             const isTouchingPowerMeter = this.isTouchingPowerMeter(pointer);
 
             // Handle by the power meter
             if (this.isMobile && isTouchingPowerMeter) return;
 
-            const whiteBall = this.balls[this.balls.length - 1]!;
             const { x, y } = whiteBall.phaserSprite!;
 
             // Lock aim direction ON CLICK
-            this.lockedAimAngle = Math.atan2(pointer.y - y, pointer.x - x);
+            this.lockedAimAngle = Math.atan2(py - y, px - x);
 
-            if (!this.isMobile) this.dragStartPosition.set(pointer.x, pointer.y);
+            if (!this.isMobile) this.dragStartPosition.set(px, py);
 
             this.isDraggingShot = true;
         });
@@ -559,7 +593,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         let angle: number;
 
-        if (!this.input.enabled) {
+        if (!this.input.enabled || whiteBall.isPocketed) {
             this.aimLine.clear();
             return;
         }
@@ -741,21 +775,17 @@ export class PoolGameScene extends Phaser.Scene {
 
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < columns; col++) {
-                const x = startX;
-                const y = startY + row * verticalSpacing;
-                ballPositions.push({ x, y });
+                ballPositions.push({ x: startX, y: startY + row * verticalSpacing });
             }
         }
 
-        const ballSprites: Phaser.GameObjects.Sprite[] = [];
-        ballPositions.forEach((pos) => {
-            const emptySprite = this.add
+        const ballSprites: Phaser.GameObjects.Sprite[] = ballPositions.map((pos) => (
+            this.add
                 .sprite(pos.x, pos.y, POOL_ASSETS.WHITE_BALL)
                 .setScale((ballRadius * 2) / 256)
                 .setAlpha(0)
-                .setVisible(false);
-            ballSprites.push(emptySprite);
-        });
+                .setVisible(false)
+        ));
 
         this.pocketedBallsRail = {
             background,
@@ -767,29 +797,35 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private checkForNewlyPocketedBalls(): void {
-        const allBalls = this.balls.slice(0, this.balls.length - 1);
+        let i;
 
-        allBalls.forEach((ball, index) => {
+        for (i = 0; i < this.balls.length - 1; ++i) {
+            const ball = this.balls[i]!;
+
             if (!ball.phaserSprite.visible && !ball.isPocketed) {
                 const alreadyPocketed = this.pocketedBallsRail.pocketedBalls.some((pb) => pb.ball === ball);
 
                 if (!alreadyPocketed) {
-                    ball.isPocketed = false;
+                    ball.isPocketed = true;
                     this.animateBallToRail(ball);
                 }
             }
-        });
+        }
+
+        const whiteBall = this.balls[i]!;
+        whiteBall.isPocketed = !whiteBall.phaserSprite.visible;
     }
 
     private animateBallToRail(ball: Ball): void {
-        const positionIndex = this.pocketedBallsRail.ballPositions.length - 1 - this.pocketedBallsRail.pocketedBalls.length;
+        const { ballPositions, pocketedBalls } = this.pocketedBallsRail;
+        const positionIndex = ballPositions.length - 1 - pocketedBalls.length;
 
         if (positionIndex < 0) {
             console.warn("Rail is full!");
             return;
         }
 
-        const targetPosition = this.pocketedBallsRail.ballPositions[positionIndex];
+        const targetPosition = ballPositions[positionIndex];
         if (!targetPosition) return;
 
         const dropStartPosition = { x: targetPosition.x, y: this.marginY - 50 };
@@ -799,7 +835,7 @@ export class PoolGameScene extends Phaser.Scene {
             .setScale(ball.phaserSprite.scale)
             .setAlpha(0.8);
 
-        this.pocketedBallsRail.pocketedBalls.push({ ball, positionIndex, isAnimating: true });
+        pocketedBalls.push({ ball, positionIndex, isAnimating: true });
 
         const moveToTopTween = this.tweens.add({
             targets: ballClone,
@@ -816,7 +852,7 @@ export class PoolGameScene extends Phaser.Scene {
                     onComplete: () => {
                         ballClone.destroy();
 
-                        const pocketedBall = this.pocketedBallsRail.pocketedBalls.find((pb) => pb.ball === ball);
+                        const pocketedBall = pocketedBalls.find((pb) => pb.ball === ball);
                         if (pocketedBall) pocketedBall.isAnimating = false;
 
                         this.updateRailDisplay();

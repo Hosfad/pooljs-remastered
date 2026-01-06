@@ -271,6 +271,13 @@ wss.on("connection", (ws) => {
         broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.HITS, { type: "success", ...data });
     });
 
+    eventListener.on(Events.HAND, withRoomAuthMiddleware, (data) => {
+        const { roomId, userId: senderId } = data;
+        const room = getRoom(roomId)!;
+
+        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.HAND, { type: "success", ...data });
+    });
+
     ws.on("close", () => {
         if (!client) return;
     });
@@ -336,20 +343,13 @@ function getRoom(roomId: string) {
 }
 
 function reshapeRoom(room: ServerRoom): Room {
-    const players = room.clients.map((c) => {
-        return reshapePlayer(c);
-    });
-    return {
-        ...room,
-        players,
-    };
+    const players = room.clients.map((c) => { return reshapePlayer(c); });
+    return { ...room, players };
 }
 function reshapePlayer(c: Client) {
     const newC = { ...c, ws: undefined };
     delete newC.ws;
-    const player: Player = {
-        ...newC,
-    };
+    const player: Player = { ...newC, };
     return player;
 }
 
@@ -359,9 +359,7 @@ function createEventListener(ws: WebSocket): TEventListener {
         handler: (data: EventsData[T]) => void;
     };
 
-    const listeners: {
-        [K in TEventKey]?: EventListeners<K>[];
-    } = {} as any;
+    const listeners: { [K in TEventKey]?: EventListeners<K>[]; } = {} as any;
 
     function parseRawMessage(raw: string) {
         try {

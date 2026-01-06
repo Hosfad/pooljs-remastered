@@ -3,13 +3,13 @@ import type { BallType, KeyPositions } from "./pool-types";
 
 type MiddlewareResponse<TOutput> =
     | {
-          success: true;
-          data: TOutput;
-          error?: null;
-      }
+        success: true;
+        data: TOutput;
+        error?: null;
+    }
     | {
-          error: string;
-      };
+        error: string;
+    };
 
 export type Middleware<TInput, TOutput = unknown> = (
     data: TInput
@@ -17,7 +17,6 @@ export type Middleware<TInput, TOutput = unknown> = (
 export type MiddlewareInput<TInput, TOutput = unknown> = Middleware<TInput, TOutput> | Middleware<TInput, TOutput>[];
 
 export type TEventKey = keyof EventsData;
-
 type THandler<T extends TEventKey> = (data: EventsData[T]) => void | Promise<void>;
 
 export type TEventListener = {
@@ -54,6 +53,7 @@ export enum Events {
     ENDS = "game-end",
     PULL = "pull",
     HITS = "hit",
+    HAND = "hand",
 
     ERROR_ROOM_FULL = "error-room-full",
     SHOW_MODAL = "show-error-modal",
@@ -75,9 +75,9 @@ export type WebsocketError = {
 export type WebsocketRespone<T> =
     | WebsocketError
     | {
-          type: "success";
-          data: T;
-      };
+        type: "success";
+        data: T;
+    };
 
 export type EventsData = {
     [Events.UPDATE_ROOM]: Room;
@@ -97,6 +97,7 @@ export type EventsData = {
     [Events.HITS]: RoomEventBodyOptions & { keyPositions: KeyPositions; state: PoolState };
     [Events.PULL]: RoomEventBodyOptions & { x: number; y: number; angle: number };
     [Events.INIT]: Room;
+    [Events.HAND]: RoomEventBodyOptions & { x: number; y: number };
 
     // ERRORS
     [Events.ERROR_ROOM_FULL]: WebsocketRespone<RoomId>;

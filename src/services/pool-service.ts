@@ -51,11 +51,7 @@ export class PoolService {
             loop: true,
         });
 
-        console.log(
-            Object.keys(this.totals)
-                .map((t) => `${t}: ${this.totals[t as BallType]}`)
-                .join(", ")
-        );
+        console.log(Object.keys(this.totals).map((t) => `${t}: ${this.totals[t as BallType]}`).join(", "));
         console.log("Players", Object.values(this.turns).join(", "));
     }
 
@@ -71,6 +67,10 @@ export class PoolService {
             return this.players[turn] === this.totals[turn] && !this.inHole[whiteBall] ? turn : nextTurn;
         }
         return undefined;
+    }
+
+    public setInHole(index: number, inHole: boolean) {
+        // this.inHole[index] = inHole;
     }
 
     public getState(): PoolState {
@@ -151,7 +151,6 @@ export class PoolService {
         const keyPositions: KeyPositions = [this.getKeyPosition()];
 
         let turn = this.whoseTurn();
-        let hitBallType = false;
         if (this.players[turn] == this.totals[turn]) turn = "black";
 
         for (let step = 0; step < MAX_STEPS; step++) {
@@ -231,13 +230,6 @@ export class PoolService {
                                     vel1.subtract({ x: impulseX, y: impulseY });
                                     vel2.add({ x: impulseX, y: impulseY });
                                 }
-
-                                if (
-                                    (ball1.ballType === "white" && ball2.ballType === turn) ||
-                                    (ball2.ballType === "white" && ball1.ballType === turn)
-                                ) {
-                                    hitBallType = true;
-                                }
                             }
                         }
                     }
@@ -279,27 +271,10 @@ export class PoolService {
             if (!anyMoving) break;
         }
 
-        const balls = this.balls.length;
-        const blackball = balls - 2;
-        const whiteball = balls - 1;
-
-        if (this.inHole[whiteball] || !hitBallType) {
-            this.inHole[whiteball] = this.inHole[blackball] === true;
-            this.balls[whiteball]!.phaserSprite.setPosition(window.innerWidth / 2, window.innerHeight / 2);
-            keyPositions.push(this.getKeyPosition());
-        }
-
         return keyPositions;
     }
 
-    private getNormal(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): { x: number; y: number } {
+    private getNormal(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): { x: number; y: number } {
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -324,14 +299,7 @@ export class PoolService {
         return closestNormal;
     }
 
-    public isPointInPolygon(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): boolean {
+    public isPointInPolygon(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): boolean {
         const { x, y } = b;
 
         let inside = false;
