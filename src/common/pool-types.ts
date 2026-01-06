@@ -7,7 +7,7 @@ import Phaser from "phaser";
 export type Collision = "ball" | "wall" | "hole";
 export type KeyPositions = { position: Phaser.Math.Vector2; hidden: boolean; collision?: Collision }[][];
 export type Color = "red" | "yellow" | "green" | "blue" | "purple" | "black" | "white" | "brown";
-export type BallType = "solid" | "striped" | "white" | "black" | "red" | "yellow";
+export type BallType = "solid" | "striped" | "white" | "black";
 
 export interface Ball {
     ballType: BallType;

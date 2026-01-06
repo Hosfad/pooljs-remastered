@@ -130,10 +130,13 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.service.subscribe(Events.PULL, ({ x, y, angle }) => {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
+            const width = this.tableWidth;
+            const height = this.tableHeight;
 
-            this.updateCueBullback(x * width, y * height, angle);
+            const mx = this.marginX;
+            const my = this.marginY;
+
+            this.updateCueBullback(x * width + mx, y * height + my, angle);
         });
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
@@ -159,16 +162,13 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private calculateTableDimensions(): void {
-        const canvas = this.game.scale.canvas;
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
+        const canvasWidth = this.scale.width;
+        const canvasHeight = this.scale.height;
 
-        const marginPercentage = 0.1;
-        const maxMargin = 100;
-        const topMargin = 100;
+        const maxMargin = 200;
 
-        this.marginX = Math.min(canvasWidth * marginPercentage, maxMargin);
-        this.marginY = Math.min(canvasHeight * marginPercentage, maxMargin) + topMargin;
+        this.marginX = maxMargin * canvasWidth / 1920;
+        this.marginY = maxMargin * canvasHeight / 1080;
 
         const availableWidth = canvasWidth - 2 * this.marginX;
         const availableHeight = canvasHeight - 2 * this.marginY;
@@ -211,7 +211,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createBalls(): void {
-        const ROWS = 5;
+        const ROWS = 3;
         const r = BALL_RADIUS;
         const DIAMETER = r * 2;
         const ROW_SPACING = DIAMETER * 0.8;
@@ -403,7 +403,10 @@ export class PoolGameScene extends Phaser.Scene {
             const sprite = this.balls[i]!.phaserSprite;
             if (!sprite.visible && i < this.balls.length - 1) return;
 
-            const pos = { x: key.position.x * window.innerWidth, y: key.position.y * window.innerHeight };
+            const pos = {
+                x: key.position.x * this.tableWidth + this.marginX,
+                y: key.position.y * this.tableHeight + this.marginY,
+            };
 
             // increment rotation angle of sprite
             if (pos.x + pos.y != sprite.x + sprite.y) sprite.rotation += 0.1;
@@ -563,13 +566,16 @@ export class PoolGameScene extends Phaser.Scene {
             return;
         }
 
-        const width = window.innerWidth;
-        const height = window.innerHeight;
+        const width = this.tableWidth;
+        const height = this.tableHeight;
+
+        const mx = this.marginX;
+        const my = this.marginY;
 
         if (this.isMobile && this.powerMeter.isDragging) {
             // Still show aim line with current angle
             this.drawAimLine(x, y, this.cue.rotation);
-            this.service.pull(x / width, y / height, this.cue.rotation);
+            this.service.pull((x - mx) / width, (y - my) / height, this.cue.rotation);
             return;
         }
 
@@ -599,7 +605,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         // Aim line
         this.drawAimLine(x, y, angle);
-        this.service.pull(x / width, y / height, angle);
+        this.service.pull((x - mx) / width, (y - my) / height, angle);
     }
 
     private drawAimLine(ballX: number, ballY: number, angle: number): void {
@@ -641,7 +647,7 @@ export class PoolGameScene extends Phaser.Scene {
             },
             "TABLE SIZE": () => `${this.tableWidth.toFixed(0)}x${this.tableHeight.toFixed(0)}`,
             "DEVICE SCALE": () => `${this.game.scale.canvas.width}x${this.game.scale.canvas.height}`,
-            WINNER: () => (this.service.winner() ? "WINNER" : ""),
+            "HOLE RADIUS": () => `${HOLE_RADIUS.toFixed(0)}`,
         });
     }
 

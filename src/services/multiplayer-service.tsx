@@ -20,7 +20,6 @@ export class MultiplayerService extends LocalService {
         try {
             if (!this.ws) this.ws = new WebSocket("ws://localhost:6969");
 
-            //   Render React
             const reactRoot = document.getElementById("react-root");
 
             if (reactRoot) {
@@ -53,11 +52,10 @@ export class MultiplayerService extends LocalService {
 
                 this.eventHandlers.get(event)?.forEach((handler) => handler(data));
             };
+
             window.addEventListener("beforeunload", () => {
                 this.call(Events.PLAYER_DISCONNECT, { userId: this.me()?.userId!, roomId: this.getRoomId()! });
-                setTimeout(() => {
-                    this.ws?.close();
-                }, 400);
+                setTimeout(() => this.ws?.close(), 400);
             });
 
             return true;
