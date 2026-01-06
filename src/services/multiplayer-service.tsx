@@ -87,6 +87,7 @@ export class MultiplayerService extends LocalService {
         this.eventHandlers.get(event)!.add(callback);
     }
 
+    // TODO: Skip one step, and override this.send
     public call<T extends keyof EventsData>(event: T, data: EventsData[T]) {
         if (!this.ws) {
             console.error("WebSocket is not open");
@@ -131,6 +132,14 @@ export class MultiplayerService extends LocalService {
         this.call(Events.PULL, { x, y, angle, userId, roomId });
     }
 
+    override moveHand(x: number, y: number): void {
+        const { userId, roomId } = this.getRoomConfig();
+
+        if (!roomId) return;
+
+        this.call(Events.HAND, { x, y, userId, roomId });
+    }
+
     public isConnected(): boolean {
         return this.ws?.readyState === WebSocket.OPEN;
     }
@@ -156,7 +165,7 @@ export class MultiplayerService extends LocalService {
         this.discordSdk = new DiscordSDK(import.meta.env.VITE_DISCORD_APP_ID);
         await this.discordSdk.ready();
 
-        const me = await this.me();
+        const me = this.me();
         if (me.access_token) {
             const res = await this.discordSdk.commands.authenticate({ access_token: me.access_token });
             if (!res.user) return console.error("Failed to authenticate with discord", res);
@@ -216,6 +225,7 @@ export class MultiplayerService extends LocalService {
             }
             this.send(Events.UPDATE_ROOM, data.data);
         });
+
         this.listen(Events.MATCH_MAKE_CANCEL_RESPONSE, (data) => {
             const { type } = data;
             if (type === "error") {
@@ -235,6 +245,9 @@ export class MultiplayerService extends LocalService {
         });
 
         // Game events
+        this.listen(Events.HAND, (data) => {
+            this.send(Events.HAND, data);
+        });
 
         this.listen(Events.INIT, (data) => {
             this.send(Events.INIT, data);

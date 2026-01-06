@@ -153,6 +153,21 @@ export class PoolGameScene extends Phaser.Scene {
             this.service.setState(state);
             this.checkWinner();
         });
+
+        this.service.subscribe(Events.HAND, ({ x, y, userId }) => {
+            if (userId === this.service.me()?.id) return;
+
+            const width = this.tableWidth;
+            const height = this.tableHeight;
+
+            const mx = this.marginX;
+            const my = this.marginY;
+
+            const whiteBall = this.balls[this.balls.length - 1]!;
+            whiteBall.phaserSprite.setPosition(x * width + mx, y * height + my);
+            whiteBall.phaserSprite.visible = true;
+            whiteBall.isPocketed = false;
+        });
     }
 
     private calculateTableDimensions(): void {
@@ -486,14 +501,19 @@ export class PoolGameScene extends Phaser.Scene {
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
+
             const { x: px, y: py } = pointer;
             this.mousePosition.set(px, py);
 
             const whiteBall = this.balls[this.balls.length - 1]!;
 
             if (whiteBall.isPocketed) {
+                const mx = this.marginX;
+                const my = this.marginY;
+
                 this.hand.visible = true;
                 this.hand.setPosition(px, py);
+                this.service.moveHand((px - mx) / this.tableWidth, (py - my) / this.tableHeight);
                 return;
             }
 
@@ -506,20 +526,20 @@ export class PoolGameScene extends Phaser.Scene {
         this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
 
-            const isTouchingPowerMeter = this.isTouchingPowerMeter(pointer);
-
             const wb = this.balls.length - 1;
             const whiteBall = this.balls[wb]!;
             const { x: px, y: py } = pointer;
 
             // Hand Stuff
             if (whiteBall.isPocketed) {
-                whiteBall.isPocketed = this.hand.visible = false;
-                whiteBall.phaserSprite.setPosition(px, py);
                 whiteBall.phaserSprite.visible = true;
+                whiteBall.phaserSprite.setPosition(px, py);
+                whiteBall.isPocketed = this.hand.visible = false;
                 this.service.setInHole(wb, false);
                 return;
             }
+
+            const isTouchingPowerMeter = this.isTouchingPowerMeter(pointer);
 
             // Handle by the power meter
             if (this.isMobile && isTouchingPowerMeter) return;

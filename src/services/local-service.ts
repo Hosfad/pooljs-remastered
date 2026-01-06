@@ -1,5 +1,5 @@
 import type { BallType, KeyPositions } from "../common/pool-types";
-import { Events } from "../common/server-types";
+import { Events, type PoolState } from "../common/server-types";
 import type { Player } from "../server";
 import { PoolService } from "./pool-service";
 import { Service } from "./service";
@@ -41,6 +41,10 @@ export class LocalService extends Service {
         });
     }
 
+    override moveHand(x: number, y: number): void {
+        this.send(Events.HAND, { x, y, userId: LOCAL_USER_ID, roomId: LOCAL_USER_ID });
+    }
+
     override setInHole(index: number, inHole: boolean): void {
         this.service.setInHole(index, inHole);
     }
@@ -77,7 +81,7 @@ export class LocalService extends Service {
         this.service.setState(state);
     }
 
-    override getState() {
+    override getState(): any {
         return this.service.getState();
     }
 

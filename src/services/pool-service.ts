@@ -70,7 +70,7 @@ export class PoolService {
     }
 
     public setInHole(index: number, inHole: boolean) {
-        this.inHole[index] = inHole;
+        // this.inHole[index] = inHole;
     }
 
     public getState(): PoolState {
@@ -270,16 +270,6 @@ export class PoolService {
 
             if (!anyMoving) break;
         }
-
-        // const balls = this.balls.length;
-        // const blackball = balls - 2;
-        // const whiteball = balls - 1;
-
-        // if (this.inHole[whiteball]) {
-        //     this.inHole[whiteball] = this.inHole[blackball] === true;
-        //     this.balls[whiteball]!.phaserSprite.setPosition(window.innerWidth / 2, window.innerHeight / 2);
-        //     keyPositions.push(this.getKeyPosition());
-        // }
 
         return keyPositions;
     }

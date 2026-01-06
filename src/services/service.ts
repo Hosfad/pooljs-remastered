@@ -37,10 +37,11 @@ export abstract class Service {
     abstract hitBalls(powerPercent: number, angle: number): KeyPositions;
     // abstract disconnect(): void;
 
-    abstract setState(state: any): void;
-    abstract getState(): any;
+    abstract setState<T>(state: T): void;
+    abstract getState<T>(): T;
 
     abstract pull(x: number, y: number, angle: number): void;
+    abstract moveHand(x: number, y: number): void;
 
     abstract timerStart(): void;
     abstract timerLeft(): number;
