@@ -147,7 +147,6 @@ export class PoolService {
         const keyPositions: KeyPositions = [this.getKeyPosition()];
 
         let turn = this.whoseTurn();
-        let hitBallType = false;
         if (this.players[turn] == this.totals[turn]) turn = "black";
 
         for (let step = 0; step < MAX_STEPS; step++) {
@@ -227,13 +226,6 @@ export class PoolService {
                                     vel1.subtract({ x: impulseX, y: impulseY });
                                     vel2.add({ x: impulseX, y: impulseY });
                                 }
-
-                                if (
-                                    (ball1.ballType === "white" && ball2.ballType === turn) ||
-                                    (ball2.ballType === "white" && ball1.ballType === turn)
-                                ) {
-                                    hitBallType = true;
-                                }
                             }
                         }
                     }
@@ -279,7 +271,7 @@ export class PoolService {
         const blackball = balls - 2;
         const whiteball = balls - 1;
 
-        if (this.inHole[whiteball] || !hitBallType) {
+        if (this.inHole[whiteball]) {
             this.inHole[whiteball] = this.inHole[blackball] === true;
             this.balls[whiteball]!.phaserSprite.setPosition(window.innerWidth / 2, window.innerHeight / 2);
             keyPositions.push(this.getKeyPosition());
