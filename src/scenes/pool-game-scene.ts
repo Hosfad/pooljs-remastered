@@ -87,7 +87,6 @@ export class PoolGameScene extends Phaser.Scene {
         // Center the table on the screen
         this.background = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, POOL_ASSETS.BACKGROUND);
         this.background.setDisplaySize(this.tableWidth, this.tableHeight);
-        this.hand = this.add.sprite(this.scale.width / 2, this.scale.height / 2, POOL_ASSETS.HAND);
 
         // Initialize game objects
         this.createHoles();
@@ -97,6 +96,7 @@ export class PoolGameScene extends Phaser.Scene {
         // Create UI
         this.createPowerMeter();
         this.createPocketedBallsRail();
+        this.createHand();
 
         // Setup input
         this.registerEvents(new MultiplayerService(new PoolService(this)));
@@ -104,6 +104,12 @@ export class PoolGameScene extends Phaser.Scene {
         this.createCue();
 
         this.service.connect();
+    }
+
+    private createHand(): void {
+        this.hand = this.add.sprite(this.scale.width / 2, this.scale.height / 2, POOL_ASSETS.HAND)
+            .setDisplaySize(BALL_RADIUS * 10, BALL_RADIUS * 10)
+            .setVisible(false);
     }
 
     private checkWinner(): void {
@@ -484,8 +490,6 @@ export class PoolGameScene extends Phaser.Scene {
 
             const whiteBall = this.balls[this.balls.length - 1]!;
 
-            console.log(whiteBall);
-
             if (whiteBall.isPocketed) {
                 this.hand.visible = true;
                 this.hand.setPosition(pointer.x, pointer.y);
@@ -508,6 +512,7 @@ export class PoolGameScene extends Phaser.Scene {
             if (whiteBall.isPocketed) {
                 whiteBall.isPocketed = false;
                 whiteBall.phaserSprite.setPosition(pointer.x, pointer.y);
+                whiteBall.phaserSprite.visible = true;
                 this.service.setInHole(wb, false);
                 this.hand.visible = false;
                 return;
@@ -769,29 +774,35 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private checkForNewlyPocketedBalls(): void {
-        for (let i = 0; i < this.balls.length - 1; i++) {
+        let i;
+
+        for (i = 0; i < this.balls.length - 1; ++i) {
             const ball = this.balls[i]!;
 
             if (!ball.phaserSprite.visible && !ball.isPocketed) {
                 const alreadyPocketed = this.pocketedBallsRail.pocketedBalls.some((pb) => pb.ball === ball);
 
                 if (!alreadyPocketed) {
-                    ball.isPocketed = false;
+                    ball.isPocketed = true;
                     this.animateBallToRail(ball);
                 }
             }
         }
+
+        const whiteBall = this.balls[i]!;
+        whiteBall.isPocketed = !whiteBall.phaserSprite.visible;
     }
 
     private animateBallToRail(ball: Ball): void {
-        const positionIndex = this.pocketedBallsRail.ballPositions.length - 1 - this.pocketedBallsRail.pocketedBalls.length;
+        const { ballPositions, pocketedBalls } = this.pocketedBallsRail;
+        const positionIndex = ballPositions.length - 1 - pocketedBalls.length;
 
         if (positionIndex < 0) {
             console.warn("Rail is full!");
             return;
         }
 
-        const targetPosition = this.pocketedBallsRail.ballPositions[positionIndex];
+        const targetPosition = ballPositions[positionIndex];
         if (!targetPosition) return;
 
         const dropStartPosition = { x: targetPosition.x, y: this.marginY - 50 };
@@ -801,7 +812,7 @@ export class PoolGameScene extends Phaser.Scene {
             .setScale(ball.phaserSprite.scale)
             .setAlpha(0.8);
 
-        this.pocketedBallsRail.pocketedBalls.push({ ball, positionIndex, isAnimating: true });
+        pocketedBalls.push({ ball, positionIndex, isAnimating: true });
 
         const moveToTopTween = this.tweens.add({
             targets: ballClone,
@@ -818,7 +829,7 @@ export class PoolGameScene extends Phaser.Scene {
                     onComplete: () => {
                         ballClone.destroy();
 
-                        const pocketedBall = this.pocketedBallsRail.pocketedBalls.find((pb) => pb.ball === ball);
+                        const pocketedBall = pocketedBalls.find((pb) => pb.ball === ball);
                         if (pocketedBall) pocketedBall.isAnimating = false;
 
                         this.updateRailDisplay();
