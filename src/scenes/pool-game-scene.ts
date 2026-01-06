@@ -482,6 +482,31 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
 
+    private canPlaceBall(px: number, py: number): boolean {
+        const xRatio = this.tableWidth / 16;
+        const yRatio = this.tableHeight / 12;
+
+        if (px < this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_INNER_X ||
+            px > this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X ||
+            py < this.marginY + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y ||
+            py > this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y) {
+            return false;
+        }
+
+        const pos = new Vector2(px, py);
+
+        for (const ball of this.balls) {
+            const { x, y } = ball.phaserSprite;
+            const ballPos = new Vector2(x, y);
+
+            if (ballPos.distance(pos) <= BALL_RADIUS * 1.5) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
@@ -491,28 +516,7 @@ export class PoolGameScene extends Phaser.Scene {
 
             const whiteBall = this.balls[this.balls.length - 1]!;
 
-            if (whiteBall.isPocketed) {
-                const xRatio = this.tableWidth / 16;
-                const yRatio = this.tableHeight / 12;
-
-                if (px < this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_INNER_X ||
-                    px > this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X ||
-                    py < this.marginY + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y ||
-                    py > this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y) {
-                    return;
-                }
-
-                const pos = new Vector2(px, py);
-
-                for (const ball of this.balls) {
-                    const { x, y } = ball.phaserSprite;
-                    const ballPos = new Vector2(x, y);
-
-                    if (ballPos.distance(pos) <= BALL_RADIUS * 1.5) {
-                        return;
-                    }
-                }
-
+            if (whiteBall.isPocketed && this.canPlaceBall(px, py)) {
                 const mx = this.marginX;
                 const my = this.marginY;
 
@@ -536,28 +540,7 @@ export class PoolGameScene extends Phaser.Scene {
             const { x: px, y: py } = pointer;
 
             // Hand Stuff
-            if (whiteBall.isPocketed) {
-                const xRatio = this.tableWidth / 16;
-                const yRatio = this.tableHeight / 12;
-
-                if (px < this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_INNER_X ||
-                    px > this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X ||
-                    py < this.marginY + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y ||
-                    py > this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y) {
-                    return;
-                }
-
-                const pos = new Vector2(px, py);
-
-                for (const ball of this.balls) {
-                    const { x, y } = ball.phaserSprite;
-                    const ballPos = new Vector2(x, y);
-
-                    if (ballPos.distance(pos) <= BALL_RADIUS * 1.5) {
-                        return;
-                    }
-                }
-
+            if (whiteBall.isPocketed && this.canPlaceBall(px, py)) {
                 whiteBall.phaserSprite.visible = true;
                 whiteBall.phaserSprite.setPosition(px, py);
                 whiteBall.isPocketed = this.hand.visible = false;
