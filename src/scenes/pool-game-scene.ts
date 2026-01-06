@@ -221,7 +221,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createBalls(): void {
-        const ROWS = 3;
+        const ROWS = 5;
         const r = BALL_RADIUS;
         const DIAMETER = r * 2;
         const ROW_SPACING = DIAMETER * 0.8;
@@ -232,13 +232,15 @@ export class PoolGameScene extends Phaser.Scene {
         const stripes = Object.values(POOL_ASSETS.STRIPES);
 
         // --- Create racked balls (triangle) ---
+        let count = 0;
+
         for (let row = 0; row < ROWS; row++) {
             const ballsInRow = ROWS - row;
             const x = rackOrigin.x + row * COL_SPACING;
             const startY = rackOrigin.y - ((ballsInRow - 1) * ROW_SPACING) / 2;
 
             for (let i = 0; i < ballsInRow; i++) {
-                const isSolid = i % 2 === 0;
+                const isSolid = ++count % 2 === 0;
                 const ballType: BallType = isSolid ? "solid" : "striped";
                 const texture = isSolid ? solids.shift() : stripes.shift();
 
