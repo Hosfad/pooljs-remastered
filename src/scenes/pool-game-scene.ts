@@ -492,6 +492,27 @@ export class PoolGameScene extends Phaser.Scene {
             const whiteBall = this.balls[this.balls.length - 1]!;
 
             if (whiteBall.isPocketed) {
+                const xRatio = this.tableWidth / 16;
+                const yRatio = this.tableHeight / 12;
+
+                if (px < this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_INNER_X ||
+                    px > this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X ||
+                    py < this.marginY + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y ||
+                    py > this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y) {
+                    return;
+                }
+
+                const pos = new Vector2(px, py);
+
+                for (const ball of this.balls) {
+                    const { x, y } = ball.phaserSprite;
+                    const ballPos = new Vector2(x, y);
+
+                    if (ballPos.distance(pos) <= BALL_RADIUS * 1.5) {
+                        return;
+                    }
+                }
+
                 const mx = this.marginX;
                 const my = this.marginY;
 
@@ -536,6 +557,7 @@ export class PoolGameScene extends Phaser.Scene {
                         return;
                     }
                 }
+
                 whiteBall.phaserSprite.visible = true;
                 whiteBall.phaserSprite.setPosition(px, py);
                 whiteBall.isPocketed = this.hand.visible = false;
