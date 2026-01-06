@@ -9,6 +9,8 @@ const Vector2 = Phaser.Math.Vector2;
 type Scores = Record<BallType, number>;
 
 export class PoolService {
+    private scene: PoolGameScene;
+
     private colliders: Collider[];
     private balls: Ball[];
     private holes: Hole[];
@@ -25,6 +27,8 @@ export class PoolService {
     private turnIndex = 0;
 
     constructor(scene: PoolGameScene) {
+        this.scene = scene;
+
         this.balls = scene.balls;
         this.colliders = scene.colliders;
         this.holes = scene.holes;
@@ -47,11 +51,7 @@ export class PoolService {
             loop: true,
         });
 
-        console.log(
-            Object.keys(this.totals)
-                .map((t) => `${t}: ${this.totals[t as BallType]}`)
-                .join(", ")
-        );
+        console.log(Object.keys(this.totals).map((t) => `${t}: ${this.totals[t as BallType]}`).join(", "));
         console.log("Players", Object.values(this.turns).join(", "));
     }
 
@@ -126,11 +126,14 @@ export class PoolService {
     }
 
     private getKeyPosition() {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
+        const width = this.scene.tableWidth;
+        const height = this.scene.tableHeight;
+
+        const mx = this.scene.marginX;
+        const my = this.scene.marginY;
 
         return this.balls.map((b, i) => ({
-            position: new Vector2(b.phaserSprite.x / width, b.phaserSprite.y / height),
+            position: new Vector2((b.phaserSprite.x - mx) / width, (b.phaserSprite.y - my) / height),
             hidden: this.inHole[i] === true,
             collision: this.collisions[i],
         }));
@@ -285,14 +288,7 @@ export class PoolService {
         return keyPositions;
     }
 
-    private getNormal(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): { x: number; y: number } {
+    private getNormal(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): { x: number; y: number } {
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -317,14 +313,7 @@ export class PoolService {
         return closestNormal;
     }
 
-    private isPointInPolygon(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): boolean {
+    private isPointInPolygon(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): boolean {
         const { x, y } = b;
 
         let inside = false;
