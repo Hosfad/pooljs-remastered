@@ -497,6 +497,15 @@ export class PoolGameScene extends Phaser.Scene {
 
         const pos = new Vector2(px, py);
 
+        for (const hole of this.holes) {
+            const { sprite: { position } } = hole;
+            const holePos = new Vector2(position.x, position.y);
+
+            if (holePos.distance(pos) <= HOLE_RADIUS * 1) {
+                return false;
+            }
+        }
+
         for (const ball of this.balls) {
             const { x, y } = ball.phaserSprite;
             const ballPos = new Vector2(x, y);
