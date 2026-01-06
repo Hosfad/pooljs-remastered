@@ -13,12 +13,9 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
     const level = 1;
 
     const roomId = service.getRoomId();
-
-    console.log("me", me);
-
     return (
         <div className="fixed top-4 left-4 z-50">
-            <div className="bg-black/40 p-4 backdrop-blur-md rounded-xl p-3 border-2 border-accent shadow-2xl">
+            <div className="bg-black/40 p-4 backdrop-blur-md rounded-xl p-3 border-2 border-emerald-600/30 shadow-2xl">
                 <div className="flex items-center gap-3">
                     <div className="relative flex-shrink-0">
                         <img src={`${photo}`} className="w-20 h-20 rounded-full border-2 border-emerald-400/50 shadow-lg" />

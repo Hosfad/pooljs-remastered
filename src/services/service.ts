@@ -1,6 +1,8 @@
 import * as Phaser from "phaser";
 
+import type { DiscordSDK } from "@discord/embedded-app-sdk";
 import { v4 as uuid } from "uuid";
+import { INIT_DISCORD_SDK } from "../common/pool-constants";
 import type { BallType, GameSettings, KeyPositions } from "../common/pool-types";
 import { Events, type EventsData } from "../common/server-types";
 import type { Player, Room } from "../server";
@@ -15,6 +17,7 @@ export type LocalUser = {
 export abstract class Service {
     private events = new Phaser.Events.EventEmitter();
     protected room: Room | null = null;
+    public discordSdk: DiscordSDK | null = null;
 
     abstract connect(): Promise<boolean>;
 
@@ -60,6 +63,7 @@ export abstract class Service {
     }
 
     public getRoomId(): string | null {
+        if (INIT_DISCORD_SDK && this.discordSdk) return this.discordSdk?.instanceId ?? null;
         const url = new URL(window.location.href);
         const roomId = url.searchParams.get("room") as string;
         if (!roomId) {

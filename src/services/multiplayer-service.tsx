@@ -20,7 +20,6 @@ interface Preferences {
 export class MultiplayerService extends LocalService {
     private ws: WebSocket | null = null;
     private eventHandlers = new Map<keyof EventsData, Set<(data: any) => void>>();
-    public discordSdk: DiscordSDK | null = null;
 
     override async connect(): Promise<boolean> {
         const wsUrl = INIT_DISCORD_SDK ? `wss://${location.host}/.proxy/api/ws` : "ws://localhost:6969/ws";
@@ -28,10 +27,10 @@ export class MultiplayerService extends LocalService {
 
         try {
             if (!this.ws) this.ws = new WebSocket(wsUrl);
-            this.registerEvents();
 
             this.ws.onopen = async () => {
                 await this.initDisocrdSDK();
+                this.registerEvents();
 
                 const reactRoot = document.getElementById("react-root");
 
@@ -149,13 +148,15 @@ export class MultiplayerService extends LocalService {
 
     private async initDisocrdSDK() {
         if (!INIT_DISCORD_SDK) return;
+
         this.discordSdk = new DiscordSDK(import.meta.env.VITE_DISCORD_APP_ID);
         await this.discordSdk.ready();
 
         const me = await this.me();
         if (me.access_token) {
-            await this.discordSdk.commands.authenticate({ access_token: me.access_token });
-            return;
+            const res = await this.discordSdk.commands.authenticate({ access_token: me.access_token });
+            if (!res.user) return console.error("Failed to authenticate with discord", res);
+            console.log("Authenticated with discord", res);
         }
 
         try {
