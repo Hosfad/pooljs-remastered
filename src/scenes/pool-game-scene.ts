@@ -486,19 +486,20 @@ export class PoolGameScene extends Phaser.Scene {
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
-            this.mousePosition.set(pointer.x, pointer.y);
+            const { x: px, y: py } = pointer;
+            this.mousePosition.set(px, py);
 
             const whiteBall = this.balls[this.balls.length - 1]!;
 
             if (whiteBall.isPocketed) {
                 this.hand.visible = true;
-                this.hand.setPosition(pointer.x, pointer.y);
+                this.hand.setPosition(px, py);
                 return;
             }
 
             if (this.isMobile && this.isDraggingShot && !this.powerMeter.isDragging) {
                 const { x, y } = whiteBall.phaserSprite!;
-                this.lockedAimAngle = Math.atan2(pointer.y - y, pointer.x - x);
+                this.lockedAimAngle = Math.atan2(py - y, px - x);
             }
         });
 
@@ -506,15 +507,17 @@ export class PoolGameScene extends Phaser.Scene {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
 
             const isTouchingPowerMeter = this.isTouchingPowerMeter(pointer);
+
             const wb = this.balls.length - 1;
             const whiteBall = this.balls[wb]!;
+            const { x: px, y: py } = pointer;
 
+            // Hand Stuff
             if (whiteBall.isPocketed) {
-                whiteBall.isPocketed = false;
-                whiteBall.phaserSprite.setPosition(pointer.x, pointer.y);
+                whiteBall.isPocketed = this.hand.visible = false;
+                whiteBall.phaserSprite.setPosition(px, py);
                 whiteBall.phaserSprite.visible = true;
                 this.service.setInHole(wb, false);
-                this.hand.visible = false;
                 return;
             }
 
@@ -524,9 +527,9 @@ export class PoolGameScene extends Phaser.Scene {
             const { x, y } = whiteBall.phaserSprite!;
 
             // Lock aim direction ON CLICK
-            this.lockedAimAngle = Math.atan2(pointer.y - y, pointer.x - x);
+            this.lockedAimAngle = Math.atan2(py - y, px - x);
 
-            if (!this.isMobile) this.dragStartPosition.set(pointer.x, pointer.y);
+            if (!this.isMobile) this.dragStartPosition.set(px, py);
 
             this.isDraggingShot = true;
         });
