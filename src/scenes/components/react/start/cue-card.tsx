@@ -27,12 +27,12 @@ export function CueCard({
     return (
         <motion.div
             whileHover={{ scale: 1.02 }}
-            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+            className={`border-2 rounded-lg p-4  transition-all ${
                 isSelected ? "border-accent bg-accent/10" : "border-white/20 bg-white/5 hover:border-accent/40"
             }`}
         >
             <div className="flex items-center gap-4 mb-4">
-                <div className="bg-gradient-to-br from-blue-900/50 to-blue-950/50 rounded-lg p-4 flex-shrink-0">
+                <div className="bg-gradient-to-br from-emerald-900/50 to-emerald-950/50 rounded-lg p-4 flex-shrink-0">
                     <div className="w-64 h-16 flex items-center justify-center">
                         <img
                             src={cue.sprite}
@@ -57,7 +57,7 @@ export function CueCard({
                         onClick={() => {
                             onSelect(cue);
                         }}
-                        className="bg-accent/20 hover:bg-accent/30 text-accent px-6 py-3 rounded-lg font-semibold border-2 border-accent/40 hover:border-accent/60 transition-all"
+                        className="bg-accent/20 hover:cursor-pointer hover:bg-accent/30 text-accent px-6 py-3 rounded-lg font-semibold border-2 border-accent/40 hover:border-accent/60 transition-all"
                     >
                         {owned ? (isSelected ? "Equipped" : "Equip") : "Unlock"}
                     </button>

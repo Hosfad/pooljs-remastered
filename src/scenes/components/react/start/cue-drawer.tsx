@@ -29,6 +29,8 @@ export function CuesDrawer({
     const me = service.me();
     const [selectedCue, setSelectedCue] = useState<CueId | null>(settings.selectedCue ?? "basic");
     const handleCueSelect = (cue: CueInfo) => {
+        if (!me.ownedCues.includes(cue.id)) return;
+
         setSelectedCue(cue.id);
         service.setSettings({
             selectedCue: cue.id,
@@ -36,7 +38,7 @@ export function CuesDrawer({
     };
 
     return (
-        <Drawer title="Cues" isOpen={isOpen} onClose={onClose}>
+        <Drawer title="Cues" isOpen={isOpen} onClose={onClose} me={me}>
             <div className="grid grid-cols-3 gap-4 mb-6">
                 {tabs.map((tab) => (
                     <button

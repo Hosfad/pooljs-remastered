@@ -14,6 +14,7 @@ export function SettingsDrawer({
     onClose: () => void;
     service: MultiplayerService;
 }) {
+    const me = service.me();
     const [settings, setSettings] = useState<GameSettings>(service.getSettings());
 
     const handleSave = () => {
@@ -30,7 +31,7 @@ export function SettingsDrawer({
     };
 
     return (
-        <Drawer title="Cues" isOpen={isOpen} onClose={onClose}>
+        <Drawer title="Game Settings" isOpen={isOpen} onClose={onClose} me={me}>
             <div className="space-y-6 max-w-2xl">
                 <div className="bg-white/10 rounded-lg p-6">
                     <h3 className="text-accent font-bold text-lg mb-4">Audio Settings</h3>

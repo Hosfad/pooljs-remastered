@@ -1,5 +1,6 @@
-import { Cog, ShoppingBag, Star, Trophy } from "lucide-react";
+import { Cog, ShoppingBag, Star } from "lucide-react";
 import React from "react";
+import { getEXPForLevel } from "../../../../common";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 import { CuesDrawer } from "./cue-drawer";
 import { SettingsDrawer } from "./settings-drawer";
@@ -7,15 +8,6 @@ import { SettingsDrawer } from "./settings-drawer";
 export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
     const me = service.me();
     const { name, photo } = me ?? {};
-
-    const playerData = {
-        score: 0,
-        maxScore: 100,
-        energy: 100,
-        cash: 100,
-        coins: 100,
-        level: 1,
-    };
 
     const room = service.getCurrentRoom();
 
@@ -31,6 +23,8 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
         setIsDrawerOpen(false);
         setActiveDrawer(null);
     };
+
+    const width = (me.exp / getEXPForLevel(me.level)) * 100;
 
     return (
         <div className="absolute top-0 right-0 w-full bg-black/40 bg-blur-2xl shadow-lg">
@@ -52,12 +46,6 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
                     </div>
                     <div className="min-w-0 ">
                         <h2 className="text-white font-bold text-lg truncate">{name}</h2>
-                        <div className="flex items-center gap-2">
-                            <span className="text-yellow-500 text-sm font-semibold">
-                                {playerData.score}/{playerData.maxScore}
-                            </span>
-                            <Trophy className="w-4 h-4 text-yellow-500" />
-                        </div>
                     </div>
                 </div>
 
@@ -94,22 +82,22 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
                         <div className="flex items-center gap-1">
                             <div className="w-24 h-2 bg-accent/20 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400"
-                                    style={{ width: `${playerData.energy}%` }}
+                                    className="h-full bg-gradient-to-r from-accent to-accent/80"
+                                    style={{ width: `${width}%` }}
                                 />
                             </div>
-                            <span className="text-white text-xs font-bold ml-1">{playerData.energy}</span>
+                            <span className="text-white text-xs font-bold ml-1">{me.level}</span>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
                         <div className="text-2xl">💵</div>
-                        <span className="text-green-400 font-bold">{playerData.cash}</span>
+                        <span className="text-green-400 font-bold">{me.cash}</span>
                     </div>
                     {/* Coins */}
                     <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
                         <div className="text-2xl">🪙</div>
-                        <span className="text-yellow-400 font-bold">{playerData.coins}</span>
+                        <span className="text-yellow-400 font-bold">{me.coins}</span>
                     </div>
                 </div>
             </div>

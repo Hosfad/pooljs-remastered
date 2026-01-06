@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 
 import type { DiscordSDK } from "@discord/embedded-app-sdk";
 import { v4 as uuid } from "uuid";
+import { getEXPForLevel } from "../common";
 import { INIT_DISCORD_SDK, type CueId } from "../common/pool-constants";
 import type { BallType, GameSettings, KeyPositions } from "../common/pool-types";
 import { Events, type EventsData } from "../common/server-types";
@@ -12,6 +13,11 @@ export type LocalUser = {
     name: string;
     photo: string;
     access_token?: string;
+    ownedCues: CueId[];
+    level: number;
+    coins: number;
+    cash: number;
+    exp: number;
 };
 
 export abstract class Service {
@@ -41,26 +47,29 @@ export abstract class Service {
 
     abstract pull(x: number, y: number, angle: number): void;
 
-    public me() {
+    public me(): LocalUser {
         const item = sessionStorage.getItem("user");
 
         if (item) {
-            const user = JSON.parse(item) as {
-                id: string;
-                name: string;
-                photo: string;
-                access_token?: string;
-                ownedCues: CueId[];
-            };
-            if (!user.ownedCues) user.ownedCues = ["basic", "advanced"];
+            const user = JSON.parse(item) as LocalUser;
+            user.ownedCues = user.ownedCues ?? ["basic", "advanced"];
+            user.level = user.level ?? 1;
+            user.coins = user.coins ?? 100;
+            user.cash = user.cash ?? 100;
+            user.exp = user.exp ?? getEXPForLevel(1) / 3;
+
             return user;
         }
-        const user = {
+        const user: LocalUser = {
             id: uuid(),
             name: this.generateRandomName(),
             photo: `/assets/avatars/${Math.floor(Math.random() * 6)}.png`,
             access_token: undefined,
             ownedCues: ["basic", "advanced"],
+            level: 1,
+            coins: 100,
+            cash: 100,
+            exp: 0,
         };
         sessionStorage.setItem("user", JSON.stringify(user));
         return user;

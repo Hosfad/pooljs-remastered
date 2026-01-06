@@ -65,7 +65,8 @@ export function Lobby({ service }: { service: MultiplayerService }) {
             service.discordSdk?.commands.openInviteDialog();
             return;
         }
-        navigator.clipboard.writeText(window.location.href);
+        if (!room) return;
+        navigator.clipboard.writeText(window.location.href + "?room=" + room.id);
         service.showErrorModal({
             title: "Invite link copied to clipboard!",
             closeAfter: 1500,

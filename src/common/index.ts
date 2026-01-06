@@ -21,3 +21,7 @@ export const padButtonText = (text: string) => {
 
     return `[ ${displayText.padEnd(TEXT_MAX_CHARS)} ]`;
 };
+
+export const getEXPForLevel = (level: number) => {
+    return Math.floor(Math.pow(level, 2) * 100);
+};
