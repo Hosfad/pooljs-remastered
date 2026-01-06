@@ -641,8 +641,7 @@ export class PoolGameScene extends Phaser.Scene {
             },
             "TABLE SIZE": () => `${this.tableWidth.toFixed(0)}x${this.tableHeight.toFixed(0)}`,
             "DEVICE SCALE": () => `${this.game.scale.canvas.width}x${this.game.scale.canvas.height}`,
-            "Margin X": () => `${this.marginX.toFixed(0)}`,
-            "Margin Y": () => `${this.marginY.toFixed(0)}`,
+            "HOLE RADIUS": () => `${HOLE_RADIUS.toFixed(0)}`,
         });
     }
 

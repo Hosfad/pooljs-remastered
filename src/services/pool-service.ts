@@ -260,7 +260,7 @@ export class PoolService {
                     }
 
                     for (const hole of this.holes) {
-                        if (b1.distance(hole.sprite.position) < BALL_RADIUS * 2) {
+                        if (b1.distance(hole.sprite.position) <= BALL_RADIUS * 2.25) {
                             this.inHole[i] = true;
                             this.players[ball1.ballType]++;
                             this.collisions[i] = "hole";
