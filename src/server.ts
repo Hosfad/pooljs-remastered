@@ -245,7 +245,7 @@ const createNewRoom = (user: { userId: string; name: string }, ws: WebSocket, ro
         ws,
         roomId: finalId,
         state: {
-            ballType: room.clients.length % 2 === 0 ? "yellow" : "red",
+            ballType: room.clients.length % 2 === 0 ? "solid" : "striped",
         },
         isSpectator: false,
     };

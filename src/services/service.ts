@@ -45,9 +45,11 @@ export abstract class Service {
     public instanciateRoom(room: Room) {
         this.room = room;
     }
+
     public getConfig() {
         return { roomId: this.getRoomId(), ...this.getStorage() };
     }
+
     public getStorage(): { userId: string; name: string } {
         let user = sessionStorage.getItem("user");
 
@@ -56,6 +58,7 @@ export abstract class Service {
             sessionStorage.setItem("user", JSON.stringify(newUser));
             return newUser;
         }
+
         const parsed = JSON.parse(user) as { userId: string; name: string };
         return parsed;
     }
@@ -72,6 +75,7 @@ export abstract class Service {
             selectedCueIndex: 0,
         };
     }
+
     public getCurrentRoom(): Room | null {
         return this.room;
     }

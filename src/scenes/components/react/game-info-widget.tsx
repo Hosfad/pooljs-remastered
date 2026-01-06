@@ -26,12 +26,8 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
 
     React.useEffect(() => {
         if (!room) return;
-
         setTimeLeft(ROUND_TIME);
-        const interval = setInterval(() => {
-            setTimeLeft(service.timerLeft());
-        }, 200);
-
+        const interval = setInterval(() => setTimeLeft(service.timerLeft()), 200);
         return () => clearInterval(interval);
     }, [room]);
 
@@ -179,7 +175,7 @@ function PlayerAvatar({ player, isActive, progress }: { player: Player; isActive
                     color: isActive ? COLORS.text : `${COLORS.text}cc`,
                 }}
             >
-                {player.name}
+                {player.name} [{player.state.ballType}]
             </div>
         </div>
     );
