@@ -747,21 +747,17 @@ export class PoolGameScene extends Phaser.Scene {
 
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < columns; col++) {
-                const x = startX;
-                const y = startY + row * verticalSpacing;
-                ballPositions.push({ x, y });
+                ballPositions.push({ x: startX, y: startY + row * verticalSpacing });
             }
         }
 
-        const ballSprites: Phaser.GameObjects.Sprite[] = [];
-        ballPositions.forEach((pos) => {
-            const emptySprite = this.add
+        const ballSprites: Phaser.GameObjects.Sprite[] = ballPositions.map((pos) => (
+            this.add
                 .sprite(pos.x, pos.y, POOL_ASSETS.WHITE_BALL)
                 .setScale((ballRadius * 2) / 256)
                 .setAlpha(0)
-                .setVisible(false);
-            ballSprites.push(emptySprite);
-        });
+                .setVisible(false)
+        ));
 
         this.pocketedBallsRail = {
             background,
