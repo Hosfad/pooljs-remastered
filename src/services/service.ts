@@ -21,19 +21,14 @@ export type LocalUser = {
 };
 
 export abstract class Service {
-    private events = new Phaser.Events.EventEmitter();
-    protected room: Room | null = null;
     public discordSdk: DiscordSDK | null = null;
+
+    protected room: Room | null = null;
+
+    private events = new Phaser.Events.EventEmitter();
 
     abstract connect(): Promise<boolean>;
 
-    public subscribe<T extends keyof EventsData>(event: T, callback: (data: EventsData[T]) => void) {
-        this.events.on(event, callback);
-    }
-
-    public send<T extends keyof EventsData>(event: T, data: EventsData[T]) {
-        this.events.emit(event, data);
-    }
     abstract getPlayers(): Player[];
     abstract winner(): string | undefined;
     abstract whoseTurn(): BallType;
@@ -46,6 +41,20 @@ export abstract class Service {
     abstract getState(): any;
 
     abstract pull(x: number, y: number, angle: number): void;
+
+    abstract timerStart(): void;
+    abstract timerLeft(): number;
+    abstract timerStop(): void;
+
+    abstract setInHole(index: number, inHole: boolean): void;
+
+    public subscribe<T extends keyof EventsData>(event: T, callback: (data: EventsData[T]) => void) {
+        this.events.on(event, callback);
+    }
+
+    public send<T extends keyof EventsData>(event: T, data: EventsData[T]) {
+        this.events.emit(event, data);
+    }
 
     public me(): LocalUser {
         const item = sessionStorage.getItem("user");
@@ -60,6 +69,7 @@ export abstract class Service {
 
             return user;
         }
+
         const user: LocalUser = {
             id: uuid(),
             name: this.generateRandomName(),
@@ -71,6 +81,7 @@ export abstract class Service {
             cash: 100,
             exp: 0,
         };
+
         sessionStorage.setItem("user", JSON.stringify(user));
         return user;
     }
@@ -82,17 +93,20 @@ export abstract class Service {
 
     public getRoomId(): string | null {
         if (INIT_DISCORD_SDK && this.discordSdk) return this.discordSdk?.instanceId ?? null;
+
         const url = new URL(window.location.href);
         const roomId = url.searchParams.get("room") as string;
+
         if (!roomId) {
             const seesionRoomId = sessionStorage.getItem("roomId");
-            if (seesionRoomId) {
-                return seesionRoomId;
-            }
+            if (seesionRoomId) return seesionRoomId;
+
             const id = uuid();
             sessionStorage.setItem("roomId", id);
+
             return id;
         }
+
         return roomId;
     }
 
@@ -105,16 +119,14 @@ export abstract class Service {
     public instanciateRoom(room: Room) {
         this.room = room;
     }
+
     public getCurrentRoom(): Room | null {
         return this.room;
     }
 
     public getSettings(): GameSettings {
         const item = sessionStorage.getItem("settings");
-        if (item) {
-            return JSON.parse(item) as GameSettings;
-        }
-        return {
+        return item ? JSON.parse(item) : {
             masterVolume: 100,
             sfxVolume: 100,
             musicVolume: 80,
@@ -168,15 +180,8 @@ export abstract class Service {
         return `${prefixes[pre]} ${suffixes[suf]}`;
     }
 
-    abstract timerStart(): void;
-
-    abstract timerLeft(): number;
-
-    abstract timerStop(): void;
-
     public showErrorModal(data: { title: string; description?: string; closeAfter?: number }) {
         const { title, description, closeAfter } = data;
-
         this.send(Events.SHOW_MODAL, { title, description, closeAfter });
     }
 }

@@ -43,6 +43,7 @@ export const POOL_ASSETS = {
         BALL_HITTING_TABLE_EDGE: "ball-hitting-table-edge",
     },
 
+    HAND: "hand",
     CUES: {
         BASIC: "cue-basic",
         ADVANCED: "cue-advanced",

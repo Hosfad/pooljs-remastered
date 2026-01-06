@@ -50,6 +50,7 @@ export class PoolGameScene extends Phaser.Scene {
     };
 
     // Graphics
+    private hand!: Phaser.GameObjects.Sprite;
     private background!: Phaser.GameObjects.Image;
     private holeBalls: Phaser.GameObjects.Sprite[] = [];
     private playedSounds: (number | undefined)[] = [];
@@ -86,20 +87,19 @@ export class PoolGameScene extends Phaser.Scene {
         // Center the table on the screen
         this.background = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, POOL_ASSETS.BACKGROUND);
         this.background.setDisplaySize(this.tableWidth, this.tableHeight);
+        this.hand = this.add.sprite(this.scale.width / 2, this.scale.height / 2, POOL_ASSETS.HAND);
 
         // Initialize game objects
         this.createHoles();
         this.createColliders();
         this.createBalls();
 
-        this.service = new MultiplayerService(new PoolService(this));
-
         // Create UI
         this.createPowerMeter();
         this.createPocketedBallsRail();
 
         // Setup input
-        this.registerEvents();
+        this.registerEvents(new MultiplayerService(new PoolService(this)));
         this.setupInput();
         this.createCue();
 
@@ -118,11 +118,14 @@ export class PoolGameScene extends Phaser.Scene {
         this.add.text(midw, midh + 40, "Click to play again!", { fontSize: "32px" }).setOrigin(0.5);
 
         this.input.once("pointerdown", () => window.location.reload());
+
+        this.isGameStarted = false;
     }
 
-    private registerEvents(): void {
+    private registerEvents(service: Service): void {
+        this.service = service;
+
         this.service.subscribe(Events.INIT, () => {
-            this.loadAvatarsAndCreateInfoHeader();
             this.service.timerStart();
             this.isGameStarted = true;
             console.log("Pool game initialized with", this.balls.length, "balls");
@@ -142,22 +145,8 @@ export class PoolGameScene extends Phaser.Scene {
             this.keyPositions.push.apply(this.keyPositions, keyPositions);
             this.service.timerStop();
             this.service.setState(state);
-            this.checkForNewlyPocketedBalls();
             this.checkWinner();
         });
-    }
-
-    private loadAvatarsAndCreateInfoHeader(): void {
-        // if (this.players) {
-        //     this.load.image("player1Avatar", this.players[0]?.photo);
-        //     this.load.image("player2Avatar", this.players[1]?.photo);
-        // }
-
-        this.load.once(Phaser.Loader.Events.COMPLETE, () => {
-            this.checkWinner();
-        });
-
-        this.load.start();
     }
 
     private calculateTableDimensions(): void {
@@ -493,10 +482,18 @@ export class PoolGameScene extends Phaser.Scene {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
             this.mousePosition.set(pointer.x, pointer.y);
 
-            if (this.isMobile && this.isDraggingShot && !this.powerMeter.isDragging) {
-                const whiteBall = this.balls[this.balls.length - 1]!;
-                const { x, y } = whiteBall.phaserSprite!;
+            const whiteBall = this.balls[this.balls.length - 1]!;
 
+            console.log(whiteBall);
+
+            if (whiteBall.isPocketed) {
+                this.hand.visible = true;
+                this.hand.setPosition(pointer.x, pointer.y);
+                return;
+            }
+
+            if (this.isMobile && this.isDraggingShot && !this.powerMeter.isDragging) {
+                const { x, y } = whiteBall.phaserSprite!;
                 this.lockedAimAngle = Math.atan2(pointer.y - y, pointer.x - x);
             }
         });
@@ -505,11 +502,20 @@ export class PoolGameScene extends Phaser.Scene {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
 
             const isTouchingPowerMeter = this.isTouchingPowerMeter(pointer);
+            const wb = this.balls.length - 1;
+            const whiteBall = this.balls[wb]!;
+
+            if (whiteBall.isPocketed) {
+                whiteBall.isPocketed = false;
+                whiteBall.phaserSprite.setPosition(pointer.x, pointer.y);
+                this.service.setInHole(wb, false);
+                this.hand.visible = false;
+                return;
+            }
 
             // Handle by the power meter
             if (this.isMobile && isTouchingPowerMeter) return;
 
-            const whiteBall = this.balls[this.balls.length - 1]!;
             const { x, y } = whiteBall.phaserSprite!;
 
             // Lock aim direction ON CLICK
@@ -559,7 +565,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         let angle: number;
 
-        if (!this.input.enabled) {
+        if (!this.input.enabled || whiteBall.isPocketed) {
             this.aimLine.clear();
             return;
         }
@@ -767,9 +773,9 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private checkForNewlyPocketedBalls(): void {
-        const allBalls = this.balls.slice(0, this.balls.length - 1);
+        for (let i = 0; i < this.balls.length - 1; i++) {
+            const ball = this.balls[i]!;
 
-        allBalls.forEach((ball, index) => {
             if (!ball.phaserSprite.visible && !ball.isPocketed) {
                 const alreadyPocketed = this.pocketedBallsRail.pocketedBalls.some((pb) => pb.ball === ball);
 
@@ -778,7 +784,7 @@ export class PoolGameScene extends Phaser.Scene {
                     this.animateBallToRail(ball);
                 }
             }
-        });
+        }
     }
 
     private animateBallToRail(ball: Ball): void {

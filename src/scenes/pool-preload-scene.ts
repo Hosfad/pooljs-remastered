@@ -2,11 +2,6 @@ import * as Phaser from "phaser";
 import { POOL_ASSETS, POOL_SCENE_KEYS } from "../common/pool-constants";
 
 export class PoolPreLoadScene extends Phaser.Scene {
-    private balls: Phaser.GameObjects.Image[] = [];
-    private orbitRadius = 150;
-    private animationDuration = 1500;
-    private readonly CENTER_Y_OFFSET = 30;
-
     constructor() {
         super({ key: POOL_SCENE_KEYS.POOL_PRELOAD });
     }
@@ -15,7 +10,7 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.load.setPath("assets");
         this.load.image(POOL_ASSETS.LOADING_BACKGROUND, "/images/loading-background.png");
 
-        // Load all the assets
+        // BALLS
         this.load.svg(POOL_ASSETS.WHITE_BALL, "/game/balls/white.svg");
         this.load.svg(POOL_ASSETS.BLACK_BALL, "/game/balls/black.svg");
 
@@ -37,6 +32,9 @@ export class PoolPreLoadScene extends Phaser.Scene {
 
         const cueSize = { width: 600, height: 300 };
 
+        // Hand
+        this.load.image(POOL_ASSETS.HAND, "/game/hand.png");
+
         // Cues
         this.load.svg(POOL_ASSETS.CUES.BASIC, "/game/cues/basic.svg", cueSize);
         this.load.svg(POOL_ASSETS.CUES.ADVANCED, "/game/cues/advanced.svg", cueSize);
@@ -47,11 +45,6 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.load.svg(POOL_ASSETS.CUES.PALESTINE, "/game/cues/palestine.svg", cueSize);
 
         this.load.on("complete", () => this.transitionToGame());
-    }
-
-    create(): void {
-        // const { width, height } = this.cameras.main;
-        // this.add.image(width / 2, height / 2, "loading-background").setDisplaySize(width, height);
     }
 
     private transitionToGame(): void {

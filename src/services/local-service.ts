@@ -41,6 +41,10 @@ export class LocalService extends Service {
         });
     }
 
+    override setInHole(index: number, inHole: boolean): void {
+        this.service.setInHole(index, inHole);
+    }
+
     override timerStart(): void {
         this.service.timerStart();
     }
