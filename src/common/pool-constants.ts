@@ -1,7 +1,7 @@
 /**
  * Pool game specific constants
  */
-export let DEBUG_GRAPHICS = true;
+export let DEBUG_GRAPHICS = false;
 export function setDebugGraphics(debug: boolean) {
     DEBUG_GRAPHICS = debug;
 }
@@ -72,7 +72,7 @@ const height = window.innerHeight;
 const targetWidth = 1920;
 const targetHeight = 1080;
 
-const screenRatio = width / targetWidth * height / targetHeight;
+const screenRatio = ((width / targetWidth) * height) / targetHeight;
 
 // Game dimensions
 export const POOL_TABLE_WIDTH = 1300;

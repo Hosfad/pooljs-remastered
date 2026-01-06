@@ -50,6 +50,9 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
     const turn = +service.isMyTurn();
     const currentPlayerId = imHost ? whenHost[turn] : whenGuest[turn];
 
+    const player1Ball = player1.state.ballType;
+    const player2Ball = player2.state.ballType;
+
     return (
         <div
             style={{
@@ -63,7 +66,12 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
             }}
         >
             {/* Player 1 */}
-            <PlayerAvatar player={player1} isActive={currentPlayerId === player1.id} progress={progress} />
+            <PlayerAvatar
+                player={player1}
+                isActive={currentPlayerId === player1.id}
+                progress={progress}
+                ballType={player1Ball}
+            />
 
             {/* Center Info */}
             <div
@@ -97,17 +105,34 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
             </div>
 
             {/* Player 2 */}
-            <PlayerAvatar player={player2} isActive={currentPlayerId === player2.id} progress={progress} />
+            <PlayerAvatar
+                player={player2}
+                isActive={currentPlayerId === player2.id}
+                progress={progress}
+                ballType={player2Ball}
+            />
         </div>
     );
 }
 
-function PlayerAvatar({ player, isActive, progress }: { player: Player; isActive: boolean; progress: number }) {
+function PlayerAvatar({
+    player,
+    isActive,
+    progress,
+    ballType,
+}: {
+    player: Player;
+    isActive: boolean;
+    progress: number;
+    ballType: string;
+}) {
     const size = 79;
     const strokeWidth = 4;
     const center = size / 2;
     const radius = center;
     const circumference = 2 * Math.PI * radius;
+
+    const ballImage = ballType === "striped" ? `/assets/game/balls/12.svg` : `/assets/game/balls/1.svg`;
 
     return (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
@@ -165,21 +190,75 @@ function PlayerAvatar({ player, isActive, progress }: { player: Player; isActive
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                         zIndex: 1,
+                        position: "relative",
+                        overflow: "hidden",
                     }}
                 >
                     {!player.photo && player.name.charAt(0).toUpperCase()}
+
+                    {/* Ball Type Indicator */}
+                    <div
+                        style={{
+                            position: "absolute",
+                            bottom: "2px",
+                            right: "2px",
+                            width: "24px",
+                            height: "24px",
+                            borderRadius: "50%",
+                            backgroundColor: "rgba(0, 0, 0, 0.7)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: `1px solid ${ballType === "striped" ? "#FFD700" : "#ffffff"}`,
+                        }}
+                    >
+                        <img
+                            src={ballImage}
+                            alt={ballType}
+                            style={{
+                                width: "16px",
+                                height: "16px",
+                                objectFit: "contain",
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* Name Label */}
+            {/* Name Label with Ball Type */}
             <div
                 style={{
-                    fontSize: "0.875rem",
-                    fontWeight: isActive ? "600" : "500",
-                    color: isActive ? COLORS.text : `${COLORS.text}cc`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "2px",
                 }}
             >
-                {player.name}
+                <div
+                    style={{
+                        fontSize: "0.875rem",
+                        fontWeight: isActive ? "600" : "500",
+                        color: isActive ? COLORS.text : `${COLORS.text}cc`,
+                    }}
+                >
+                    {player.name}
+                </div>
+                <div
+                    style={{
+                        fontSize: "0.75rem",
+                        color: ballType === "striped" ? "#FFD700" : "#ffffff",
+                        textTransform: "uppercase",
+                        fontWeight: "500",
+                        letterSpacing: "0.5px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                    }}
+                >
+                    <span style={{ opacity: 0.8 }}>•</span>
+                    {ballType === "striped" ? "Striped" : "Solid"}
+                    <span style={{ opacity: 0.8 }}>•</span>
+                </div>
             </div>
         </div>
     );

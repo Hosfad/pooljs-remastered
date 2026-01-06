@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertCircle, Lightbulb, MousePointer2, Target, Trophy, XCircle } from "lucide-react";
 import React, { useEffect } from "react";
 import { Events } from "../../../common/server-types";
 import type { LocalService } from "../../../services/local-service";
@@ -27,7 +28,77 @@ export function ActionButtons({ service }: { service: MultiplayerService | Local
         ),
         "how-to-play": () => (
             <Modal isOpen={modalOpen === "how-to-play"} onClose={() => setModalOpen(null)} title="How to play">
-                <div className="flex flex-col gap-4 p-2 sm:p-4 "></div>{" "}
+                <div className="flex flex-col gap-4 p-2 px-8">
+                    <div className="flex gap-3">
+                        <Target className="w-6 h-6 text-accent flex-shrink-0 mt-1" />
+                        <div>
+                            <h3 className="font-semibold text-accent text-lg mb-1">Objective</h3>
+                            <p className="text-text dark:text-gray-300">
+                                Pot all of your designated balls (solids or stripes) and then sink the 8-ball to win the
+                                game.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 ">
+                        <MousePointer2 className="w-6 h-6 text-accent flex-shrink-0 mt-1" />
+                        <div>
+                            <h3 className="font-semibold text-accent text-lg mb-1">Controls</h3>
+                            <p className="text-text dark:text-gray-300">
+                                <strong>Aim:</strong> Move your mouse/finger to aim the cue stick.
+                                <br />
+                                <strong>Power:</strong> Pull back to set shot power.
+                                <br />
+                                <strong>Shoot:</strong> Release to take your shot.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <AlertCircle className="w-6 h-6 text-accent flex-shrink-0 mt-1" />
+                        <div>
+                            <h3 className="font-semibold text-accent text-lg mb-1">Rules</h3>
+                            <ul className="text-text dark:text-gray-300 space-y-1">
+                                <li>• Break the rack to start the game</li>
+                                <li>• First ball potted determines your group (solids/stripes)</li>
+                                <li>• You get another turn if you pot your ball legally</li>
+                                <li>• Foul if you pot the cue ball or opponent's ball</li>
+                                <li>• Pot the 8-ball last to win (but not on the break!)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <XCircle className="w-6 h-6 text-accent flex-shrink-0 mt-1" />
+                        <div>
+                            <h3 className="font-semibold text-accent text-lg mb-1">Fouls</h3>
+                            <p className="text-text dark:text-gray-300">
+                                Scratching the cue ball, failing to hit your ball first, or potting the 8-ball early results
+                                in your opponent getting ball-in-hand.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <Lightbulb className="w-6 h-6 text-accent flex-shrink-0 mt-1" />
+                        <div>
+                            <h3 className="font-semibold text-accent text-lg mb-1">Tips</h3>
+                            <ul className="text-text dark:text-gray-300 space-y-1">
+                                <li>• Plan your position for the next shot</li>
+                                <li>• Use spin to control the cue ball</li>
+                                <li>• Don't always shoot at maximum power</li>
+                                <li>• Think defensively if you don't have a clear shot</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-start gap-3 mt-2 p-3 rounded-lg">
+                        <Trophy className="w-6 h-6 text-accent  flex-shrink-0 mt-1" />
+                        <div>
+                            <p className="text-text dark:text-gray-300 font-medium">Good luck and enjoy the game!</p>
+                        </div>
+                    </div>
+                </div>
             </Modal>
         ),
         error: () =>
