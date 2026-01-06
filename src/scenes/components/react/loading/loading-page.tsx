@@ -26,7 +26,15 @@ function LoadingAnimation({ message = "Finding Opponent", subMessage, showDots =
     }, [showDots]);
 
     return (
-        <div className="w-screen h-screen fixed inset-0 z-50 flex items-center justify-center bg-primary bg-opacity-80 backdrop-blur-sm">
+        <div
+            className="w-screen h-screen fixed inset-0 z-50 flex items-center justify-center bg-primary bg-opacity-80 backdrop-blur-sm"
+            style={{
+                backgroundImage: `url(/assets/game/image.png)`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+            }}
+        >
             <div className="flex flex-col items-center justify-center gap-2 sm:gap-3 w-full max-w-md px-4">
                 <div className="relative w-[120px] sm:w-[150px] h-[40px] sm:h-[50px] flex items-center justify-center">
                     <img

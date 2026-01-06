@@ -2,7 +2,6 @@ import * as Phaser from "phaser";
 
 import type { DiscordSDK } from "@discord/embedded-app-sdk";
 import { v4 as uuid } from "uuid";
-import { getEXPForLevel } from "../common";
 import { INIT_DISCORD_SDK, type CueId } from "../common/pool-constants";
 import type { BallType, GameSettings, KeyPositions } from "../common/pool-types";
 import { Events, type EventsData } from "../common/server-types";
@@ -56,7 +55,7 @@ export abstract class Service {
             user.level = user.level ?? 1;
             user.coins = user.coins ?? 100;
             user.cash = user.cash ?? 100;
-            user.exp = user.exp ?? getEXPForLevel(1) / 3;
+            user.exp = user.exp ?? 0;
 
             return user;
         }

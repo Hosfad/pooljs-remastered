@@ -3,7 +3,7 @@ import type { CueInfo } from "../../../../common/pool-constants";
 
 export function StatBar({ label, value, max = 10 }: { label: string; value: number; max?: number }) {
     return (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-6">
             <span className="text-white/80 text-sm font-medium w-12">{label}</span>
             <div className="flex gap-1">
                 {Array.from({ length: max }).map((_, i) => (
@@ -59,7 +59,11 @@ export function CueCard({
                         }}
                         className="bg-accent/20 hover:cursor-pointer hover:bg-accent/30 text-accent px-6 py-3 rounded-lg font-semibold border-2 border-accent/40 hover:border-accent/60 transition-all"
                     >
-                        {owned ? (isSelected ? "Equipped" : "Equip") : "Unlock"}
+                        {owned
+                            ? isSelected
+                                ? "Equipped"
+                                : "Equip"
+                            : `${cue.price.cash ? `💵 ${cue.price.cash}` : `🪙 ${cue.price.coins}`}`}
                     </button>
                 </div>
             </div>

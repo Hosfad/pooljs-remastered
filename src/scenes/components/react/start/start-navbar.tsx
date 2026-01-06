@@ -1,6 +1,8 @@
-import { Cog, ShoppingBag, Star } from "lucide-react";
+import { Cog, ShoppingBag } from "lucide-react";
 import React from "react";
 import { getEXPForLevel } from "../../../../common";
+import { Events } from "../../../../common/server-types";
+import type { Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 import { CuesDrawer } from "./cue-drawer";
 import { SettingsDrawer } from "./settings-drawer";
@@ -9,7 +11,13 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
     const me = service.me();
     const { name, photo } = me ?? {};
 
-    const room = service.getCurrentRoom();
+    const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
+    React.useEffect(() => {
+        service.subscribe(Events.INIT, (data) => {
+            setRoom(data);
+        });
+        service.subscribe(Events.UPDATE_ROOM, (data) => setRoom(data));
+    }, []);
 
     const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
     const [activeDrawer, setActiveDrawer] = React.useState<string | null>(null);
@@ -26,8 +34,10 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
 
     const width = (me.exp / getEXPForLevel(me.level)) * 100;
 
+    if (room?.isGameStarted) return null;
+
     return (
-        <div className="absolute top-0 right-0 w-full bg-black/40 bg-blur-2xl shadow-lg">
+        <div className="absolute top-0 right-0 w-full bg-black/60 bg-blur-2xl shadow-lg">
             <SettingsDrawer isOpen={isDrawerOpen && activeDrawer === "settings"} onClose={closeDrawer} service={service} />
             <CuesDrawer isOpen={isDrawerOpen && activeDrawer === "cues"} onClose={closeDrawer} service={service} />
 
@@ -40,8 +50,8 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
                             alt="Player Avatar"
                             className="w-16 h-16 rounded-lg border-2 border-yellow-500 shadow-md"
                         />
-                        <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1">
-                            <Star className="w-3 h-3 text-gray-900 fill-gray-900" />
+                        <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1 px-2">
+                            <p className="text-sm">{me.level}</p>
                         </div>
                     </div>
                     <div className="min-w-0 ">

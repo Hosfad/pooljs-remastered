@@ -96,15 +96,23 @@ export const CUE_DATA = {
         accuracy: 65,
         spin: 0,
         sprite: `/assets/game/cues/basic.svg`,
+        price: {
+            coins: undefined,
+            cash: undefined,
+        },
     },
 
     advanced: {
         id: "advanced",
-        category: "owned",
+        category: "standard",
         power: 70,
         accuracy: 60,
         spin: 10,
         sprite: `/assets/game/cues/advanced.svg`,
+        price: {
+            coins: 100,
+            cash: undefined,
+        },
     },
 
     expert: {
@@ -114,15 +122,10 @@ export const CUE_DATA = {
         accuracy: 85,
         spin: 20,
         sprite: `/assets/game/cues/expert.svg`,
-    },
-
-    sword: {
-        id: "sword",
-        category: "standard",
-        power: 80,
-        accuracy: 88,
-        spin: 30,
-        sprite: `/assets/game/cues/sword.svg`,
+        price: {
+            coins: 500,
+            cash: undefined,
+        },
     },
 
     wodden_sword: {
@@ -132,15 +135,35 @@ export const CUE_DATA = {
         accuracy: 90,
         spin: 40,
         sprite: `/assets/game/cues/wodden-sword.svg`,
+        price: {
+            coins: 1000,
+            cash: undefined,
+        },
+    },
+
+    sword: {
+        id: "sword",
+        category: "standard",
+        power: 80,
+        accuracy: 88,
+        spin: 30,
+        sprite: `/assets/game/cues/sword.svg`,
+        price: {
+            cash: 100,
+            coins: undefined,
+        },
     },
 
     palestine: {
         id: "palestine",
         category: "standard",
-        power: 85,
-        accuracy: 92,
-        spin: 50,
+        power: 100,
+        accuracy: 100,
+        spin: 80,
         sprite: `/assets/game/cues/palestine.svg`,
+        price: {
+            cash: 200,
+        },
     },
 } as const;
 

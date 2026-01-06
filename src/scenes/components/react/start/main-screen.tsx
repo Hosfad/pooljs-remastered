@@ -10,7 +10,7 @@ function MainScreen({ service }: { service: MultiplayerService }) {
         <div
             className="relative w-screen h-[100vh] bg-primary flex flex-col"
             // style={{
-            //     backgroundImage: `url(/assets/game/play-background.png)`,
+            //     backgroundImage: `url(/assets/game/image2.png)`,
             //     backgroundSize: "cover",
             //     backgroundPosition: "center",
             //     backgroundRepeat: "no-repeat",
