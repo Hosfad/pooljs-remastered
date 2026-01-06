@@ -5,6 +5,7 @@
 import * as Phaser from "phaser";
 import {
     BALL_RADIUS,
+    CUSHION_CONSTANTS,
     DEBUG_GRAPHICS,
     HOLE_RADIUS,
     MODAL_OPEN,
@@ -271,23 +272,6 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createColliders(): void {
-        const CUSHION_CONSTANTS = {
-            SIDE_INNER_X: 0, // Inner edge x position
-            SIDE_OUTER_X: 1.0, // Outer edge x position
-            SIDE_THICKNESS_X: 0, // Thickness in x direction
-            SIDE_TOP_Y: 0.8, // Top inset
-            SIDE_BOTTOM_Y: 1.8, // Bottom inset
-
-            // Top/bottom cushion dimensions (horizontal rails)
-            RAIL_OUTER_Y: 0, // Outer edge y position
-            RAIL_INNER_Y: 1.3, // Inner edge y position
-            RAIL_THICKNESS_Y: 1.3, // Thickness in y direction (RAIL_INNER_Y - RAIL_OUTER_Y adjusted)
-            RAIL_SIDE_X: 0.6, // Side inset
-            RAIL_CORNER_X: 1.4, // Corner diagonal inset
-            RAIL_POCKET_OUTER: 2.14, // Outer pocket edge divisor
-            RAIL_POCKET_INNER: 2.05, // Inner pocket edge divisor
-        };
-
         const xRatio = this.tableWidth / 16;
         const yRatio = this.tableHeight / 12;
 
@@ -532,6 +516,26 @@ export class PoolGameScene extends Phaser.Scene {
 
             // Hand Stuff
             if (whiteBall.isPocketed) {
+                const xRatio = this.tableWidth / 16;
+                const yRatio = this.tableHeight / 12;
+
+                if (px < this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_INNER_X ||
+                    px > this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X ||
+                    py < this.marginY + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y ||
+                    py > this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y) {
+                    return;
+                }
+
+                const pos = new Vector2(px, py);
+
+                for (const ball of this.balls) {
+                    const { x, y } = ball.phaserSprite;
+                    const ballPos = new Vector2(x, y);
+
+                    if (ballPos.distance(pos) <= BALL_RADIUS * 1.5) {
+                        return;
+                    }
+                }
                 whiteBall.phaserSprite.visible = true;
                 whiteBall.phaserSprite.setPosition(px, py);
                 whiteBall.isPocketed = this.hand.visible = false;

@@ -13,6 +13,22 @@ export function setGlobalModalOpenVariable(open: boolean) {
     MODAL_OPEN = open;
 }
 
+export const CUSHION_CONSTANTS = {
+    SIDE_INNER_X: 0, // Inner edge x position
+    SIDE_OUTER_X: 1.0, // Outer edge x position
+    SIDE_THICKNESS_X: 0, // Thickness in x direction
+    SIDE_TOP_Y: 0.8, // Top inset
+    SIDE_BOTTOM_Y: 1.8, // Bottom inset
+
+    // Top/bottom cushion dimensions (horizontal rails)
+    RAIL_OUTER_Y: 0, // Outer edge y position
+    RAIL_INNER_Y: 1.3, // Inner edge y position
+    RAIL_THICKNESS_Y: 1.3, // Thickness in y direction (RAIL_INNER_Y - RAIL_OUTER_Y adjusted)
+    RAIL_SIDE_X: 0.6, // Side inset
+    RAIL_CORNER_X: 1.4, // Corner diagonal inset
+    RAIL_POCKET_OUTER: 2.14, // Outer pocket edge divisor
+    RAIL_POCKET_INNER: 2.05, // Inner pocket edge divisor
+};
 export const POOL_ASSETS = {
     BACKGROUND: "background",
     SOLID: {
