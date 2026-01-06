@@ -488,12 +488,12 @@ export class PoolGameScene extends Phaser.Scene {
         const xRatio = this.tableWidth / 16;
         const yRatio = this.tableHeight / 12;
 
-        if (px < this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_INNER_X ||
-            px > this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X ||
-            py < this.marginY + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y ||
-            py > this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y) {
-            return false;
-        }
+        const leftEdge = this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
+        const rightEdge = this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
+        const upperEdge = this.marginY + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y + BALL_RADIUS * 1.5;
+        const lowerEdge = this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y + BALL_RADIUS * 1.5;
+
+        if (px < leftEdge || px > rightEdge || py < upperEdge || py > lowerEdge) return false;
 
         const pos = new Vector2(px, py);
 
