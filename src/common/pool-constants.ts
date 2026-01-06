@@ -2,9 +2,11 @@
  * Pool game specific constants
  */
 export let DEBUG_GRAPHICS = false;
+
 export function setDebugGraphics(debug: boolean) {
     DEBUG_GRAPHICS = debug;
 }
+export let INIT_DISCORD_SDK = false;
 
 export let MODAL_OPEN: boolean = false;
 export function setGlobalModalOpenVariable(open: boolean) {

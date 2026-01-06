@@ -1,5 +1,5 @@
 import React from "react";
-import { COLORS } from "../../../common/pool-constants.ts";
+import { COLORS } from "../../../../common/pool-constants.ts";
 
 interface SliderProps {
     label: string;

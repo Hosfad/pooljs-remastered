@@ -3,13 +3,13 @@ import type { BallType, KeyPositions } from "./pool-types";
 
 type MiddlewareResponse<TOutput> =
     | {
-        success: true;
-        data: TOutput;
-        error?: null;
-    }
+          success: true;
+          data: TOutput;
+          error?: null;
+      }
     | {
-        error: string;
-    };
+          error: string;
+      };
 
 export type Middleware<TInput, TOutput = unknown> = (
     data: TInput
@@ -34,6 +34,7 @@ export type TEventListener = {
 
 export enum Events {
     // Create room
+    UPDATE_ROOM = "update-room",
     CREATE_ROOM = "create-room",
     CREATE_ROOM_RESPONSE = "create-room-response",
     // Join room
@@ -47,6 +48,7 @@ export enum Events {
     KICK_PLAYER = "kick-player",
 
     PLAYER_DISCONNECT = "player-disconnect",
+    PLAYER_DISCONNECT_RESPONSE = "player-disconnect-response",
 
     INIT = "game-init",
     ENDS = "game-end",
@@ -72,22 +74,24 @@ export type WebsocketError = {
 export type WebsocketRespone<T> =
     | WebsocketError
     | {
-        type: "success";
-        data: T;
-    };
+          type: "success";
+          data: T;
+      };
 
 export type EventsData = {
-    [Events.JOIN_ROOM]: { userId: string; name: string; roomId?: string };
+    [Events.UPDATE_ROOM]: Room;
+    [Events.JOIN_ROOM]: { userId: string; name: string; photo: string; roomId?: string };
     [Events.JOIN_ROOM_RESPONSE]: WebsocketRespone<Room>;
     [Events.START_GAME]: RoomEventBodyOptions;
 
     [Events.MATCH_MAKE_START]: RoomEventBodyOptions;
-    [Events.MATCH_MAKE_START_RESPONSE]: WebsocketRespone<RoomId>;
+    [Events.MATCH_MAKE_START_RESPONSE]: WebsocketRespone<Room>;
     [Events.MATCH_MAKE_CANCEL]: RoomEventBodyOptions;
-    [Events.MATCH_MAKE_CANCEL_RESPONSE]: WebsocketRespone<RoomId>;
+    [Events.MATCH_MAKE_CANCEL_RESPONSE]: WebsocketRespone<Room>;
     [Events.KICK_PLAYER]: RoomEventBodyOptions & { kickTargetId: string };
 
     [Events.PLAYER_DISCONNECT]: RoomEventBodyOptions;
+    [Events.PLAYER_DISCONNECT_RESPONSE]: WebsocketRespone<Room>;
 
     [Events.HITS]: RoomEventBodyOptions & { keyPositions: KeyPositions; state: PoolState };
     [Events.PULL]: RoomEventBodyOptions & { x: number; y: number; angle: number };

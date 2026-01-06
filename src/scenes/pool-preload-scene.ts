@@ -26,9 +26,6 @@ export class PoolPreLoadScene extends Phaser.Scene {
             this.load.svg(stripes[i]!, `/game/balls/${i + stripes.length + 2}.svg`);
         }
 
-        // Create animation AFTER assets are loaded
-        this.createLoadingAnimation();
-
         this.load.image(POOL_ASSETS.BACKGROUND, "/game/background.png");
         this.load.image(POOL_ASSETS.DRAG_ICON, "/game/drag.png");
         this.load.image(POOL_ASSETS.AVATAR, "/images/man.png");
@@ -60,51 +57,5 @@ export class PoolPreLoadScene extends Phaser.Scene {
     private transitionToGame(): void {
         this.tweens.killAll();
         this.scene.start(POOL_SCENE_KEYS.POOL_GAME);
-    }
-
-    private createLoadingAnimation(): void {
-        const textures = [
-            POOL_ASSETS.WHITE_BALL,
-            POOL_ASSETS.BLACK_BALL,
-            POOL_ASSETS.STRIPED_BALL,
-            POOL_ASSETS.SOLID_BALL,
-            POOL_ASSETS.STRIPED_BALL,
-            POOL_ASSETS.SOLID_BALL,
-            POOL_ASSETS.STRIPED_BALL,
-        ];
-
-        const centerX = this.cameras.main.centerX;
-        const centerY = this.cameras.main.centerY + this.CENTER_Y_OFFSET;
-
-        textures.forEach((key, index) => {
-            const ball = this.add.image(centerX, centerY, key);
-            ball.setVisible(false);
-            ball.setScale(0.5);
-
-            this.balls.push(ball);
-
-            // Staggered start (200ms increments)
-            this.time.delayedCall(index * 200, () => this.startOrbit(ball));
-        });
-    }
-
-    private startOrbit(ball: Phaser.GameObjects.Image): void {
-        ball.setVisible(true);
-
-        let rotation = { angle: 0 };
-
-        this.tweens.add({
-            targets: rotation,
-            angle: 360,
-            duration: this.animationDuration,
-            ease: "Cubic.easeInOut",
-            repeat: -1,
-            onUpdate: () => {
-                const rad = Phaser.Math.DegToRad(rotation.angle);
-                ball.x = this.cameras.main.centerX + Math.cos(rad) * this.orbitRadius;
-                ball.y = this.cameras.main.centerY + this.CENTER_Y_OFFSET + Math.sin(rad) * this.orbitRadius;
-                ball.rotation = rad;
-            },
-        });
     }
 }

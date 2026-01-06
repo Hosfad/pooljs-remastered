@@ -5,6 +5,13 @@ import type { BallType, GameSettings, KeyPositions } from "../common/pool-types"
 import { Events, type EventsData } from "../common/server-types";
 import type { Player, Room } from "../server";
 
+export type LocalUser = {
+    id: string;
+    name: string;
+    photo: string;
+    access_token?: string;
+};
+
 export abstract class Service {
     private events = new Phaser.Events.EventEmitter();
     protected room: Room | null = null;
@@ -31,40 +38,57 @@ export abstract class Service {
 
     abstract pull(x: number, y: number, angle: number): void;
 
-    public me(): { userId: string; name: string } | undefined {
-        const { userId } = this.getConfig();
-        return userId ? { userId, name: this.getStorage().name } : undefined;
+    public me() {
+        const item = sessionStorage.getItem("user");
+
+        if (item) {
+            return JSON.parse(item) as { id: string; name: string; photo: string; access_token?: string };
+        }
+        const user = {
+            id: uuid(),
+            name: this.generateRandomName(),
+            photo: `/assets/avatars/${Math.floor(Math.random() * 6)}.png`,
+            access_token: undefined,
+        };
+        sessionStorage.setItem("user", JSON.stringify(user));
+        return user;
+    }
+
+    public getRoomConfig() {
+        const me = this.me();
+        return { roomId: this.getRoomId()!, ...me, userId: me.id };
     }
 
     public getRoomId(): string | null {
         const url = new URL(window.location.href);
-        const roomId = url.searchParams.get("room");
+        const roomId = url.searchParams.get("room") as string;
+        if (!roomId) {
+            const seesionRoomId = sessionStorage.getItem("roomId");
+            if (seesionRoomId) {
+                return seesionRoomId;
+            }
+            const id = uuid();
+            sessionStorage.setItem("roomId", id);
+            return id;
+        }
         return roomId;
+    }
+
+    public setLocalUser(data: Partial<LocalUser>) {
+        const localUser = this.me();
+        const newUser = { ...localUser, ...data };
+        sessionStorage.setItem("user", JSON.stringify(newUser));
     }
 
     public instanciateRoom(room: Room) {
         this.room = room;
     }
-
-    public getConfig() {
-        return { roomId: this.getRoomId(), ...this.getStorage() };
-    }
-
-    public getStorage(): { userId: string; name: string } {
-        let user = sessionStorage.getItem("user");
-
-        if (!user) {
-            const newUser = { userId: uuid(), name: this.generateRandomName() };
-            sessionStorage.setItem("user", JSON.stringify(newUser));
-            return newUser;
-        }
-
-        const parsed = JSON.parse(user) as { userId: string; name: string };
-        return parsed;
+    public getCurrentRoom(): Room | null {
+        return this.room;
     }
 
     public getSettings(): GameSettings {
-        const item = localStorage.getItem("settings");
+        const item = sessionStorage.getItem("settings");
         if (item) {
             return JSON.parse(item) as GameSettings;
         }
@@ -76,15 +100,11 @@ export abstract class Service {
         };
     }
 
-    public getCurrentRoom(): Room | null {
-        return this.room;
-    }
-
     public setSettings(newData: Partial<GameSettings>) {
         const settings = this.getSettings();
         const newSettings = { ...settings, ...newData };
         console.log("Setting settings", newSettings);
-        localStorage.setItem("settings", JSON.stringify(newSettings));
+        sessionStorage.setItem("settings", JSON.stringify(newSettings));
     }
 
     private generateRandomName() {

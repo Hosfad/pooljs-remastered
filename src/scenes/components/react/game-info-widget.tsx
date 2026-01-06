@@ -19,7 +19,10 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
     const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
 
     React.useEffect(() => {
-        service.subscribe(Events.INIT, (data) => setRoom(data));
+        service.subscribe(Events.INIT, (data) => {
+            setRoom(data);
+        });
+        service.subscribe(Events.UPDATE_ROOM, (data) => setRoom(data));
     }, []);
 
     const [timeLeft, setTimeLeft] = React.useState(ROUND_TIME);
@@ -39,7 +42,7 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
 
     if (!player1 || !player2) return null;
 
-    const imHost = room?.hostId === service.me()?.userId;
+    const imHost = room?.hostId === service.me()?.id;
     const whenHost = [player2.id, player1.id];
     const whenGuest = [player1.id, player2.id];
 
@@ -48,66 +51,67 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
 
     const player1Ball = player1.state.ballType;
     const player2Ball = player2.state.ballType;
-
     return (
-        <div
-            style={{
-                display: "flex",
-                position: "absolute",
-                inset: 0,
-                maxHeight: "10%",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "1.5rem 20rem",
-            }}
-        >
-            {/* Player 1 */}
-            <PlayerAvatar
-                player={player1}
-                isActive={currentPlayerId === player1.id}
-                progress={progress}
-                ballType={player1Ball}
-            />
-
-            {/* Center Info */}
+        room?.isGameStarted && (
             <div
                 style={{
-                    flex: 1,
-                    textAlign: "center",
-                    padding: "0 2rem",
+                    display: "flex",
+                    position: "absolute",
+                    inset: 0,
+                    maxHeight: "10%",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "1.5rem 20rem",
                 }}
             >
-                <div
-                    style={{
-                        fontSize: "3rem",
-                        fontWeight: "bold",
-                        color: COLORS.text,
-                        fontFamily: "monospace",
-                        marginBottom: "0.25rem",
-                    }}
-                >
-                    {String(timeLeft).padStart(2, "0")}s
-                </div>
-                <div
-                    style={{
-                        fontSize: "0.875rem",
-                        color: `${COLORS.accent}cc`,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                    }}
-                >
-                    {currentPlayerId === player1.id ? player1.name : player2.name}'s Turn
-                </div>
-            </div>
+                {/* Player 1 */}
+                <PlayerAvatar
+                    player={player1}
+                    isActive={currentPlayerId === player1.id}
+                    progress={progress}
+                    ballType={player1Ball}
+                />
 
-            {/* Player 2 */}
-            <PlayerAvatar
-                player={player2}
-                isActive={currentPlayerId === player2.id}
-                progress={progress}
-                ballType={player2Ball}
-            />
-        </div>
+                {/* Center Info */}
+                <div
+                    style={{
+                        flex: 1,
+                        textAlign: "center",
+                        padding: "0 2rem",
+                    }}
+                >
+                    <div
+                        style={{
+                            fontSize: "3rem",
+                            fontWeight: "bold",
+                            color: COLORS.text,
+                            fontFamily: "monospace",
+                            marginBottom: "0.25rem",
+                        }}
+                    >
+                        {String(timeLeft).padStart(2, "0")}s
+                    </div>
+                    <div
+                        style={{
+                            fontSize: "0.875rem",
+                            color: `${COLORS.accent}cc`,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                        }}
+                    >
+                        {currentPlayerId === player1.id ? player1.name : player2.name}'s Turn
+                    </div>
+                </div>
+
+                {/* Player 2 */}
+                <PlayerAvatar
+                    player={player2}
+                    isActive={currentPlayerId === player2.id}
+                    progress={progress}
+                    ballType={player2Ball}
+                />
+            </div>
+        )
     );
 }
 
@@ -129,7 +133,6 @@ function PlayerAvatar({
     const circumference = 2 * Math.PI * radius;
 
     const ballImage = ballType === "striped" ? `/assets/game/balls/12.svg` : `/assets/game/balls/1.svg`;
-
     return (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
             <div style={{ position: "relative", width: `${size}px`, height: `${size}px` }}>
@@ -191,33 +194,6 @@ function PlayerAvatar({
                     }}
                 >
                     {!player.photo && player.name.charAt(0).toUpperCase()}
-
-                    {/* Ball Type Indicator */}
-                    <div
-                        style={{
-                            position: "absolute",
-                            bottom: "2px",
-                            right: "2px",
-                            width: "24px",
-                            height: "24px",
-                            borderRadius: "50%",
-                            backgroundColor: "rgba(0, 0, 0, 0.7)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            border: `1px solid ${ballType === "striped" ? "#FFD700" : "#ffffff"}`,
-                        }}
-                    >
-                        <img
-                            src={ballImage}
-                            alt={ballType}
-                            style={{
-                                width: "16px",
-                                height: "16px",
-                                objectFit: "contain",
-                            }}
-                        />
-                    </div>
                 </div>
             </div>
 
@@ -242,7 +218,6 @@ function PlayerAvatar({
                 <div
                     style={{
                         fontSize: "0.75rem",
-                        color: ballType === "striped" ? "#FFD700" : "#ffffff",
                         textTransform: "uppercase",
                         fontWeight: "500",
                         letterSpacing: "0.5px",
@@ -251,9 +226,15 @@ function PlayerAvatar({
                         gap: "4px",
                     }}
                 >
-                    <span style={{ opacity: 0.8 }}>•</span>
-                    {ballType === "striped" ? "Striped" : "Solid"}
-                    <span style={{ opacity: 0.8 }}>•</span>
+                    <img
+                        src={ballImage}
+                        alt={ballType}
+                        style={{
+                            width: "16px",
+                            height: "16px",
+                            objectFit: "contain",
+                        }}
+                    />
                 </div>
             </div>
         </div>

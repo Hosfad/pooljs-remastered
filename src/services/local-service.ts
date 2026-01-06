@@ -26,12 +26,13 @@ export class LocalService extends Service {
                     roomId: LOCAL_USER_ID,
                     photo: "player-1-avatar.jpg",
                     state: {
-                        ballType: "yellow",
+                        ballType: "striped",
                     },
                     isSpectator: false,
                 },
             ],
             isMatchMaking: false,
+            isGameStarted: true,
         };
 
         return new Promise((resolve) => {
@@ -84,7 +85,7 @@ export class LocalService extends Service {
         const keyPositions = this.service.hitBalls(powerPercent, angle);
         this.send(Events.HITS, {
             keyPositions,
-            state: { ...this.service.getState(), roundStart: Date.now() },
+            state: { ...this.service.getState() },
             userId: LOCAL_USER_ID,
             roomId: LOCAL_USER_ID,
         });

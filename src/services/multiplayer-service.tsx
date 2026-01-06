@@ -2,11 +2,16 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { type BallType, type KeyPositions } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
+import type { Player } from "../server";
+import { LocalService } from "./local-service";
+
+import { DiscordSDK } from "@discord/embedded-app-sdk";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { INIT_DISCORD_SDK } from "../common/pool-constants";
 import { ActionButtons } from "../scenes/components/react/action-buttons";
 import { GameInfoWidget } from "../scenes/components/react/game-info-widget";
 import { Lobby } from "../scenes/components/react/game-lobby";
-import type { Player } from "../server";
-import { LocalService } from "./local-service";
+import MainScreen from "../scenes/components/react/main-screen";
 
 interface Preferences {
     ballType: BallType;
@@ -15,29 +20,36 @@ interface Preferences {
 export class MultiplayerService extends LocalService {
     private ws: WebSocket | null = null;
     private eventHandlers = new Map<keyof EventsData, Set<(data: any) => void>>();
+    public discordSdk: DiscordSDK | null = null;
 
     override async connect(): Promise<boolean> {
+        const wsUrl = INIT_DISCORD_SDK ? `wss://${location.host}/.proxy/api/ws` : "ws://localhost:6969/ws";
+        console.log("Connecting to", wsUrl);
+
         try {
-            if (!this.ws) this.ws = new WebSocket("ws://localhost:6969");
-
-            const reactRoot = document.getElementById("react-root");
-
-            if (reactRoot) {
-                console.log("Rendering React");
-                const root = createRoot(reactRoot);
-                root.render(
-                    <React.StrictMode>
-                        <Lobby service={this}></Lobby>
-                        <GameInfoWidget service={this} />
-                        <ActionButtons service={this} />
-                    </React.StrictMode>
-                );
-            }
-
+            if (!this.ws) this.ws = new WebSocket(wsUrl);
             this.registerEvents();
 
             this.ws.onopen = async () => {
-                await this.insertCoin();
+                await this.initDisocrdSDK();
+
+                const reactRoot = document.getElementById("react-root");
+
+                if (reactRoot) {
+                    const root = createRoot(reactRoot);
+                    root.render(
+                        <React.StrictMode>
+                            <BrowserRouter>
+                                <Routes>
+                                    <Route path="/" element={<MainScreen service={this} />}></Route>
+                                    <Route path="/lobby" element={<Lobby service={this} />}></Route>
+                                </Routes>
+                                <GameInfoWidget service={this} />
+                                <ActionButtons service={this} />
+                            </BrowserRouter>
+                        </React.StrictMode>
+                    );
+                }
             };
 
             this.ws.onmessage = (e) => {
@@ -54,7 +66,7 @@ export class MultiplayerService extends LocalService {
             };
 
             window.addEventListener("beforeunload", () => {
-                this.call(Events.PLAYER_DISCONNECT, { userId: this.me()?.userId!, roomId: this.getRoomId()! });
+                this.call(Events.PLAYER_DISCONNECT, { userId: this.me()?.id!, roomId: this.getRoomId()! });
                 setTimeout(() => this.ws?.close(), 400);
             });
 
@@ -73,7 +85,7 @@ export class MultiplayerService extends LocalService {
     }
 
     public call<T extends keyof EventsData>(event: T, data: EventsData[T]) {
-        if (!this.ws || !this.ws.OPEN) {
+        if (!this.ws) {
             console.error("WebSocket is not open");
             return;
         }
@@ -85,7 +97,7 @@ export class MultiplayerService extends LocalService {
     }
 
     override isMyTurn(): boolean {
-        const imHost = this.room?.hostId === this.me()?.userId;
+        const imHost = this.room?.hostId === this.me()?.id;
         const index = this.service.getState().turnIndex;
         return imHost ? index == 0 : index == 1;
     }
@@ -99,7 +111,7 @@ export class MultiplayerService extends LocalService {
     }
 
     override hitBalls(powerPercent: number, angle: number): KeyPositions {
-        const { userId, roomId } = this.getConfig();
+        const { userId, roomId } = this.getRoomConfig();
         if (!roomId) return [];
 
         const keyPositions = this.service.hitBalls(powerPercent, angle);
@@ -109,7 +121,7 @@ export class MultiplayerService extends LocalService {
     }
 
     override pull(x: number, y: number, angle: number): void {
-        const { userId, roomId } = this.getConfig();
+        const { userId, roomId } = this.getRoomConfig();
 
         if (!roomId) return;
 
@@ -118,12 +130,6 @@ export class MultiplayerService extends LocalService {
 
     public isConnected(): boolean {
         return this.ws?.readyState === WebSocket.OPEN;
-    }
-
-    private async insertCoin() {
-        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return await this.connect();
-        const { userId, roomId, name } = this.getConfig();
-        this.call(Events.JOIN_ROOM, { roomId: roomId ?? undefined, userId, name });
     }
 
     private getPreferences(): Partial<Preferences> {
@@ -141,8 +147,89 @@ export class MultiplayerService extends LocalService {
         return this.getPreferences()[key];
     }
 
+    private async initDisocrdSDK() {
+        if (!INIT_DISCORD_SDK) return;
+        this.discordSdk = new DiscordSDK(import.meta.env.VITE_DISCORD_APP_ID);
+        await this.discordSdk.ready();
+
+        const me = await this.me();
+        if (me.access_token) {
+            await this.discordSdk.commands.authenticate({ access_token: me.access_token });
+            return;
+        }
+
+        try {
+            const { code } = await this.discordSdk.commands.authorize({
+                client_id: import.meta.env.VITE_DISCORD_APP_ID!,
+                response_type: "code",
+                state: "",
+                prompt: "none",
+                scope: ["identify", "guilds", "guilds.members.read"],
+            });
+            if (!code) return console.log("No code found");
+
+            const discordUser = await fetch(`/api/api/token`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    code,
+                }),
+            });
+            const data: Partial<Player> = await discordUser.json();
+            this.setLocalUser(data);
+        } catch (e) {
+            console.error("ERROR IN DISCORD AUTHENTICATION", e);
+        }
+    }
+
     registerEvents() {
-        // TODO: Handle errors inseread of logging
+        // Room events
+
+        this.listen(Events.JOIN_ROOM_RESPONSE, (data) => {
+            const { type } = data;
+            if (type === "error") {
+                return console.error("Error joining room", data);
+            }
+            console.log("Joined room", data);
+            const roomIdFromUrl = this.getRoomId();
+            this.instanciateRoom(data.data);
+            if (roomIdFromUrl !== data.data.id) {
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set("room", data.data.id);
+                window.history.replaceState({}, "", newUrl.toString());
+            }
+            this.send(Events.UPDATE_ROOM, data.data);
+        });
+
+        this.listen(Events.MATCH_MAKE_START_RESPONSE, (data) => {
+            const { type } = data;
+            if (type === "error") {
+                const { code: errCode, message: errMessage } = data;
+                return;
+            }
+            this.send(Events.UPDATE_ROOM, data.data);
+        });
+        this.listen(Events.MATCH_MAKE_CANCEL_RESPONSE, (data) => {
+            const { type } = data;
+            if (type === "error") {
+                const { code: errCode, message: errMessage } = data;
+                return;
+            }
+            this.send(Events.UPDATE_ROOM, data.data);
+        });
+
+        this.listen(Events.PLAYER_DISCONNECT_RESPONSE, (data) => {
+            const { type } = data;
+            if (type === "error") {
+                const { code: errCode, message: errMessage } = data;
+                return;
+            }
+            this.send(Events.UPDATE_ROOM, data.data);
+        });
+
+        // Game events
 
         this.listen(Events.INIT, (data) => {
             this.send(Events.INIT, data);

@@ -3,9 +3,9 @@
 import React from "react";
 import { CUES } from "../../../common/pool-constants.ts";
 import type { GameSettings } from "../../../common/pool-types.ts";
-import { Button } from "./button.tsx";
-import { Modal } from "./modal.tsx";
-import { Slider } from "./slider.tsx";
+import { Button } from "./ui/button.tsx";
+import { Modal } from "./ui/modal.tsx";
+import { Slider } from "./ui/slider.tsx";
 
 interface SettingsModalProps {
     isOpen: boolean;

@@ -1,13 +1,30 @@
-import React from "react";
+import { ShareIcon } from "lucide-react";
+import React, { useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { INIT_DISCORD_SDK } from "../../../common/pool-constants";
 import { Events } from "../../../common/server-types";
 import type { Room } from "../../../server";
 import type { MultiplayerService } from "../../../services/multiplayer-service";
-import { Button } from "./button";
+import { Button } from "./ui/button";
 
 export function Lobby({ service }: { service: MultiplayerService }) {
     const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
-    const [visible, setVisible] = React.useState(true);
-    const [lobbyState, setLobbyState] = React.useState<"lobby" | "matchmaking">("lobby");
+
+    useEffect(() => {
+        const me = service.me();
+        service.call(Events.JOIN_ROOM, { ...me, userId: me.id, roomId: service.getRoomId()! });
+
+        service.subscribe(Events.UPDATE_ROOM, (data) => {
+            setRoom(data);
+            setVisible(true);
+        });
+
+        service.subscribe(Events.INIT, (data) => {
+            setVisible(false);
+        });
+    }, []);
+    const lobbyState = room?.isMatchMaking ? "matchmaking" : "lobby";
+    const [visible, setVisible] = React.useState(!room?.isGameStarted);
 
     React.useEffect(() => {
         const lockOrientation = async () => {
@@ -26,94 +43,9 @@ export function Lobby({ service }: { service: MultiplayerService }) {
         }
     }, []);
 
-    React.useEffect(() => {
-        service.listen(Events.JOIN_ROOM_RESPONSE, (input) => {
-            setVisible(true);
-            const { type } = input;
-            const roomIdFromUrl = service.getRoomId();
-
-            if (type === "error") {
-                const { code: errCode, message: errMessage } = input;
-                setVisible(false);
-                return service.showErrorModal({
-                    title: "Error joining room",
-                    description: errMessage,
-                });
-            }
-
-            const room = input.data;
-            service.instanciateRoom(room);
-            setRoom(room);
-
-            if (roomIdFromUrl !== room.id) {
-                const newUrl = new URL(window.location.href);
-                newUrl.searchParams.set("room", room.id);
-                window.history.replaceState({}, "", newUrl.toString());
-            }
-        });
-
-        service.listen(Events.MATCH_MAKE_START_RESPONSE, (input) => {
-            const { type } = input;
-            if (type === "error") {
-                const { code: errCode, message: errMessage } = input;
-                return service.showErrorModal({
-                    title: "Error starting matchmaking",
-                    description: errMessage,
-                });
-            }
-            setLobbyState("matchmaking");
-        });
-
-        service.listen(Events.MATCH_MAKE_CANCEL_RESPONSE, (input) => {
-            const { type } = input;
-            if (type === "error") {
-                const { code: errCode, message: errMessage } = input;
-                return service.showErrorModal({
-                    title: "Error cancelling matchmaking",
-                    description: errMessage,
-                });
-            }
-            setLobbyState("lobby");
-        });
-
-        service.listen(Events.KICK_PLAYER, (input) => {
-            const { kickTargetId } = input;
-            if (kickTargetId === currentPlayer?.id) {
-                service.showErrorModal({
-                    title: "You were kicked from the lobby",
-                });
-                setTimeout(() => window.location.replace("/"), 3000);
-                return;
-            }
-
-            // filter out the kicked player
-            setRoom((prev) => {
-                if (!prev) return prev;
-                const newPlayers = prev!.players.filter((p) => p.id !== kickTargetId);
-                return { ...prev, players: newPlayers };
-            });
-            service.showErrorModal({
-                title: "Player was kicked from the lobby",
-                description: `Player ${kickTargetId} was kicked from the lobby`,
-            });
-        });
-
-        service.listen(Events.INIT, (input) => {
-            setVisible(false);
-        });
-    }, [service]);
-
-    const handleInvite = () => {
-        navigator.clipboard.writeText(window.location.href);
-        service.showErrorModal({
-            title: "Invite link copied to clipboard!",
-            closeAfter: 1500,
-        });
-    };
-
     const players = room?.players ?? [];
     const me = service.me();
-    const currentPlayer = players.find((p) => p.id === me?.userId);
+    const currentPlayer = me;
 
     const handleStartMatchmaking = () => {
         if (!room) return;
@@ -127,7 +59,18 @@ export function Lobby({ service }: { service: MultiplayerService }) {
         if (!room || !currentPlayer) return;
         service.call(Events.MATCH_MAKE_CANCEL, { userId: currentPlayer.id, roomId: room.id });
     };
-
+    const handleInvite = () => {
+        if (INIT_DISCORD_SDK) {
+            console.log("Opening invite dialog");
+            service.discordSdk?.commands.openInviteDialog();
+            return;
+        }
+        navigator.clipboard.writeText(window.location.href);
+        service.showErrorModal({
+            title: "Invite link copied to clipboard!",
+            closeAfter: 1500,
+        });
+    };
     const currentPlayerIsHost = currentPlayer?.id === room?.hostId;
     const otherPlayer = players.find((p) => p.id !== currentPlayer?.id);
 
@@ -145,10 +88,10 @@ export function Lobby({ service }: { service: MultiplayerService }) {
         if (!currentPlayerIsHost || !currentPlayer || !room) return;
         service.call(Events.KICK_PLAYER, { userId: currentPlayer.id, roomId: room.id, kickTargetId: id });
     };
-
+    const path = useLocation().pathname;
     return (
         visible && (
-            <div className="flex flex-col gap-4 w-screen h-[100vh] bg-primary items-center justify-center p-2 md:p-4">
+            <div className="relative flex flex-col gap-4 w-screen h-[100vh] bg-primary items-center justify-center p-2 md:p-4">
                 {/* Main content */}
                 <div className=" w-full  flex flex-col gap-4 ">
                     <div className="md:min-h-[25vh] min-h-[40vh]">
@@ -224,7 +167,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
                             onClick={() =>
                                 lobbyState === "matchmaking" ? handleCancelMatchmaking() : handleStartMatchmaking()
                             }
-                            className="landscape:w-full md:w-[18%]!"
+                            className="landscape:w-full md:w-[16%]!"
                         >
                             {lobbyState === "matchmaking" ? "Cancel Matchmaking" : "Find Online Match"}
                         </Button>
@@ -232,13 +175,25 @@ export function Lobby({ service }: { service: MultiplayerService }) {
                             disabled={!currentPlayerIsHost || players.length < 2}
                             onClick={handleStart}
                             variant="dark"
-                            className="landscape:w-full md:w-[18%]!"
+                            className="landscape:w-full md:w-[16%]!"
                         >
                             {currentPlayerIsHost ? "Start Game" : "Waiting for host to start..."}
+                        </Button>
+                        <Button
+                            onClick={handleInvite}
+                            variant="secondary"
+                            className="landscape:w-auto md:w-auto! px-3 md:px-4!"
+                        >
+                            <ShareIcon />
                         </Button>
                     </div>
                 </div>
 
+                <Link to={path === "/lobby" ? "/" : `/lobby?room=${service.getRoomId()}`}>
+                    <Button variant="dark" className="absolute bottom-4 min-w-[20vw] right-4">
+                        {path === "/lobby" ? "Go Back" : "Start Game"}
+                    </Button>
+                </Link>
                 <br />
                 <br />
             </div>

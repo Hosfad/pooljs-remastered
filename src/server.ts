@@ -24,6 +24,7 @@ type ServerRoom = {
     timestamp: number;
     isMatchMaking: boolean;
     kickedPlayers?: string[];
+    isGameStarted: boolean;
 };
 
 type Prettify<T> = { [K in keyof T]: T[K] } & {};
@@ -44,29 +45,64 @@ export type Client = {
 export type Player = Omit<Client, "ws">;
 
 const app = express();
+
+app.use(express.json());
+
+app.post("/api/token", async (req, res) => {
+    const body = req.body;
+
+    const response = await fetch(`https://discord.com/api/oauth2/token`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+            client_id: import.meta.env.VITE_DISCORD_APP_ID as string,
+            client_secret: import.meta.env.DISCORD_APP_SECRET as string,
+            grant_type: "authorization_code",
+            code: req.body.code,
+        }),
+    });
+
+    const { access_token } = await response.json();
+    const me = (await getDiscordOauth2Information(access_token))?.user;
+
+    if (!me) return res.status(400).send("Invalid code");
+
+    const player = {
+        id: me.id,
+        name: me.username,
+        photo: `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}`,
+        access_token: access_token,
+    };
+
+    console.log("Discord user", player);
+
+    res.send(player);
+});
+
 const server = app.listen(6969, () => {
     console.log("Multiplayer server running on :6969", process.cwd());
 });
 
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ server, path: "/ws" });
 
 const rooms: Record<string, ServerRoom> = {};
 
-const NUM_AVATARS = 6;
-
 wss.on("connection", (ws) => {
     let client: Client | null = null;
+
+    console.log("New connection");
 
     const eventListener = createEventListener(ws);
     const withRoomAuthMiddleware = roomAuthMiddleware();
 
     eventListener.on(Events.JOIN_ROOM, (data) => {
-        const { roomId, userId: senderId, name } = data;
+        const { roomId, userId: senderId, name, photo } = data;
         const room = roomId ? getRoom(roomId) : null;
 
         if (!room) {
-            const finalId = roomId ?? uuid();
-            const newRoom = createNewRoom({ userId: senderId, name }, ws, finalId);
+            const newRoom = createNewRoom({ userId: senderId, name, photo }, ws, roomId);
             sendEvent(ws, Events.JOIN_ROOM_RESPONSE, {
                 type: "success",
                 data: reshapeRoom(newRoom),
@@ -97,15 +133,15 @@ wss.on("connection", (ws) => {
         if (existingClient) {
             room.clients = room.clients.filter((c) => c.id !== senderId);
         }
-
+        const existingBallType = room.clients[0]?.state.ballType;
         room.clients.push({
             id: senderId,
             name,
             ws,
-            photo: `/assets/avatars/${Math.floor(Math.random() * NUM_AVATARS)}.png`,
+            photo: `${photo}`,
             roomId: room.id,
             state: {
-                ballType: room.clients.length % 2 === 0 ? "yellow" : "red",
+                ballType: existingBallType ? (existingBallType === "solid" ? "striped" : "solid") : "solid",
             },
             isSpectator,
         });
@@ -138,7 +174,7 @@ wss.on("connection", (ws) => {
             });
 
         room.isMatchMaking = true;
-        sendEvent(ws, Events.MATCH_MAKE_START_RESPONSE, { type: "success", data: { roomId: room.id } });
+        sendEvent(ws, Events.MATCH_MAKE_START_RESPONSE, { type: "success", data: reshapeRoom(room) });
     });
 
     eventListener.on(Events.MATCH_MAKE_CANCEL, (data) => {
@@ -148,7 +184,7 @@ wss.on("connection", (ws) => {
         if (room.clients.length === 2) return console.error("Match already found (match make cancel)", roomId);
 
         room.isMatchMaking = false;
-        sendEvent(ws, Events.MATCH_MAKE_CANCEL_RESPONSE, { type: "success", data: { roomId: room.id } });
+        sendEvent(ws, Events.MATCH_MAKE_CANCEL_RESPONSE, { type: "success", data: reshapeRoom(room) });
     });
 
     eventListener.on(Events.KICK_PLAYER, withRoomAuthMiddleware, (data) => {
@@ -186,12 +222,24 @@ wss.on("connection", (ws) => {
         if (!room) return;
         const client = room.clients.find((c) => c.id === senderId);
         if (!client) return;
-        client.disconnectedAt = Date.now();
+        client.ws.close();
 
-        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.PLAYER_DISCONNECT, {
-            roomId: room.id,
-            userId: senderId,
+        // Change host/ delete room (if players.length === 0)
+        if (room.hostId === senderId) {
+            const remainingPlayers = room.clients.filter((c) => c.id !== senderId);
+            if (remainingPlayers.length === 0) {
+                delete rooms[room.id];
+                return;
+            }
+            room.hostId = remainingPlayers[0]!.id;
+        }
+        room.isGameStarted = false;
+        room.clients = room.clients.filter((c) => c.id !== senderId);
+        rooms[room.id] = room;
+
+        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.PLAYER_DISCONNECT_RESPONSE, {
             type: "success",
+            data: reshapeRoom(room),
         });
     });
 
@@ -200,6 +248,8 @@ wss.on("connection", (ws) => {
         const room = getRoom(roomId);
 
         if (!room) return;
+        room.isGameStarted = true;
+        rooms[room.id] = room;
 
         broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.INIT, {
             type: "success",
@@ -226,9 +276,10 @@ wss.on("connection", (ws) => {
     });
 });
 
-const createNewRoom = (user: { userId: string; name: string }, ws: WebSocket, roomId?: string | null) => {
+const createNewRoom = (user: { userId: string; name: string; photo: string }, ws: WebSocket, roomId?: string | null) => {
     const finalId = roomId ?? uuid();
-    const { userId, name: username } = user;
+
+    const { userId, name: username, photo } = user;
 
     const room: ServerRoom = {
         id: finalId,
@@ -236,12 +287,13 @@ const createNewRoom = (user: { userId: string; name: string }, ws: WebSocket, ro
         timestamp: Date.now(),
         hostId: userId,
         isMatchMaking: false,
+        isGameStarted: false,
     };
 
     const client: Client = {
         id: userId,
         name: username,
-        photo: `/assets/avatars/${Math.floor(Math.random() * 6)}.png`,
+        photo: `${photo}`,
         ws,
         roomId: finalId,
         state: {
@@ -404,4 +456,20 @@ function broadcastEvent<T extends TEventKey>(
     if (!room) return;
 
     room.clients.forEach((c) => sendEvent(c.ws, event, body));
+}
+
+export async function getDiscordOauth2Information(access_token: String) {
+    const res = await fetch("https://discord.com/api/oauth2/@me", {
+        headers: {
+            Authorization: `Bearer ${access_token}`,
+        },
+    })
+        .then((res) => {
+            return res;
+        })
+        .catch((e) => {
+            console.log(e.message);
+            return null;
+        });
+    return res === null ? null : res.json();
 }

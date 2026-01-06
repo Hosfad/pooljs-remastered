@@ -9,9 +9,20 @@ export default defineConfig({
       },
     },
   },
+
+
   server: {
     port: 3000,
-    allowedHosts: ["dev.osrsplus.fun"]
+    allowedHosts: ["dev.osrsplus.fun"],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:6969',
+        changeOrigin: true,
+        secure: true,
+        ws: true,
+        rewrite: path => path.replace(/^\/api/, '')
+      }
+    },
   },
   plugins: [tailwindcss()],
 });
