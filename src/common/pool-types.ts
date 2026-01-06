@@ -3,6 +3,7 @@
  */
 
 import Phaser from "phaser";
+import type { CueId } from "./pool-constants";
 
 export type Collision = "ball" | "wall" | "hole";
 export type KeyPositions = { position: Phaser.Math.Vector2; hidden: boolean; collision?: Collision }[][];
@@ -46,5 +47,7 @@ export type GameSettings = {
     masterVolume: number;
     sfxVolume: number;
     musicVolume: number;
-    selectedCueIndex: number;
+    selectedCue: CueId;
+    showHints: boolean;
+    showAimLine: boolean;
 };

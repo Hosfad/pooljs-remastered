@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { Events } from "../../../common/server-types";
-import type { Player, Room } from "../../../server";
-import type { LocalService } from "../../../services/local-service";
-import type { MultiplayerService } from "../../../services/multiplayer-service";
+import { Events } from "../../../../common/server-types";
+import type { Player, Room } from "../../../../server";
+import type { LocalService } from "../../../../services/local-service";
+import type { MultiplayerService } from "../../../../services/multiplayer-service";
 
 const COLORS = {
     primary: "#2C5530",

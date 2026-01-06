@@ -1,0 +1,68 @@
+import { motion } from "framer-motion";
+import type { CueInfo } from "../../../../common/pool-constants";
+
+export function StatBar({ label, value, max = 10 }: { label: string; value: number; max?: number }) {
+    return (
+        <div className="flex items-center gap-3">
+            <span className="text-white/80 text-sm font-medium w-12">{label}</span>
+            <div className="flex gap-1">
+                {Array.from({ length: max }).map((_, i) => (
+                    <div key={i} className={`w-3 h-5 rounded-sm ${i < value ? "bg-accent" : "bg-white/10"}`} />
+                ))}
+            </div>
+        </div>
+    );
+}
+export function CueCard({
+    cue,
+    onSelect,
+    owned,
+    isSelected,
+}: {
+    cue: CueInfo;
+    onSelect: (cue: CueInfo) => void;
+    owned: boolean;
+    isSelected: boolean;
+}) {
+    return (
+        <motion.div
+            whileHover={{ scale: 1.02 }}
+            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                isSelected ? "border-accent bg-accent/10" : "border-white/20 bg-white/5 hover:border-accent/40"
+            }`}
+        >
+            <div className="flex items-center gap-4 mb-4">
+                <div className="bg-gradient-to-br from-blue-900/50 to-blue-950/50 rounded-lg p-4 flex-shrink-0">
+                    <div className="w-64 h-16 flex items-center justify-center">
+                        <img
+                            src={cue.sprite}
+                            alt={cue.id}
+                            className="max-w-full max-h-full object-contain"
+                            onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <div className="flex-1 space-y-2">
+                    <h3 className="text-white font-semibold text-lg mb-3">{cue.id.toUpperCase()}</h3>
+                    <StatBar label="Power" value={cue.power / 10} />
+                    <StatBar label="Accuracy" value={cue.accuracy / 10} />
+                    <StatBar label="Spin" value={cue.spin / 10} />
+                </div>
+
+                <div className="flex-shrink-0">
+                    <button
+                        onClick={() => {
+                            onSelect(cue);
+                        }}
+                        className="bg-accent/20 hover:bg-accent/30 text-accent px-6 py-3 rounded-lg font-semibold border-2 border-accent/40 hover:border-accent/60 transition-all"
+                    >
+                        {owned ? (isSelected ? "Equipped" : "Equip") : "Unlock"}
+                    </button>
+                </div>
+            </div>
+        </motion.div>
+    );
+}

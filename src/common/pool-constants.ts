@@ -91,34 +91,60 @@ export const COLORS = {
 export const CUE_DATA = {
     basic: {
         id: "basic",
-        power: 70,
-        accuracy: 80,
+        category: "owned",
+        power: 55,
+        accuracy: 65,
+        spin: 0,
+        sprite: `/assets/game/cues/basic.svg`,
     },
+
     advanced: {
         id: "advanced",
-        power: 90,
-        accuracy: 65,
+        category: "owned",
+        power: 70,
+        accuracy: 60,
+        spin: 10,
+        sprite: `/assets/game/cues/advanced.svg`,
     },
+
     expert: {
         id: "expert",
-        power: 60,
-        accuracy: 95,
+        category: "standard",
+        power: 75,
+        accuracy: 85,
+        spin: 20,
+        sprite: `/assets/game/cues/expert.svg`,
     },
+
     sword: {
         id: "sword",
-        power: 60,
-        accuracy: 95,
+        category: "standard",
+        power: 80,
+        accuracy: 88,
+        spin: 30,
+        sprite: `/assets/game/cues/sword.svg`,
     },
+
     wodden_sword: {
         id: "wodden_sword",
-        power: 60,
-        accuracy: 95,
+        category: "standard",
+        power: 82,
+        accuracy: 90,
+        spin: 40,
+        sprite: `/assets/game/cues/wodden-sword.svg`,
     },
+
     palestine: {
         id: "palestine",
-        power: 60,
-        accuracy: 95,
+        category: "standard",
+        power: 85,
+        accuracy: 92,
+        spin: 50,
+        sprite: `/assets/game/cues/palestine.svg`,
     },
 } as const;
-export const CUES = Object.keys(CUE_DATA) as CueId[];
+
 export type CueId = keyof typeof CUE_DATA;
+export const CUES = Object.keys(CUE_DATA) as CueId[];
+
+export type CueInfo = typeof CUE_DATA[CueId];

@@ -57,6 +57,7 @@ export enum Events {
 
     ERROR_ROOM_FULL = "error-room-full",
     SHOW_MODAL = "show-error-modal",
+    SHOW_LOADING = "show-loading",
 }
 
 type RoomId = {
@@ -100,6 +101,7 @@ export type EventsData = {
     // ERRORS
     [Events.ERROR_ROOM_FULL]: WebsocketRespone<RoomId>;
     [Events.SHOW_MODAL]: { title: string; description?: string; closeAfter?: number };
+    [Events.SHOW_LOADING]: { show: false } | { show: true; message: string; subMessage?: string };
 };
 
 export interface PoolState {

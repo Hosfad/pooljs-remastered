@@ -8,11 +8,11 @@ import { LocalService } from "./local-service";
 import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { INIT_DISCORD_SDK } from "../common/pool-constants";
-import { ActionButtons } from "../scenes/components/react/action-buttons";
-import { PlayerInfoWidget } from "../scenes/components/react/current-player-widget";
-import { GameInfoWidget } from "../scenes/components/react/game-info-widget";
-import { Lobby } from "../scenes/components/react/game-lobby";
-import MainScreen from "../scenes/components/react/main-screen";
+import { LoadingPage } from "../scenes/components/react/loading/loading-page";
+import { GameInfoWidget } from "../scenes/components/react/lobby/game-info-widget";
+import { Lobby } from "../scenes/components/react/lobby/game-lobby";
+import MainScreen from "../scenes/components/react/start/main-screen";
+import { PlayerInfoWidget } from "../scenes/components/react/start/start-navbar";
 
 interface Preferences {
     ballType: BallType;
@@ -30,9 +30,6 @@ export class MultiplayerService extends LocalService {
             if (!this.ws) this.ws = new WebSocket(wsUrl);
 
             this.ws.onopen = async () => {
-                await this.initDisocrdSDK();
-                this.registerEvents();
-
                 const reactRoot = document.getElementById("react-root");
 
                 if (reactRoot) {
@@ -40,18 +37,22 @@ export class MultiplayerService extends LocalService {
                     root.render(
                         <React.StrictMode>
                             <BrowserRouter>
+                                <LoadingPage service={this} />
                                 <Routes>
                                     <Route path="/" element={<MainScreen service={this} />}></Route>
                                     <Route path="/lobby" element={<Lobby service={this} />}></Route>
                                 </Routes>
                                 <PlayerInfoWidget service={this} />
-
                                 <GameInfoWidget service={this} />
-                                <ActionButtons service={this} />
                             </BrowserRouter>
                         </React.StrictMode>
                     );
                 }
+                this.send(Events.SHOW_LOADING, { show: true, message: "Pool Game" });
+
+                await this.initDisocrdSDK();
+                this.registerEvents();
+                setTimeout(() => this.send(Events.SHOW_LOADING, { show: false }), 1500);
             };
 
             this.ws.onmessage = (e) => {

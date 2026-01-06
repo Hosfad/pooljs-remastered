@@ -5,7 +5,6 @@
 import * as Phaser from "phaser";
 import {
     BALL_RADIUS,
-    CUES,
     DEBUG_GRAPHICS,
     HOLE_RADIUS,
     MODAL_OPEN,
@@ -254,7 +253,6 @@ export class PoolGameScene extends Phaser.Scene {
         const whiteBall = this.balls[this.balls.length - 1]!;
         const { x, y } = this.toTableCoordinates(whiteBall.phaserSprite.x, whiteBall.phaserSprite.y);
         const config = this.service.getSettings();
-        const selectedCue = CUES[config.selectedCueIndex % CUES.length];
         const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUES.BASIC);
         cueSprite.setOrigin(1, 0.5);
         cueSprite.setFlipX(true);

@@ -2,7 +2,7 @@ import * as Phaser from "phaser";
 
 import type { DiscordSDK } from "@discord/embedded-app-sdk";
 import { v4 as uuid } from "uuid";
-import { INIT_DISCORD_SDK } from "../common/pool-constants";
+import { INIT_DISCORD_SDK, type CueId } from "../common/pool-constants";
 import type { BallType, GameSettings, KeyPositions } from "../common/pool-types";
 import { Events, type EventsData } from "../common/server-types";
 import type { Player, Room } from "../server";
@@ -45,13 +45,22 @@ export abstract class Service {
         const item = sessionStorage.getItem("user");
 
         if (item) {
-            return JSON.parse(item) as { id: string; name: string; photo: string; access_token?: string };
+            const user = JSON.parse(item) as {
+                id: string;
+                name: string;
+                photo: string;
+                access_token?: string;
+                ownedCues: CueId[];
+            };
+            if (!user.ownedCues) user.ownedCues = ["basic", "advanced"];
+            return user;
         }
         const user = {
             id: uuid(),
             name: this.generateRandomName(),
             photo: `/assets/avatars/${Math.floor(Math.random() * 6)}.png`,
             access_token: undefined,
+            ownedCues: ["basic", "advanced"],
         };
         sessionStorage.setItem("user", JSON.stringify(user));
         return user;
@@ -100,7 +109,9 @@ export abstract class Service {
             masterVolume: 100,
             sfxVolume: 100,
             musicVolume: 80,
-            selectedCueIndex: 0,
+            selectedCue: "basic",
+            showHints: true,
+            showAimLine: true,
         };
     }
 

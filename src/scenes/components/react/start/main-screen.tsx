@@ -1,10 +1,11 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import type { MultiplayerService } from "../../../services/multiplayer-service";
+import type { MultiplayerService } from "../../../../services/multiplayer-service";
 
 function MainScreen({ service }: { service: MultiplayerService }) {
     const [_] = React.useState();
     const path = useLocation().pathname;
+
     return (
         <div
             className="relative w-screen h-[100vh] bg-primary flex flex-col"
@@ -18,7 +19,7 @@ function MainScreen({ service }: { service: MultiplayerService }) {
             <div className="flex-1 flex items-center justify-center gap-8 px-8">
                 <Link to={path === "/lobby" ? "/" : `/lobby`}>
                     <button className="group relative bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-blue-500/50 w-64 h-64 flex flex-col items-center justify-center gap-4">
-                        <div className="text-7xl group-hover:scale-110 transition-transform">🎯</div>
+                        <div className="text-7xl group-hover:scale-110 transition-transform">🎱</div>
                         <div className="text-white text-3xl font-bold">1v1 Match</div>
                         <div className="text-blue-100 text-sm">Play against a friend</div>
                     </button>

@@ -1,5 +1,8 @@
 import { Cog, ShoppingBag, Star, Trophy } from "lucide-react";
-import type { MultiplayerService } from "../../../services/multiplayer-service";
+import React from "react";
+import type { MultiplayerService } from "../../../../services/multiplayer-service";
+import { CuesDrawer } from "./cue-drawer";
+import { SettingsDrawer } from "./settings-drawer";
 
 export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
     const me = service.me();
@@ -14,11 +17,26 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
         level: 1,
     };
 
-    const handleButtonClick = (button: string) => {};
-
     const room = service.getCurrentRoom();
+
+    const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+    const [activeDrawer, setActiveDrawer] = React.useState<string | null>(null);
+
+    const openDrawer = (drawer: string) => {
+        setActiveDrawer(drawer);
+        setIsDrawerOpen(true);
+    };
+
+    const closeDrawer = () => {
+        setIsDrawerOpen(false);
+        setActiveDrawer(null);
+    };
+
     return (
         <div className="absolute top-0 right-0 w-full bg-black/40 bg-blur-2xl shadow-lg">
+            <SettingsDrawer isOpen={isDrawerOpen && activeDrawer === "settings"} onClose={closeDrawer} service={service} />
+            <CuesDrawer isOpen={isDrawerOpen && activeDrawer === "cues"} onClose={closeDrawer} service={service} />
+
             <div className="flex items-center justify-between px-4 py-3 gap-4">
                 {/* Player Info Section */}
                 <div className="flex items-center gap-4 min-w-0">
@@ -32,7 +50,7 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
                             <Star className="w-3 h-3 text-gray-900 fill-gray-900" />
                         </div>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 ">
                         <h2 className="text-white font-bold text-lg truncate">{name}</h2>
                         <div className="flex items-center gap-2">
                             <span className="text-yellow-500 text-sm font-semibold">
@@ -46,22 +64,25 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
                 {/* Navigation Buttons */}
                 <div className="flex gap-2 flex-shrink-0">
                     <button
-                        onClick={() => handleButtonClick("cues")}
-                        className="flex flex-col items-center justify-center bg-accent/10 hover:bg-accent/20 rounded-lg px-6 py-2 transition-colors min-w-[70px]"
+                        onClick={() => openDrawer("cues")}
+                        className="flex flex-col items-center justify-center bg-accent/10 hover:bg-accent/20 rounded-lg px-6 py-2 transition-colors w-24"
                     >
                         <div className="text-2xl mb-1">🎱</div>
                         <span className="text-white text-sm font-semibold">Cues</span>
                     </button>
 
                     <button
-                        onClick={() => handleButtonClick("shop")}
-                        className="flex flex-col items-center justify-center bg-accent/10 hover:bg-accent/20 rounded-lg px-6 py-2 transition-colors min-w-[70px]"
+                        onClick={() => openDrawer("shop")}
+                        className="flex flex-col items-center justify-center bg-accent/10 hover:bg-accent/20 rounded-lg px-6 py-2 transition-colors w-24"
                     >
                         <ShoppingBag className="w-6 h-6 text-green-400 mb-1" />
                         <span className="text-white text-sm font-semibold">Shop</span>
                     </button>
 
-                    <button className="flex flex-col items-center justify-center bg-accent/10 hover:bg-accent/20 rounded-lg px-6 py-2 transition-colors min-w-[70px]">
+                    <button
+                        onClick={() => openDrawer("settings")}
+                        className="flex flex-col items-center justify-center bg-accent/10 hover:bg-accent/20 rounded-lg px-6 py-2 transition-colors w-24"
+                    >
                         <Cog className="w-6 h-6 text-yellow-400 mb-1" />
                         <span className="text-white text-sm font-semibold">Settings</span>
                     </button>

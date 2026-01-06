@@ -1,11 +1,11 @@
 import { ShareIcon } from "lucide-react";
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { INIT_DISCORD_SDK } from "../../../common/pool-constants";
-import { Events } from "../../../common/server-types";
-import type { Room } from "../../../server";
-import type { MultiplayerService } from "../../../services/multiplayer-service";
-import { Button } from "./ui/button";
+import { INIT_DISCORD_SDK } from "../../../../common/pool-constants";
+import { Events } from "../../../../common/server-types";
+import type { Room } from "../../../../server";
+import type { MultiplayerService } from "../../../../services/multiplayer-service";
+import { Button } from "../ui/button";
 
 export function Lobby({ service }: { service: MultiplayerService }) {
     const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
@@ -201,7 +201,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
     );
 }
 
-export function MatchmakingAnimation() {
+function MatchmakingAnimation() {
     const [dots, setDots] = React.useState("");
 
     React.useEffect(() => {
