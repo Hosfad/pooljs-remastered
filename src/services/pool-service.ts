@@ -109,7 +109,7 @@ export class PoolService {
             b.phaserSprite.visible = !key.hidden;
         });
 
-        if (this.players[turn] == points && !this.winner() && !this.balls[whiteball]!.isPocketed) {
+        if (this.players[turn] == points && !this.winner() || this.balls[whiteball]!.isPocketed) {
             this.turnIndex = (this.turnIndex + 1) % this.turns.length;
         }
 
