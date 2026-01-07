@@ -701,11 +701,6 @@ export class PoolGameScene extends Phaser.Scene {
 
         const currentPos = aimDir.clone().multiply(ballRadius).add({ x: ballX, y: ballY });
         const rayDirection = aimDir.clone();
-        const maxDistance = 2000;
-
-        let hitDetected = false;
-        let hitPosition = new Vector2(0, 0);
-        let hitType: "ball" | "wall" | null = null;
 
         let closestBallDistance = Infinity;
         let closestBallHitPos = new Vector2(0, 0);
@@ -713,7 +708,10 @@ export class PoolGameScene extends Phaser.Scene {
         const BALL_SQR = BALL_RADIUS * BALL_RADIUS;
 
         for (let i = 0; i < this.balls.length - 1; i++) {
-            const delta = currentPos.clone().subtract(this.balls[i]!.phaserSprite);
+            const ball = this.balls[i]!;
+            if (ball.isPocketed) continue;
+
+            const delta = currentPos.clone().subtract(ball.phaserSprite);
 
             const a = rayDirection.lengthSq();
             const b = delta.dot(rayDirection) * 2;
@@ -732,26 +730,10 @@ export class PoolGameScene extends Phaser.Scene {
                 if (t1 > 0 && t1 < t) t = t1;
                 if (t2 > 0 && t2 < t) t = t2;
 
-                if (t < maxDistance && t < closestBallDistance) {
+                if (t < closestBallDistance) {
                     closestBallDistance = t;
                     closestBallHitPos = rayDirection.clone().multiply({ x: t, y: t }).add(currentPos);
-                    hitType = "ball";
                 }
-            }
-        }
-
-        // TODO: walls hitbox
-        let closestWallDistance = Infinity;
-        let closestWallHitPos = new Vector2(0, 0);
-
-        if (closestBallDistance < Infinity || closestWallDistance < Infinity) {
-            hitDetected = true;
-            if (closestBallDistance < closestWallDistance) {
-                hitPosition = closestBallHitPos;
-                hitType = "ball";
-            } else {
-                hitPosition = closestWallHitPos;
-                hitType = "wall";
             }
         }
 
@@ -766,9 +748,9 @@ export class PoolGameScene extends Phaser.Scene {
         this.aimLine.beginPath();
         this.aimLine.moveTo(cx, cy);
 
-        if (hitDetected) {
-            const targetX = hitPosition.x;
-            const targetY = hitPosition.y;
+        if (closestBallDistance < Infinity) { // Hit ball
+            const targetX = closestBallHitPos.x;
+            const targetY = closestBallHitPos.y;
 
             this.aimLineShadow.lineTo(targetX, targetY);
             this.aimLine.lineTo(targetX, targetY);
@@ -778,9 +760,31 @@ export class PoolGameScene extends Phaser.Scene {
 
             this.aimLineShadow.strokeCircle(targetX, targetY, 5);
             this.aimLine.strokeCircle(targetX, targetY, 5);
-        } else {
-            const targetX = cx + aimDir.x * maxDistance;
-            const targetY = cy + aimDir.y * maxDistance;
+        } else { // Hit wall
+            const tw = this.tableWidth;
+            const th = this.tableHeight;
+
+            const mx = this.marginX;
+            const my = this.marginY;
+
+            const xRatio = tw / 16;
+            const yRatio = th / 12;
+
+            const leftEdge = mx + xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
+            const rightEdge = mx + tw - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
+            const upperEdge = my + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y + BALL_RADIUS * 1.5;
+            const lowerEdge = my + th - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y + BALL_RADIUS * 1.5;
+
+            const aimX = aimDir.x;
+            const aimY = aimDir.y;
+
+            const dx = aimX > 0 ? rightEdge - cx : leftEdge - cx;
+            const dy = aimY > 0 ? lowerEdge - cy : upperEdge - cy;
+
+            const t = Math.min(dx / aimX, dy / aimY);
+
+            const targetX = cx + aimX * t;
+            const targetY = cy + aimY * t;
 
             this.aimLineShadow.lineTo(targetX, targetY);
             this.aimLine.lineTo(targetX, targetY);
