@@ -804,13 +804,13 @@ export class PoolGameScene extends Phaser.Scene {
             this.lineTo(endX, endY);
             this.strokePath();
         } else { // Hit wall
-            const { left, right, top, bottom } = this.getTableEdges();
-
             const aimX = aimDir.x;
             const aimY = aimDir.y;
 
-            const dx = aimX > 0 ? right - cx : bottom - cx;
-            const dy = aimY > 0 ? left - cy : top - cy;
+            const { left, right, top, bottom } = this.getTableEdges();
+
+            const dx = aimX > 0 ? right - cx : left - cx;
+            const dy = aimY > 0 ? bottom - cy : top - cy;
 
             const t = Math.min(dx / aimX, dy / aimY);
 
