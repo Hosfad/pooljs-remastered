@@ -63,6 +63,7 @@ export class PoolGameScene extends Phaser.Scene {
     private lockedAimAngle = 0;
     private dragVector = new Vector2();
     private aimLine!: Phaser.GameObjects.Graphics;
+    private aimLineShadow!: Phaser.GameObjects.Graphics;
     private isMobile = false;
 
     private pocketedBallsRail!: {
@@ -290,6 +291,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createCue(): void {
+        this.aimLineShadow = this.add.graphics();
         this.aimLine = this.add.graphics();
 
         const whiteBall = this.balls[this.balls.length - 1]!;
@@ -643,6 +645,7 @@ export class PoolGameScene extends Phaser.Scene {
         let angle: number;
 
         if (!this.input.enabled || whiteBall.isPocketed) {
+            this.aimLineShadow.clear();
             this.aimLine.clear();
             return;
         }
@@ -690,6 +693,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private drawAimLine(ballX: number, ballY: number, angle: number): void {
+        this.aimLineShadow.clear();
         this.aimLine.clear();
 
         const aimDir = new Vector2(Math.cos(angle), Math.sin(angle));
@@ -754,19 +758,36 @@ export class PoolGameScene extends Phaser.Scene {
         const cx = currentPos.x;
         const cy = currentPos.y;
 
-        this.aimLine.lineStyle(2, 0xffffff, 1.5);
+        this.aimLineShadow.lineStyle(6, 0x000000, 1);
+        this.aimLineShadow.beginPath();
+        this.aimLineShadow.moveTo(cx, cy);
+
+        this.aimLine.lineStyle(2, 0xffffff, 1);
         this.aimLine.beginPath();
         this.aimLine.moveTo(cx, cy);
 
         if (hitDetected) {
-            this.aimLine.lineTo(hitPosition.x, hitPosition.y);
-            this.aimLine.lineStyle(3, hitType === "ball" ? 0xff0000 : 0xffff00, 1);
-            this.aimLine.strokeCircle(hitPosition.x, hitPosition.y, 5);
-        } else {
-            this.aimLine.lineTo(cx + aimDir.x * maxDistance, cy + aimDir.y * maxDistance);
-        }
+            const targetX = hitPosition.x;
+            const targetY = hitPosition.y;
 
-        this.aimLine.strokePath();
+            this.aimLineShadow.lineTo(targetX, targetY);
+            this.aimLine.lineTo(targetX, targetY);
+
+            this.aimLineShadow.strokePath();
+            this.aimLine.strokePath();
+
+            this.aimLineShadow.strokeCircle(targetX, targetY, 5);
+            this.aimLine.strokeCircle(targetX, targetY, 5);
+        } else {
+            const targetX = cx + aimDir.x * maxDistance;
+            const targetY = cy + aimDir.y * maxDistance;
+
+            this.aimLineShadow.lineTo(targetX, targetY);
+            this.aimLine.lineTo(targetX, targetY);
+
+            this.aimLineShadow.strokePath();
+            this.aimLine.strokePath();
+        }
     }
 
     private setupDebugPanel(): void {
