@@ -189,3 +189,31 @@ export type CueId = keyof typeof CUE_DATA;
 export const CUES = Object.keys(CUE_DATA) as CueId[];
 
 export type CueInfo = typeof CUE_DATA[CueId];
+
+export type ShopPack = {
+    id: string;
+    base: number;
+    currency: "coins" | "cash";
+    bonusPercent: number;
+    total: number;
+    price: string;
+    tag?: "best" | "popular";
+};
+
+export const COIN_PACKS: ShopPack[] = [
+    { id: "c1", base: 100000, bonusPercent: 80, total: 180000, price: "$99.99", tag: "best", currency: "coins" },
+    { id: "c2", base: 45000, bonusPercent: 65, total: 75000, price: "$49.99", tag: "popular", currency: "coins" },
+    { id: "c3", base: 16000, bonusPercent: 60, total: 25600, price: "$19.99", currency: "coins" },
+    { id: "c4", base: 8000, bonusPercent: 40, total: 11200, price: "$9.99", currency: "coins" },
+    { id: "c5", base: 4000, bonusPercent: 30, total: 5200, price: "$4.99", currency: "coins" },
+    { id: "c6", base: 1500, bonusPercent: 25, total: 1875, price: "$1.99", currency: "coins" },
+];
+
+export const CASH_PACKS: ShopPack[] = [
+    { id: "m1", base: 1000, bonusPercent: 60, total: 1600, price: "$99.99", tag: "best", currency: "cash" },
+    { id: "m2", base: 450, bonusPercent: 45, total: 653, price: "$49.99", tag: "popular", currency: "cash" },
+    { id: "m3", base: 180, bonusPercent: 25, total: 225, price: "$19.99", currency: "cash" },
+    { id: "m4", base: 90, bonusPercent: 20, total: 110, price: "$9.99", currency: "cash" },
+    { id: "m5", base: 40, bonusPercent: 20, total: 48, price: "$4.99", currency: "cash" },
+    { id: "m6", base: 15, bonusPercent: 10, total: 17, price: "$1.99", currency: "cash" },
+];

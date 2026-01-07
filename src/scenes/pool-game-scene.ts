@@ -799,7 +799,7 @@ export class PoolGameScene extends Phaser.Scene {
             const dx = hitBall.phaserSprite.x - targetX;
             const dy = hitBall.phaserSprite.y - targetY;
 
-            const lineLength = BALL_RADIUS * 2.5;
+            const lineLength = BALL_RADIUS * 4;
             const angle = Math.atan2(dy, dx);
 
             const endX = targetX + Math.cos(angle) * lineLength;

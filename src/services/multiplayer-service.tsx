@@ -252,6 +252,11 @@ export class MultiplayerService extends LocalService {
             this.send(Events.UPDATE_ROOM, data.data);
         });
 
+        this.listen(Events.UPDATE_ROOM, (data) => {
+            this.instanciateRoom(data);
+            this.send(Events.UPDATE_ROOM, data);
+        });
+
         // Game events
         this.listen(Events.HAND, (data) => {
             this.send(Events.HAND, data);

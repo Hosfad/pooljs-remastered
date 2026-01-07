@@ -1,4 +1,6 @@
-import { ShareIcon } from "lucide-react";
+"use client";
+
+import { ArrowLeft, Loader, ShareIcon, UsersIcon } from "lucide-react";
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { INIT_DISCORD_SDK } from "../../../../common/pool-constants";
@@ -92,204 +94,152 @@ export function Lobby({ service }: { service: MultiplayerService }) {
     const path = useLocation().pathname;
     return (
         visible && (
-            <div className="relative flex flex-col gap-4 w-screen h-[100vh] bg-primary items-center justify-center p-2 md:p-4">
+            <div
+                className="relative flex flex-col gap-4 w-screen h-[100vh] bg-primary items-center justify-center p-2 md:p-4"
+                style={{
+                    backgroundImage: `url(/assets/game/play-background.png)`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                }}
+            >
                 {/* Main content */}
-                <div className=" w-full  flex flex-col gap-4 ">
+                <div className="w-full flex flex-col gap-4">
                     <div className="md:min-h-[25vh] min-h-[40vh]">
-                        {lobbyState === "matchmaking" ? (
-                            <MatchmakingAnimation />
-                        ) : (
-                            <div className="md:mt-20 flex-1 flex flex-col md:flex-row landscape:flex-row gap-3 md:gap-6 landscape:gap-4  items-center justify-center ">
-                                <div className="flex-1 flex flex-col items-center justify-center gap-2 md:gap-4 landscape:gap-2 bg-black/20 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-8 landscape:p-3 border-2 border-emerald-600/30 shadow-xl max-w-xs w-full">
-                                    <div className="relative">
-                                        <img
-                                            src={currentPlayer?.photo}
-                                            className={`relative w-16 h-16 md:w-32 md:h-32 landscape:w-20 landscape:h-20 rounded-full shadow-lg border-2 md:border-4 landscape:border-3  border-emerald-400/50`}
-                                            alt="Player 1"
-                                        />
+                        <div className="md:mt-20 flex-1 flex flex-col md:flex-row landscape:flex-row gap-3 md:gap-6 landscape:gap-4 items-center justify-center max-w-[calc(2*20rem+3.5rem+1.5rem)] mx-auto">
+                            <div className="relative flex-1 flex flex-col items-center justify-center gap-2 md:gap-4 landscape:gap-2 bg-gradient-to-b from-dark/90 to-dark/70 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-8 landscape:p-4 border-2 border-accent/40 shadow-[0_8px_32px_rgba(16,185,129,0.2)] max-w-xs w-full">
+                                {currentPlayerIsHost && (
+                                    <div className="absolute -top-3 left-4 px-3 py-1 bg-accent/90 rounded-full">
+                                        <span className="text-xs font-bold text-dark">Host</span>
                                     </div>
-                                    <div className="text-center">
-                                        <h2
-                                            className={`text-base md:text-2xl landscape:text-lg font-bold  text-emerald-300`}
-                                        >
-                                            {currentPlayer?.name}
-                                        </h2>
-                                    </div>
-                                </div>
+                                )}
 
-                                <div className="flex items-center justify-center flex-shrink-0">
-                                    <div className="w-12 h-12 md:w-20 md:h-20 landscape:w-14 landscape:h-14 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-2xl border-2 md:border-4 landscape:border-3 border-amber-300">
-                                        <span className="text-lg md:text-3xl landscape:text-xl font-bold text-amber-950">
-                                            VS
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="relative flex-1 flex flex-col items-center justify-center gap-2 md:gap-4 landscape:gap-2 bg-black/20 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-8 landscape:p-3 border-2 border-emerald-600/30 shadow-xl max-w-xs w-full">
-                                    {currentPlayerIsHost && otherPlayer && (
-                                        <Button
-                                            onClick={() => handleKickPlayer(otherPlayer?.id!)}
-                                            variant="dark"
-                                            className="absolute top-2 right-2 px-2! w-8! h-8!"
-                                        >
-                                            x
-                                        </Button>
+                                <div className="relative">
+                                    {lobbyState === "matchmaking" && (
+                                        <>
+                                            <div className="absolute inset-0 rounded-full bg-accent/30 animate-ping" />
+                                            <div className="absolute inset-0 rounded-full bg-accent/20 animate-pulse" />
+                                        </>
                                     )}
+                                    <img
+                                        src={currentPlayer?.photo || "/placeholder.svg"}
+                                        className="relative w-20 h-20 md:w-36 md:h-36 landscape:w-24 landscape:h-24 rounded-full shadow-xl border-4 md:border-[6px] landscape:border-4 border-accent/60"
+                                        alt="Player 1"
+                                    />
+                                </div>
 
-                                    <div className="relative">
-                                        {otherPlayer ? (
-                                            <img
-                                                src={otherPlayer?.photo}
-                                                className={`relative w-16 h-16 md:w-32 md:h-32 landscape:w-20 landscape:h-20 rounded-full shadow-lg border-2 md:border-4 landscape:border-3  border-emerald-400/50`}
-                                                alt="Player 1"
-                                            />
-                                        ) : (
-                                            <div className="relative w-16 h-16 md:w-32 md:h-32 landscape:w-20 landscape:h-20 rounded-full border-2 md:border-4 landscape:border-3 border-dashed border-emerald-400/50 shadow-lg flex items-center justify-center bg-emerald-950/50">
-                                                <span className="text-2xl md:text-4xl landscape:text-3xl opacity-50">?</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="text-center">
-                                        <h2
-                                            className={`text-base md:text-2xl landscape:text-lg font-bold text-emerald-300 
-                                            `}
-                                        >
-                                            {otherPlayer?.name ?? "Waiting ..."}
-                                        </h2>
-                                    </div>
+                                <div className="text-center">
+                                    <h2 className="text-lg md:text-2xl landscape:text-xl font-bold text-text">
+                                        {currentPlayer?.name}
+                                    </h2>
+                                    <p className="text-xs md:text-sm text-accent/60 mt-1">Ready to play</p>
                                 </div>
                             </div>
-                        )}
+
+                            <div className="flex items-center justify-center flex-shrink-0 relative">
+                                <div className="absolute inset-0 bg-accent/20 rounded-full blur-xl" />
+                                <div className="relative w-14 h-14 md:w-24 md:h-24 landscape:w-16 landscape:h-16 rounded-full bg-gradient-to-br from-accent via-accent/90 to-accent/70 flex items-center justify-center shadow-[0_8px_32px_rgba(16,185,129,0.4)] border-4 border-accent/30">
+                                    <span className="text-xl md:text-4xl landscape:text-2xl font-black text-dark">VS</span>
+                                </div>
+                            </div>
+
+                            <div className="relative flex-1 flex flex-col items-center justify-center gap-2 md:gap-4 landscape:gap-2 bg-gradient-to-b from-dark/90 to-dark/70 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-8 landscape:p-4 border-2 border-accent/40 shadow-[0_8px_32px_rgba(16,185,129,0.2)] max-w-xs w-full">
+                                {!currentPlayerIsHost && (
+                                    <div className="absolute -top-3 left-4 px-3 py-1 bg-accent/90 rounded-full">
+                                        <span className="text-xs font-bold text-dark">Host</span>
+                                    </div>
+                                )}
+
+                                {currentPlayerIsHost && otherPlayer && (
+                                    <Button
+                                        onClick={() => handleKickPlayer(otherPlayer?.id!)}
+                                        variant="dark"
+                                        className="absolute top-2 right-2 px-2! w-8! h-8! hover:bg-red-600 transition-colors"
+                                    >
+                                        ×
+                                    </Button>
+                                )}
+
+                                <div className="relative">
+                                    {lobbyState === "matchmaking" && (
+                                        <>
+                                            <div className="absolute inset-0 rounded-full bg-accent/30 animate-ping" />
+                                            <div className="absolute inset-0 rounded-full bg-accent/20 animate-pulse" />
+                                        </>
+                                    )}
+
+                                    {otherPlayer ? (
+                                        <img
+                                            src={otherPlayer?.photo || "/placeholder.svg"}
+                                            className="relative w-20 h-20 md:w-36 md:h-36 landscape:w-24 landscape:h-24 rounded-full shadow-xl border-4 md:border-[6px] landscape:border-4 border-accent/60"
+                                            alt="Player 2"
+                                        />
+                                    ) : (
+                                        <div className="relative w-20 h-20 md:w-36 md:h-36 landscape:w-24 landscape:h-24 rounded-full border-4 md:border-[6px] landscape:border-4 border-dashed border-accent/50 shadow-xl flex items-center justify-center bg-dark/80">
+                                            <span className="text-3xl md:text-5xl landscape:text-4xl text-accent/40">?</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="text-center">
+                                    <h2 className="text-lg md:text-2xl landscape:text-xl font-bold text-text">
+                                        {otherPlayer?.name ?? "Waiting..."}
+                                    </h2>
+                                    <p className="text-xs md:text-sm text-accent/60 mt-1">
+                                        {otherPlayer
+                                            ? "Ready to play"
+                                            : lobbyState === "matchmaking"
+                                            ? "Searching..."
+                                            : "Empty slot"}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className={`w-full flex items-center justify-center gap-2 md:gap-4   `}>
+
+                    <div className="w-full max-w-[calc(2*20rem+3.5rem+1.5rem)] mx-auto grid grid-cols-2 items-center justify-center gap-2">
                         <Button
                             variant="secondary"
                             disabled={!currentPlayerIsHost || players.length >= 2}
                             onClick={() =>
                                 lobbyState === "matchmaking" ? handleCancelMatchmaking() : handleStartMatchmaking()
                             }
-                            className="landscape:w-full md:w-[16%]!"
+                            className="  bg-dark/80 border-2 border-accent/40 hover:bg-dark hover:border-accent/60 transition-all"
                         >
-                            {lobbyState === "matchmaking" ? "Cancel Matchmaking" : "Find Online Match"}
+                            {lobbyState === "matchmaking" ? (
+                                <Loader className="w-4 h-4 animate-spin mr-2" />
+                            ) : (
+                                <UsersIcon className="w-4 h-4 mr-2" />
+                            )}
+                            {lobbyState === "matchmaking" ? "Cancel Search" : "Find Online"}
                         </Button>
+
                         <Button
                             disabled={!currentPlayerIsHost || players.length < 2}
                             onClick={handleStart}
                             variant="dark"
-                            className="landscape:w-full md:w-[16%]!"
+                            className=" bg-dark/80 border border-accent/30 hover:bg-dark hover:border-accent/50 transition-all"
                         >
-                            {currentPlayerIsHost ? "Start Game" : "Waiting for host to start..."}
+                            {currentPlayerIsHost ? "Start Game" : "Waiting for host..."}
                         </Button>
+                        <Link to={"/"} className="w-full">
+                            <Button
+                                variant="dark"
+                                className="w-full flex items-center justify-center gap-2 bg-dark/80 border border-accent/30 hover:bg-dark hover:border-accent/50 transition-all"
+                            >
+                                <ArrowLeft className="w-4 h-4" /> Go Back
+                            </Button>
+                        </Link>
                         <Button
                             onClick={handleInvite}
                             variant="secondary"
-                            className="landscape:w-auto md:w-auto! px-3 md:px-4!"
+                            className="landscape:w-auto md:w-auto! px-3 md:px-4! bg-dark/80 border-2 border-accent/40 hover:bg-dark hover:border-accent/60 transition-all"
                         >
                             <ShareIcon />
                         </Button>
                     </div>
                 </div>
-
-                <Link to={path === "/lobby" ? "/" : `/lobby?room=${service.getRoomId()}`}>
-                    <Button variant="dark" className="absolute bottom-4 min-w-[20vw] right-4">
-                        {path === "/lobby" ? "Go Back" : "Start Game"}
-                    </Button>
-                </Link>
-                <br />
-                <br />
             </div>
         )
-    );
-}
-
-function MatchmakingAnimation() {
-    const [dots, setDots] = React.useState("");
-
-    React.useEffect(() => {
-        const interval = setInterval(() => {
-            setDots((prev) => {
-                if (prev.length >= 3) return "";
-                return prev + ".";
-            });
-        }, 500);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    return (
-        <div className="flex flex-col my-auto items-center justify-center gap-2 sm:gap-3 w-full h-full">
-            <div className="relative w-[120px] sm:w-[150px] h-[40px] sm:h-[50px] flex items-center justify-center">
-                <img
-                    src="/assets/game/balls/white.svg"
-                    alt="Bouncing ball 1"
-                    className="absolute w-[25px] sm:w-[30px] h-[25px] sm:h-[30px] object-contain rounded-full animate-bounce-left"
-                    style={{
-                        transform: "translateX(-35px) translateY(0)",
-                    }}
-                />
-
-                <img
-                    src="/assets/game/balls/1.svg"
-                    alt="Bouncing ball 2"
-                    className="absolute w-[25px] sm:w-[30px] h-[25px] sm:h-[30px] object-contain rounded-full animate-bounce-center"
-                    style={{
-                        transform: "translateX(0) translateY(0)",
-                    }}
-                />
-
-                <img
-                    src="/assets/game/balls/black.svg"
-                    alt="Bouncing ball 3"
-                    className="absolute w-[25px] sm:w-[30px] h-[25px] sm:h-[30px] object-contain rounded-full animate-bounce-right"
-                    style={{
-                        transform: "translateX(35px) translateY(0)",
-                    }}
-                />
-            </div>
-
-            <div className="text-center">
-                <h2 className="text-sm sm:text-base font-bold text-text mb-0.5">Finding Opponent{dots}</h2>
-                <p className="text-[10px] sm:text-xs text-gray-300">Searching for players...</p>
-            </div>
-
-            <style>{`
-                @keyframes bounce-left {
-                    0%,
-                    100% {
-                        transform: translateX(-35px) translateY(0);
-                    }
-                    50% {
-                        transform: translateX(-35px) translateY(-20px);
-                    }
-                }
-                @keyframes bounce-center {
-                    0%,
-                    100% {
-                        transform: translateX(0) translateY(0);
-                    }
-                    50% {
-                        transform: translateX(0) translateY(-30px);
-                    }
-                }
-                @keyframes bounce-right {
-                    0%,
-                    100% {
-                        transform: translateX(35px) translateY(0);
-                    }
-                    50% {
-                        transform: translateX(35px) translateY(-20px);
-                    }
-                }
-                .animate-bounce-left {
-                    animation: bounce-left 1.5s ease-in-out infinite;
-                }
-                .animate-bounce-center {
-                    animation: bounce-center 1.5s ease-in-out infinite 0.25s;
-                }
-                .animate-bounce-right {
-                    animation: bounce-right 1.5s ease-in-out infinite 0.5s;
-                }
-            `}</style>
-        </div>
     );
 }

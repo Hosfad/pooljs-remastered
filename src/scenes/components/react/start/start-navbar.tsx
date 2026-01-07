@@ -38,7 +38,7 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
     if (room?.isGameStarted) return null;
 
     return (
-        <div className="absolute top-0 right-0 w-full bg-black/60 bg-blur-2xl shadow-lg">
+        <div className="absolute top-0 right-0 w-full bg-black/40 bg-blur-2xl shadow-lg">
             <SettingsDrawer isOpen={isDrawerOpen && activeDrawer === "settings"} onClose={closeDrawer} service={service} />
             <CuesDrawer isOpen={isDrawerOpen && activeDrawer === "cues"} onClose={closeDrawer} service={service} />
             <ShopDrawer isOpen={isDrawerOpen && activeDrawer === "shop"} onClose={closeDrawer} service={service} />

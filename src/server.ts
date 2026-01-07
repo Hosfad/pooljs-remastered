@@ -199,24 +199,24 @@ wss.on("connection", (ws) => {
 
         const client = room.clients.find((c) => c.id === kickTargetId);
         if (!client) return console.error("Client not found", roomId);
+        room.clients = room.clients.filter((c) => c.id !== kickTargetId);
+
         broadcastEvent(
             {
                 roomId,
                 senderId,
             },
-            Events.KICK_PLAYER,
+            Events.UPDATE_ROOM,
             {
                 type: "success",
-                roomId,
-                userId: senderId,
-                kickTargetId,
+                ...reshapeRoom(room),
             }
         );
-        room.clients = room.clients.filter((c) => c.id !== kickTargetId);
         room.kickedPlayers = room.kickedPlayers ?? [];
         room.kickedPlayers.push(kickTargetId);
         client.ws.close();
         rooms[room.id] = room;
+        console.log("Kicked player", kickTargetId, "from room", room.id);
     });
 
     eventListener.on(Events.PLAYER_DISCONNECT, withRoomAuthMiddleware, (data) => {

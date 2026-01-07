@@ -2,21 +2,29 @@
 
 import React from "react";
 import { COLORS } from "../../../../common/pool-constants";
-import { Events } from "../../../../common/server-types";
+import { Events, type PoolState } from "../../../../common/server-types";
 import type { Player, Room } from "../../../../server";
-import type { LocalService } from "../../../../services/local-service";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 
 const ROUND_TIME = 30;
 
-export function GameInfoWidget({ service }: { service: MultiplayerService | LocalService }) {
+export function GameInfoWidget({ service }: { service: MultiplayerService }) {
     const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
+    const [state, setState] = React.useState<PoolState | null>(service.getState());
 
     React.useEffect(() => {
         service.subscribe(Events.INIT, (data) => {
             setRoom(data);
+            setState(service.getState());
         });
-        service.subscribe(Events.UPDATE_ROOM, (data) => setRoom(data));
+        service.subscribe(Events.UPDATE_ROOM, (data) => {
+            setRoom(data);
+            setState(service.getState());
+        });
+
+        service.subscribe(Events.HITS, (data) => {
+            setState(service.getState());
+        });
     }, []);
 
     const [timeLeft, setTimeLeft] = React.useState(ROUND_TIME);
@@ -45,6 +53,22 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
 
     const player1Ball = player1.state.ballType;
     const player2Ball = player2.state.ballType;
+
+    const ballIndexesInHole = Object.keys(state!.inHole).map((index) => +index);
+
+    const player1ScoredBalls = ballIndexesInHole.filter((index) => {
+        const ballType = index >= 9 ? "striped" : "solid";
+        if (player1Ball === ballType) return true;
+        return false;
+    });
+
+    const player2ScoredBalls = ballIndexesInHole.filter((index) => {
+        const ballType = index >= 9 ? "striped" : "solid";
+        if (player2Ball === ballType) return true;
+        return false;
+    });
+
+    console.log({ state, player1ScoredBalls, player2ScoredBalls });
     return (
         room?.isGameStarted && (
             <div
@@ -59,27 +83,44 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
                 }}
             >
                 {/* Player 1 */}
-                <PlayerHUD player={player1} isActive={currentPlayerId === player1.id} progress={progress} />
-
+                <PlayerHUD
+                    player={player1}
+                    isActive={currentPlayerId === player1.id}
+                    progress={progress}
+                    inHole={player1ScoredBalls}
+                />
                 {/* Center Info */}
                 <div
+                    className="mt-20"
                     style={{
                         flex: 1,
                         textAlign: "center",
                         padding: "0 2rem",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "0.5rem",
                     }}
                 >
-                    <div
+                    {/* Current Ball Type Image */}
+                    <img
+                        src={`/assets/game/balls/${
+                            currentPlayerId === player1.id
+                                ? player1Ball === "solid"
+                                    ? "1"
+                                    : "9"
+                                : player2Ball === "solid"
+                                ? "1"
+                                : "9"
+                        }.svg`}
+                        alt={currentPlayerId === player1.id ? player1Ball : player2Ball}
                         style={{
-                            fontSize: "3rem",
-                            fontWeight: "bold",
-                            color: COLORS.text,
-                            fontFamily: "monospace",
-                            marginBottom: "0.25rem",
+                            width: 64,
+                            height: 64,
+                            filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))",
                         }}
-                    >
-                        {String(timeLeft).padStart(2, "0")}s
-                    </div>
+                    />
+
                     <div
                         style={{
                             fontSize: "0.875rem",
@@ -90,10 +131,27 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
                     >
                         {currentPlayerId === player1.id ? player1.name : player2.name}'s Turn
                     </div>
+
+                    <div
+                        style={{
+                            fontSize: "1.5rem",
+                            fontWeight: "bold",
+                            color: COLORS.text,
+                            fontFamily: "monospace",
+                        }}
+                    >
+                        {String(timeLeft).padStart(2, "0")}s
+                    </div>
                 </div>
 
                 {/* Player 2 */}
-                <PlayerHUD player={player2} isActive={currentPlayerId === player2.id} progress={progress} reverse={true} />
+                <PlayerHUD
+                    player={player2}
+                    isActive={currentPlayerId === player2.id}
+                    progress={progress}
+                    reverse={true}
+                    inHole={player2ScoredBalls}
+                />
             </div>
         )
     );
@@ -104,14 +162,14 @@ function PlayerHUD({
     isActive,
     progress,
     reverse,
+    inHole,
 }: {
     player: Player;
     isActive: boolean;
     progress: number;
     reverse?: boolean;
+    inHole: number[];
 }) {
-    const scoredBalls = [1, 2, 3, 4, 5, 6];
-
     return (
         <div style={{ display: "flex", alignItems: "center", gap: "1rem", direction: reverse ? "rtl" : "ltr" }}>
             <PlayerAvatar player={player} isActive={isActive} progress={progress} ballType={player.state.ballType} />
@@ -129,7 +187,7 @@ function PlayerHUD({
 
                 {/* Scored balls */}
                 <div style={{ display: "flex", gap: "4px" }}>
-                    {scoredBalls.map((ball) => (
+                    {inHole.map((ball) => (
                         <img
                             key={ball}
                             src={`/assets/game/balls/${ball}.svg`}

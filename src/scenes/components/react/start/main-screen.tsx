@@ -9,12 +9,12 @@ function MainScreen({ service }: { service: MultiplayerService }) {
     return (
         <div
             className="relative w-screen h-[100vh] bg-primary flex flex-col"
-            // style={{
-            //     backgroundImage: `url(/assets/game/image2.png)`,
-            //     backgroundSize: "cover",
-            //     backgroundPosition: "center",
-            //     backgroundRepeat: "no-repeat",
-            // }}
+            style={{
+                backgroundImage: `url(/assets/game/play-background.png)`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+            }}
         >
             <div className="flex-1 flex items-center justify-center gap-8 px-8">
                 <Link to={path === "/lobby" ? "/" : `/lobby`}>
