@@ -108,7 +108,8 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createHand(): void {
-        this.hand = this.add.sprite(this.scale.width / 2, this.scale.height / 2, POOL_ASSETS.HAND)
+        this.hand = this.add
+            .sprite(this.scale.width / 2, this.scale.height / 2, POOL_ASSETS.HAND)
             .setDisplaySize(BALL_RADIUS * 10, BALL_RADIUS * 10)
             .setVisible(false);
     }
@@ -284,11 +285,11 @@ export class PoolGameScene extends Phaser.Scene {
                         y: yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y,
                     },
                     {
-                        x: xRatio * (CUSHION_CONSTANTS.SIDE_OUTER_X - CUSHION_CONSTANTS.SIDE_THICKNESS_X),
+                        x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X,
                         y: yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
                     },
                     {
-                        x: xRatio * (CUSHION_CONSTANTS.SIDE_OUTER_X - CUSHION_CONSTANTS.SIDE_THICKNESS_X),
+                        x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X,
                         y: this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
                     },
                     {
@@ -495,10 +496,12 @@ export class PoolGameScene extends Phaser.Scene {
                 const xRatio = this.tableWidth / 16;
                 const yRatio = this.tableHeight / 12;
 
-                if (px < this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_INNER_X ||
-                    px > this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X ||
-                    py < this.marginY + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y ||
-                    py > this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y) {
+                // Draw a circle on marginX and y 60
+
+                const leftEdge = this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
+                const rightEdge = this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
+
+                if (px < leftEdge || px > rightEdge) {
                     return;
                 }
 
@@ -540,10 +543,12 @@ export class PoolGameScene extends Phaser.Scene {
                 const xRatio = this.tableWidth / 16;
                 const yRatio = this.tableHeight / 12;
 
-                if (px < this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_INNER_X ||
+                if (
+                    px < this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_INNER_X ||
                     px > this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X ||
                     py < this.marginY + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y ||
-                    py > this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y) {
+                    py > this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y
+                ) {
                     return;
                 }
 
@@ -805,13 +810,13 @@ export class PoolGameScene extends Phaser.Scene {
             }
         }
 
-        const ballSprites: Phaser.GameObjects.Sprite[] = ballPositions.map((pos) => (
+        const ballSprites: Phaser.GameObjects.Sprite[] = ballPositions.map((pos) =>
             this.add
                 .sprite(pos.x, pos.y, POOL_ASSETS.WHITE_BALL)
                 .setScale((ballRadius * 2) / 256)
                 .setAlpha(0)
                 .setVisible(false)
-        ));
+        );
 
         this.pocketedBallsRail = {
             background,

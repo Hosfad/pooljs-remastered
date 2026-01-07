@@ -1,6 +1,7 @@
 import express from "express";
 import { v4 as uuid } from "uuid";
 import WebSocket, { WebSocketServer } from "ws";
+import { Experience } from "./common";
 import type { BallType } from "./common/pool-types";
 import {
     Events,
@@ -83,6 +84,8 @@ app.post("/api/token", async (req, res) => {
 
 const server = app.listen(6969, () => {
     console.log("Multiplayer server running on :6969", process.cwd());
+
+    console.log("EXP for level 99", Experience.getXpForLevel(100));
 });
 
 const wss = new WebSocketServer({ server, path: "/ws" });
@@ -343,13 +346,15 @@ function getRoom(roomId: string) {
 }
 
 function reshapeRoom(room: ServerRoom): Room {
-    const players = room.clients.map((c) => { return reshapePlayer(c); });
+    const players = room.clients.map((c) => {
+        return reshapePlayer(c);
+    });
     return { ...room, players };
 }
 function reshapePlayer(c: Client) {
     const newC = { ...c, ws: undefined };
     delete newC.ws;
-    const player: Player = { ...newC, };
+    const player: Player = { ...newC };
     return player;
 }
 
@@ -359,7 +364,7 @@ function createEventListener(ws: WebSocket): TEventListener {
         handler: (data: EventsData[T]) => void;
     };
 
-    const listeners: { [K in TEventKey]?: EventListeners<K>[]; } = {} as any;
+    const listeners: { [K in TEventKey]?: EventListeners<K>[] } = {} as any;
 
     function parseRawMessage(raw: string) {
         try {

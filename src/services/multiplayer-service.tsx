@@ -11,6 +11,7 @@ import { INIT_DISCORD_SDK } from "../common/pool-constants";
 import { LoadingPage } from "../scenes/components/react/loading/loading-page";
 import { GameInfoWidget } from "../scenes/components/react/lobby/game-info-widget";
 import { Lobby } from "../scenes/components/react/lobby/game-lobby";
+import SpinIndicator from "../scenes/components/react/lobby/spin-selector";
 import MainScreen from "../scenes/components/react/start/main-screen";
 import { PlayerInfoWidget } from "../scenes/components/react/start/start-navbar";
 
@@ -44,6 +45,7 @@ export class MultiplayerService extends LocalService {
                                 </Routes>
                                 <PlayerInfoWidget service={this} />
                                 <GameInfoWidget service={this} />
+                                <SpinIndicator service={this} />
                             </BrowserRouter>
                         </React.StrictMode>
                     );

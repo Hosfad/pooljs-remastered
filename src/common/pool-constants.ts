@@ -1,7 +1,7 @@
 /**
  * Pool game specific constants
  */
-export let DEBUG_GRAPHICS = false;
+export let DEBUG_GRAPHICS = true;
 
 export function setDebugGraphics(debug: boolean) {
     DEBUG_GRAPHICS = debug;

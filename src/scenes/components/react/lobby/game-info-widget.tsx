@@ -1,17 +1,11 @@
 "use client";
 
 import React from "react";
+import { COLORS } from "../../../../common/pool-constants";
 import { Events } from "../../../../common/server-types";
 import type { Player, Room } from "../../../../server";
 import type { LocalService } from "../../../../services/local-service";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
-
-const COLORS = {
-    primary: "#2C5530",
-    dark: "#1A1A1A",
-    accent: "#ffffff",
-    text: "#ffffff",
-};
 
 const ROUND_TIME = 30;
 
@@ -60,17 +54,12 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
                     inset: 0,
                     maxHeight: "10%",
                     alignItems: "center",
-                    justifyContent: "space-between",
+                    justifyContent: "center",
                     padding: "1.5rem 20rem",
                 }}
             >
                 {/* Player 1 */}
-                <PlayerAvatar
-                    player={player1}
-                    isActive={currentPlayerId === player1.id}
-                    progress={progress}
-                    ballType={player1Ball}
-                />
+                <PlayerHUD player={player1} isActive={currentPlayerId === player1.id} progress={progress} />
 
                 {/* Center Info */}
                 <div
@@ -104,14 +93,58 @@ export function GameInfoWidget({ service }: { service: MultiplayerService | Loca
                 </div>
 
                 {/* Player 2 */}
-                <PlayerAvatar
-                    player={player2}
-                    isActive={currentPlayerId === player2.id}
-                    progress={progress}
-                    ballType={player2Ball}
-                />
+                <PlayerHUD player={player2} isActive={currentPlayerId === player2.id} progress={progress} reverse={true} />
             </div>
         )
+    );
+}
+
+function PlayerHUD({
+    player,
+    isActive,
+    progress,
+    reverse,
+}: {
+    player: Player;
+    isActive: boolean;
+    progress: number;
+    reverse?: boolean;
+}) {
+    const scoredBalls = [1, 2, 3, 4, 5, 6];
+
+    return (
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", direction: reverse ? "rtl" : "ltr" }}>
+            <PlayerAvatar player={player} isActive={isActive} progress={progress} ballType={player.state.ballType} />
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span
+                    style={{
+                        fontSize: "0.9rem",
+                        fontWeight: 600,
+                        color: isActive ? COLORS.text : `${COLORS.text}aa`,
+                    }}
+                >
+                    {player.name}
+                </span>
+
+                {/* Scored balls */}
+                <div style={{ display: "flex", gap: "4px" }}>
+                    {scoredBalls.map((ball) => (
+                        <img
+                            key={ball}
+                            src={`/assets/game/balls/${ball}.svg`}
+                            alt={`Ball ${ball}`}
+                            style={{
+                                width: 18,
+                                height: 18,
+                                opacity: isActive ? 1 : 0.6,
+                                filter: "drop-shadow(0 0 2px rgba(0,0,0,0.8))",
+                            }}
+                        />
+                    ))}
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -126,48 +159,56 @@ function PlayerAvatar({
     progress: number;
     ballType: string;
 }) {
-    const size = 79;
+    const size = 78;
     const strokeWidth = 4;
-    const center = size / 2;
-    const radius = center;
-    const circumference = 2 * Math.PI * radius;
+    const cornerRadius = 12;
 
-    const ballImage = ballType === "striped" ? `/assets/game/balls/12.svg` : `/assets/game/balls/1.svg`;
+    const perimeter = 4 * size - 8 * cornerRadius + 2 * Math.PI * cornerRadius;
+    const dashOffset = perimeter * (1 - progress / 100);
+
     return (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-            <div style={{ position: "relative", width: `${size}px`, height: `${size}px` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <div style={{ position: "relative", width: size, height: size }}>
                 {/* Animated Border */}
                 {isActive && (
                     <svg
+                        width={size + strokeWidth}
+                        height={size + strokeWidth}
                         style={{
                             position: "absolute",
-                            top: `-${strokeWidth / 2}px`,
-                            left: `-${strokeWidth / 2}px`,
-                            width: `${size + strokeWidth}px`,
-                            height: `${size + strokeWidth}px`,
-                            transform: "rotate(-90deg)",
+                            top: -strokeWidth / 2,
+                            left: -strokeWidth / 2,
                             pointerEvents: "none",
                         }}
                     >
-                        <circle
-                            cx={center + strokeWidth / 2}
-                            cy={center + strokeWidth / 2}
-                            r={radius}
+                        {/* Background border */}
+                        <rect
+                            x={strokeWidth / 2}
+                            y={strokeWidth / 2}
+                            width={size}
+                            height={size}
+                            rx={cornerRadius}
                             fill="none"
                             stroke={`${COLORS.primary}40`}
                             strokeWidth={strokeWidth}
                         />
-                        <circle
-                            cx={center + strokeWidth / 2}
-                            cy={center + strokeWidth / 2}
-                            r={radius}
+
+                        {/* Animated progress */}
+                        <rect
+                            x={strokeWidth / 2}
+                            y={strokeWidth / 2}
+                            width={size}
+                            height={size}
+                            rx={cornerRadius}
                             fill="none"
                             stroke="#FFD700"
                             strokeWidth={strokeWidth}
-                            strokeDasharray={circumference}
-                            strokeDashoffset={circumference * (1 - progress / 100)}
+                            strokeDasharray={perimeter}
+                            strokeDashoffset={dashOffset}
                             strokeLinecap="round"
-                            style={{ transition: "stroke-dashoffset 0.1s linear" }}
+                            style={{
+                                transition: "stroke-dashoffset 0.15s linear",
+                            }}
                         />
                     </svg>
                 )}
@@ -177,64 +218,23 @@ function PlayerAvatar({
                     style={{
                         width: "100%",
                         height: "100%",
-                        borderRadius: "50%",
+                        borderRadius: cornerRadius,
+                        backgroundColor: isActive ? COLORS.primary : `${COLORS.primary}70`,
+                        backgroundImage: player.photo ? `url(${player.photo})` : "none",
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         fontSize: "2rem",
-                        fontWeight: "bold",
-                        backgroundColor: isActive ? COLORS.primary : `${COLORS.primary}80`,
+                        fontWeight: 700,
                         color: COLORS.text,
-                        backgroundImage: player.photo ? `url(${player.photo})` : "none",
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        zIndex: 1,
                         position: "relative",
-                        overflow: "hidden",
+                        zIndex: 1,
+                        boxShadow: isActive ? "0 0 12px rgba(255,215,0,0.45)" : "none",
                     }}
                 >
-                    {!player.photo && player.name.charAt(0).toUpperCase()}
-                </div>
-            </div>
-
-            {/* Name Label with Ball Type */}
-            <div
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "2px",
-                }}
-            >
-                <div
-                    style={{
-                        fontSize: "0.875rem",
-                        fontWeight: isActive ? "600" : "500",
-                        color: isActive ? COLORS.text : `${COLORS.text}cc`,
-                    }}
-                >
-                    {player.name}
-                </div>
-                <div
-                    style={{
-                        fontSize: "0.75rem",
-                        textTransform: "uppercase",
-                        fontWeight: "500",
-                        letterSpacing: "0.5px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                    }}
-                >
-                    <img
-                        src={ballImage}
-                        alt={ballType}
-                        style={{
-                            width: "16px",
-                            height: "16px",
-                            objectFit: "contain",
-                        }}
-                    />
+                    {!player.photo && player.name[0]!.toUpperCase()}
                 </div>
             </div>
         </div>
