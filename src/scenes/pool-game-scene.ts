@@ -513,16 +513,27 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
 
+    private getTableEdges(): { left: number; right: number; top: number; bottom: number } {
+        const tw = this.tableWidth;
+        const th = this.tableHeight;
+
+        const mx = this.marginX;
+        const my = this.marginY;
+
+        const xRatio = tw / 16;
+        const yRatio = th / 12;
+
+        return {
+            left: mx + xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS,
+            right: mx + tw - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS,
+            top: my + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y + BALL_RADIUS * 1.5,
+            bottom: my + th - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y + BALL_RADIUS * 1.5,
+        };
+    }
+
     private canPlaceBall(px: number, py: number): boolean {
-        const xRatio = this.tableWidth / 16;
-        const yRatio = this.tableHeight / 12;
-
-        const leftEdge = this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
-        const rightEdge = this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
-        const upperEdge = this.marginY + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y + BALL_RADIUS * 1.5;
-        const lowerEdge = this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y + BALL_RADIUS * 1.5;
-
-        if (px < leftEdge || px > rightEdge || py < upperEdge || py > lowerEdge) return false;
+        const { left, right, top, bottom } = this.getTableEdges();
+        if (px < left || px > right || py < top || py > bottom) return false;
 
         const pos = new Vector2(px, py);
 
@@ -691,6 +702,31 @@ export class PoolGameScene extends Phaser.Scene {
         this.service.pull((x - mx) / width, (y - my) / height, angle);
     }
 
+    private lineStyle(width: number, color: number, alpha: number = 1): void {
+        this.aimLineShadow.lineStyle(width * 3, 0x000000, alpha);
+        this.aimLine.lineStyle(width, color, alpha);
+    }
+
+    private strokePath(): void {
+        this.aimLineShadow.strokePath();
+        this.aimLine.strokePath();
+    }
+
+    private beginPath(): void {
+        this.aimLineShadow.beginPath();
+        this.aimLine.beginPath();
+    }
+
+    private moveTo(x: number, y: number): void {
+        this.aimLineShadow.moveTo(x, y);
+        this.aimLine.moveTo(x, y);
+    }
+
+    private lineTo(x: number, y: number): void {
+        this.aimLineShadow.lineTo(x, y);
+        this.aimLine.lineTo(x, y);
+    }
+
     private drawAimLine(ballX: number, ballY: number, angle: number): void {
         this.aimLineShadow.clear();
         this.aimLine.clear();
@@ -741,23 +777,16 @@ export class PoolGameScene extends Phaser.Scene {
         const cx = currentPos.x;
         const cy = currentPos.y;
 
-        this.aimLineShadow.lineStyle(6, 0x000000, 1);
-        this.aimLineShadow.beginPath();
-        this.aimLineShadow.moveTo(cx, cy);
-
-        this.aimLine.lineStyle(2, 0xffffff, 1);
-        this.aimLine.beginPath();
-        this.aimLine.moveTo(cx, cy);
+        this.lineStyle(2, 0xffffff);
+        this.beginPath();
+        this.moveTo(cx, cy);
 
         if (hitBall) {
             const targetX = closestBallHitPos.x;
             const targetY = closestBallHitPos.y;
 
-            this.aimLineShadow.lineTo(targetX, targetY);
-            this.aimLine.lineTo(targetX, targetY);
-
-            this.aimLineShadow.strokePath();
-            this.aimLine.strokePath();
+            this.lineTo(targetX, targetY);
+            this.strokePath();
 
             this.aimLineShadow.strokeCircle(targetX, targetY, 5);
             this.aimLine.strokeCircle(targetX, targetY, 5);
@@ -765,52 +794,28 @@ export class PoolGameScene extends Phaser.Scene {
             const dx = hitBall.phaserSprite.x - targetX;
             const dy = hitBall.phaserSprite.y - targetY;
 
+            const lineLength = BALL_RADIUS * 2.5;
             const angle = Math.atan2(dy, dx);
 
-            const lineLength = BALL_RADIUS * 2.5;
             const endX = targetX + Math.cos(angle) * lineLength;
             const endY = targetY + Math.sin(angle) * lineLength;
 
-            this.aimLineShadow.moveTo(targetX, targetY);
-            this.aimLineShadow.lineTo(endX, endY);
-
-            this.aimLine.moveTo(targetX, targetY);
-            this.aimLine.lineTo(endX, endY);
-
-            this.aimLineShadow.strokePath();
-            this.aimLine.strokePath();
-
+            this.moveTo(targetX, targetY);
+            this.lineTo(endX, endY);
+            this.strokePath();
         } else { // Hit wall
-            const tw = this.tableWidth;
-            const th = this.tableHeight;
-
-            const mx = this.marginX;
-            const my = this.marginY;
-
-            const xRatio = tw / 16;
-            const yRatio = th / 12;
-
-            const leftEdge = mx + xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
-            const rightEdge = mx + tw - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
-            const upperEdge = my + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y + BALL_RADIUS * 1.5;
-            const lowerEdge = my + th - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y + BALL_RADIUS * 1.5;
+            const { left, right, top, bottom } = this.getTableEdges();
 
             const aimX = aimDir.x;
             const aimY = aimDir.y;
 
-            const dx = aimX > 0 ? rightEdge - cx : leftEdge - cx;
-            const dy = aimY > 0 ? lowerEdge - cy : upperEdge - cy;
+            const dx = aimX > 0 ? right - cx : bottom - cx;
+            const dy = aimY > 0 ? left - cy : top - cy;
 
             const t = Math.min(dx / aimX, dy / aimY);
 
-            const targetX = cx + aimX * t;
-            const targetY = cy + aimY * t;
-
-            this.aimLineShadow.lineTo(targetX, targetY);
-            this.aimLine.lineTo(targetX, targetY);
-
-            this.aimLineShadow.strokePath();
-            this.aimLine.strokePath();
+            this.lineTo(cx + aimX * t, cy + aimY * t);
+            this.strokePath();
         }
     }
 
