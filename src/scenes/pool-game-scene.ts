@@ -693,40 +693,36 @@ export class PoolGameScene extends Phaser.Scene {
         this.aimLine.clear();
 
         const aimDir = new Vector2(Math.cos(angle), Math.sin(angle));
-        const aimStartX = ballX + aimDir.x * (BALL_RADIUS + 2);
-        const aimStartY = ballY + aimDir.y * (BALL_RADIUS + 2);
+        const ballRadius = { x: BALL_RADIUS + 2, y: BALL_RADIUS + 2 };
 
-        let currentPos = new Vector2(aimStartX, aimStartY);
-        let rayDirection = aimDir.clone();
+        const currentPos = aimDir.clone().multiply(ballRadius).add({ x: ballX, y: ballY });
+        const rayDirection = aimDir.clone();
         const maxDistance = 2000;
 
         let hitDetected = false;
         let hitPosition = new Vector2(0, 0);
         let hitType: "ball" | "wall" | null = null;
 
-        const whiteBallIndex = this.balls.findIndex((ball) => ball.ballType === "white");
         let closestBallDistance = Infinity;
         let closestBallHitPos = new Vector2(0, 0);
 
-        for (let i = 0; i < this.balls.length; i++) {
-            if (i === whiteBallIndex) continue;
+        const BALL_SQR = BALL_RADIUS * BALL_RADIUS;
 
-            const ball = this.balls[i]!;
-            const ballPos = new Vector2(ball.phaserSprite.x, ball.phaserSprite.y);
+        for (let i = 0; i < this.balls.length - 1; i++) {
+            const delta = currentPos.clone().subtract(this.balls[i]!.phaserSprite);
 
-            const dx = currentPos.x - ballPos.x;
-            const dy = currentPos.y - ballPos.y;
-
-            const a = rayDirection.x * rayDirection.x + rayDirection.y * rayDirection.y;
-            const b = 2 * (dx * rayDirection.x + dy * rayDirection.y);
-            const c = dx * dx + dy * dy - BALL_RADIUS * BALL_RADIUS;
+            const a = rayDirection.lengthSq();
+            const b = delta.dot(rayDirection) * 2;
+            const c = delta.lengthSq() - BALL_SQR;
 
             const discriminant = b * b - 4 * a * c;
 
             if (discriminant >= 0) {
+                const a2 = a * 2;
                 const sqrtDisc = Math.sqrt(discriminant);
-                const t1 = (-b - sqrtDisc) / (2 * a);
-                const t2 = (-b + sqrtDisc) / (2 * a);
+
+                const t1 = (-b - sqrtDisc) / a2;
+                const t2 = (-b + sqrtDisc) / a2;
 
                 let t = Infinity;
                 if (t1 > 0 && t1 < t) t = t1;
@@ -734,12 +730,13 @@ export class PoolGameScene extends Phaser.Scene {
 
                 if (t < maxDistance && t < closestBallDistance) {
                     closestBallDistance = t;
-                    closestBallHitPos = new Vector2(currentPos.x + rayDirection.x * t, currentPos.y + rayDirection.y * t);
+                    closestBallHitPos = rayDirection.clone().multiply({ x: t, y: t }).add(currentPos);
                     hitType = "ball";
                 }
             }
         }
 
+        // TODO: walls hitbox
         let closestWallDistance = Infinity;
         let closestWallHitPos = new Vector2(0, 0);
 
@@ -754,17 +751,19 @@ export class PoolGameScene extends Phaser.Scene {
             }
         }
 
+        const cx = currentPos.x;
+        const cy = currentPos.y;
+
         this.aimLine.lineStyle(2, 0xffffff, 1.5);
         this.aimLine.beginPath();
-        this.aimLine.moveTo(aimStartX, aimStartY);
+        this.aimLine.moveTo(cx, cy);
 
         if (hitDetected) {
             this.aimLine.lineTo(hitPosition.x, hitPosition.y);
-
             this.aimLine.lineStyle(3, hitType === "ball" ? 0xff0000 : 0xffff00, 1);
             this.aimLine.strokeCircle(hitPosition.x, hitPosition.y, 5);
         } else {
-            this.aimLine.lineTo(aimStartX + aimDir.x * maxDistance, aimStartY + aimDir.y * maxDistance);
+            this.aimLine.lineTo(cx + aimDir.x * maxDistance, cy + aimDir.y * maxDistance);
         }
 
         this.aimLine.strokePath();
