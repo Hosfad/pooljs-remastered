@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import type { CueInfo } from "../../../../common/pool-constants";
 
 export function StatBar({ label, value, max = 10 }: { label: string; value: number; max?: number }) {
@@ -25,26 +24,20 @@ export function CueCard({
     isSelected: boolean;
 }) {
     return (
-        <motion.div
-            whileHover={{ scale: 1.02 }}
-            className={`border-2 rounded-lg p-4  transition-all ${
+        <div
+            className={`border-2 rounded-lg p-4   ${
                 isSelected ? "border-accent bg-accent/10" : "border-white/20 bg-white/5 hover:border-accent/40"
             }`}
         >
-            <div className="flex items-center gap-4 mb-4">
-                <div className="bg-gradient-to-br from-emerald-900/50 to-emerald-950/50 rounded-lg p-4 flex-shrink-0">
-                    <div className="w-64 h-16 flex items-center justify-center">
-                        <img
-                            src={cue.sprite}
-                            alt={cue.id}
-                            className="max-w-full max-h-full object-contain"
-                            onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                            }}
-                        />
-                    </div>
-                </div>
-
+            <div
+                className="flex items-center gap-4 mb-4"
+                style={{
+                    backgroundImage: `url(${cue.sprite})`,
+                    backgroundSize: "70% 90%", // Shrink the image slightly                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                }}
+            >
                 <div className="flex-1 space-y-2">
                     <h3 className="text-white font-semibold text-lg mb-3">{cue.id.toUpperCase()}</h3>
                     <StatBar label="Power" value={cue.power / 10} />
@@ -67,6 +60,6 @@ export function CueCard({
                     </button>
                 </div>
             </div>
-        </motion.div>
+        </div>
     );
 }

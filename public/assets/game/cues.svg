@@ -277,7 +277,7 @@
 	</g>
 </g>
 
-<g id="cue-9" transform="translate(0 -200)">
+<g id="cue-9" transform="translate(0 -180)">
 	<!-- shaft -->
 	<polygon class="st7" points="1284.5,1268.5 984.7,1267.3 115.5,1263.9 115.5,1257.4 984.7,1254 1284.5,1252.8"/>
 	<polygon class="st4" points="984.7,1254 984.7,1267.3 1284.5,1268.5 1284.5,1252.8"/>
@@ -318,7 +318,7 @@
 </g>
 
 
-<g id="cue-12" transform="translate(0 -520)">
+<g id="cue-12" transform="translate(0 -480)">
 	<polygon class="st8" points="1284.5,1690 984.7,1688.8 115.5,1685.4 115.5,1678.9 984.7,1675.5 1284.5,1674.3"/>
 	<polygon class="st4" points="984.7,1675.5 984.7,1688.8 1284.5,1690 1284.5,1674.3"/>
 
@@ -351,7 +351,7 @@
 
 
 
-<g id="cue-13" transform="translate(0 -280)">
+<g id="cue-13" transform="translate(0 -230)">
 
 	<polygon class="st16"
 		points="1284.5,1550 984.7,1548.8 115.5,1545.4 115.5,1538.9 984.7,1535.5 1284.5,1534.3"/>
@@ -359,9 +359,9 @@
 		points="984.7,1535.5 984.7,1548.8 1284.5,1550 1284.5,1534.3"/>
 
 	<!-- tribal pattern from cue-11 -->
-	<polygon class="st18" points="400,1538 420,1548 440,1538 460,1548 480,1538"/>
-	<polygon class="st18" points="500,1538 520,1548 540,1538 560,1548 580,1538"/>
-	<polygon class="st18" points="600,1538 620,1548 640,1538 660,1548 680,1538"/>
+	<polygon class="st18" points="440,1538 460,1548 480,1538"/>
+<polygon class="st18" points="480,1538 500,1548 520,1538 540,1548 560,1538"/>
+<polygon class="st18" points="560,1538 580,1548 600,1538 620,1548 640,1538"/>
 
 	<!-- butt from cue-13 (repositioned to match cue-11 Y) -->
 	<path class="st4"
@@ -378,37 +378,46 @@
 	<!-- butt cap -->
 	<polygon class="st18"
 		points="1276.5,1550 1284.5,1550 1284.5,1534.3 1276.5,1534.3"/>
+		
+    <rect x="975" y="1535" width="10" height="14" class="st18"/>
 
-
+<g>
+    <polygon class="st18" points="1100,1535 1120,1535 1110,1550"/>
+    
+    <polygon class="st18" points="1150,1535 1140,1550 1160,1550"/>
+    
+    <polygon class="st18" points="1180,1535 1200,1535 1190,1550"/>
+</g>
 		<rect x="115.5" y="1538.9" class="st6" width="12.4" height="6.5"/>
 
 </g>
 
 
-<g id="cue-15" transform="translate(0 -530)">
-	<!-- shaft -->
-	<polygon class="st4" points="1284.5,1920 984.7,1918.8 115.5,1915.4 115.5,1908.9 984.7,1905.5 1284.5,1904.3"/>
 
-	<!-- constellation dots -->
-	<circle cx="620" cy="1912" r="2" class="st13"/>
-	<circle cx="650" cy="1910" r="1.8" class="st13"/>
-	<circle cx="690" cy="1913" r="2.2" class="st13"/>
-	<circle cx="720" cy="1909" r="1.6" class="st13"/>
+<g id="cue-toxic" transform="translate(0 1280)">
+    <polygon class="st4" points="1284.5,139.7 984.7,138.4 115.5,135 115.5,128.5 984.7,125.1 1284.5,123.9"/>
+    
+    <circle cx="620" cy="132" r="2" class="st13"/>
+    <circle cx="650" cy="130" r="1.8" class="st13"/>
+    <circle cx="690" cy="133" r="2.2" class="st13"/>
+    <circle cx="720" cy="129" r="1.6" class="st13"/>
 
-	<!-- glowing band -->
-	<rect x="1040" y="1908.9" width="180" height="6.5" class="st13"/>
+    <g>
+        <polygon class="st13" points="1100,125 1120,125 1110,139 1090,139"/>
+        <polygon class="st13" points="1140,125 1160,125 1150,139 1130,139"/>
+        <polygon class="st13" points="1180,125 1200,125 1190,139 1170,139"/>
+    </g>
+    
+    <rect x="975" y="125" width="10" height="14" class="st13"/>
+    
+    <path class="st4" d="M1293.4,138.5c0,4.9-4,8.8-8.8,8.8l0,0c-4.9,0-8.8-4-8.8-8.8v-13.2c0-4.9,4-8.8,8.8-8.8l0,0
+        c4.9,0,8.8,4,8.8,8.8V138.5z"/>
+    <polygon class="st13" points="1276.5,139.7 1284.5,139.7 1284.5,123.9 1276.5,123.9"/>
 
-	<!-- butt -->
-	<path class="st4" d="M1293.4,1918.8c0,4.9-4,8.8-8.8,8.8l0,0c-4.9,0-8.8-4-8.8-8.8v-13.2c0-4.9,4-8.8,8.8-8.8l0,0
-		c4.9,0,8.8,4,8.8,8.8V1918.8z"/>
-	<polygon class="st13" points="1276.5,1920 1284.5,1920 1284.5,1904.3 1276.5,1904.3"/>
-
-	<!-- tip -->
-	<rect x="115.5" y="1908.9" class="st6" width="12.4" height="6.5"/>
+    <rect x="115.5" y="128.5" class="st13" width="12.4" height="6.5"/>
 </g>
 
-
-<g id="cue-winter-1" transform="translate(0 1340)">
+<g id="cue-winter-1" transform="translate(0 1390)">
     <polygon class="st6" points="1284.5,139.7 984.7,138.4 115.5,135 115.5,128.5 984.7,125.1 1284.5,123.9"/>
     <polygon class="st14" points="984.7,125.1 984.7,138.4 1284.5,139.7 1284.5,123.9"/>
     <path class="st9" d="M1289,135.2c0,2.5-2,4.5-4.5,4.5l0,0c-2.5,0-4.5-2-4.5-4.5v-6.7c0-2.5,2-4.5,4.5-4.5l0,0c2.5,0,4.5,2,4.5,4.5V135.2z"/>
@@ -426,8 +435,27 @@
     </g>
 </g>
 
+<g id="cue-fire-1" transform="translate(0 1490)">
+    <polygon class="st4" points="1284.5,139.7 984.7,138.4 115.5,135 115.5,128.5 984.7,125.1 1284.5,123.9"/>
+    
+    <polygon fill="#E34110" points="984.7,125.1 984.7,138.4 1284.5,139.7 1284.5,123.9"/>
+    <polygon fill="#F9A023" points="1080,126 1080,137.5 1284.5,139.7 1284.5,123.9"/>
+    
+    <polygon fill="#F92323" points="400,130 450,133 400,134 350,131"/>
+    <polygon fill="#F9A023" points="600,129 650,132 600,133 550,130"/>
+    
+    <polygon class="st9" points="1276.5,139.6 1284.5,139.7 1284.5,123.9 1276.5,123.9"/>
+    <polygon class="st9" points="979.4,138.4 984.7,138.4 984.7,125.1 979.4,125.2"/>
 
+    <path class="st4" d="M1289,135.2c0,2.5-2,4.5-4.5,4.5l0,0c-2.5,0-4.5-2-4.5-4.5v-6.7c0-2.5,2-4.5,4.5-4.5l0,0c2.5,0,4.5,2,4.5,4.5V135.2z"/>
 
+    <path fill="#F92323" d="M118.2,132.3c0,1.5-1.2,2.8-2.8,2.8l0,0c-1.5,0-2.8-1.2-2.8-2.8v-0.9c0-1.5,1.2-2.8,2.8-2.8l0,0c1.5,0,2.8,1.2,2.8,2.8V132.3z"/>
+    <rect x="115.5" y="128.5" fill="#F93D3D" width="12.4" height="6.5"/>
+
+    <g class="st10">
+        <polygon class="st11" points="115.5,128.5 115.5,130.5 1284.5,125.9 1284.5,123.9 984.7,125.1"/>
+    </g>
+</g>
 
 
 

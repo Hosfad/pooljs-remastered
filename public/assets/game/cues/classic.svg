@@ -1,0 +1,67 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" style="enable-background:new 0 0 1400 2600;" xml:space="preserve" viewBox="115.5 1186.8 1177.92 30.83">
+<style type="text/css">
+	.st0{fill:#18892A;}
+	.st1{fill:#0F6D1A;}
+	.st2{fill:#AF6A17;}
+	.st3{fill:#D88D2B;}
+	.st4{fill:#323132;}
+	.st5{fill:#F93D3D;}
+	.st6{fill:#FFFFFF;}
+	.st7{fill:#F9C582;}
+	.st8{fill:#999999;}
+	.st9{fill:#CECECE;}
+	.st10{opacity:0.3;}
+	.st11{fill:#F4F4F4;}
+	.st12{fill:#F92323;}
+	.st13{fill:#28C4E8;}
+	.st14{opacity:0.4;}
+	.st15{fill:#CCAE2E;}
+	.st16{fill:#58585B;}
+	.st17{fill:#E6E7E8;}
+	.st18{fill:#F70F26;}
+	.st19{fill:#123284;}
+	.st20{fill:#7C3613;}
+	.st21{fill:#63280D;}
+	.st22{fill:#893C1A;}
+	.variant-ebony .st7 { fill:#2B1B12; }
+.variant-ebony .st4 { fill:#1A1A1A; }
+.variant-ebony .st9 { fill:#C9A24D; }
+.variant-ebony .st8 { fill:#8A6A2F; }
+.variant-carbon .st7 { fill:#2A2E35; }
+.variant-carbon .st4 { fill:#0B1220; }
+.variant-carbon .st9 { fill:#38BDF8; }
+.variant-carbon .st8 { fill:#94A3B8; }
+.variant-rosewood .st7 { fill:#7C3A1C; }
+.variant-rosewood .st4 { fill:#3B1C10; }
+.variant-rosewood .st9 { fill:#E6E7E8; }
+.variant-rosewood .st8 { fill:#B08968; }
+</style>
+
+
+
+<g id="cue-12" transform="translate(0 -480)">
+	<polygon class="st8" points="1284.5,1690 984.7,1688.8 115.5,1685.4 115.5,1678.9 984.7,1675.5 1284.5,1674.3"/>
+	<polygon class="st4" points="984.7,1675.5 984.7,1688.8 1284.5,1690 1284.5,1674.3"/>
+
+	<!-- gears -->
+	<circle cx="640" cy="1682" r="5" class="st9"/>
+	<circle cx="670" cy="1682" r="5" class="st16"/>
+	<rect x="700" y="1678" width="40" height="8" class="st21"/>
+
+	<!-- bolts -->
+	<circle cx="620" cy="1682" r="2" class="st11"/>
+	<circle cx="760" cy="1682" r="2" class="st11"/>
+
+	<path class="st4" d="M1293.4,1688.8      c0,4.9-4,8.8-8.8,8.8      l0,0      c-4.9,0-8.8-4-8.8-8.8      v-13.2      c0-4.9,4-8.8,8.8-8.8      l0,0      c4.9,0,8.8,4,8.8,8.8      V1688.8z"/>
+
+
+		<polygon class="st21" points="1276.5,1690 1284.5,1690 1284.5,1674.3 1276.5,1674.3"/>
+
+
+		<rect x="115.5" y="1678.9" class="st6" width="12.4" height="6.5"/>
+</g>
+
+
+
+
+</svg>

@@ -115,11 +115,22 @@ export const CUE_DATA = {
         spin: 0,
         sprite: `/assets/game/cues/basic.svg`,
         price: {
-            coins: undefined,
             cash: undefined,
+            coins: undefined,
         },
     },
-
+    standard: {
+        id: "standard",
+        category: "standard",
+        power: 60,
+        accuracy: 60,
+        spin: 10,
+        sprite: `/assets/game/cues/standard.svg`,
+        price: {
+            cash: undefined,
+            coins: 3000,
+        },
+    },
     advanced: {
         id: "advanced",
         category: "standard",
@@ -128,8 +139,33 @@ export const CUE_DATA = {
         spin: 10,
         sprite: `/assets/game/cues/advanced.svg`,
         price: {
-            coins: 100,
             cash: undefined,
+            coins: 5000,
+        },
+    },
+    classic: {
+        id: "classic",
+        category: "standard",
+        power: 80,
+        accuracy: 80,
+        spin: 20,
+        sprite: `/assets/game/cues/classic.svg`,
+        price: {
+            cash: undefined,
+            coins: 10000,
+        },
+    },
+
+    flame: {
+        id: "flame",
+        category: "standard",
+        power: 90,
+        accuracy: 90,
+        spin: 30,
+        sprite: `/assets/game/cues/flame.svg`,
+        price: {
+            cash: undefined,
+            coins: 50000,
         },
     },
 
@@ -141,8 +177,8 @@ export const CUE_DATA = {
         spin: 20,
         sprite: `/assets/game/cues/expert.svg`,
         price: {
-            coins: 500,
             cash: undefined,
+            coins: 10_000,
         },
     },
 
@@ -154,8 +190,8 @@ export const CUE_DATA = {
         spin: 40,
         sprite: `/assets/game/cues/wodden-sword.svg`,
         price: {
-            coins: 1000,
-            cash: undefined,
+            cash: 100,
+            coins: undefined,
         },
     },
 
@@ -167,7 +203,20 @@ export const CUE_DATA = {
         spin: 30,
         sprite: `/assets/game/cues/sword.svg`,
         price: {
-            cash: 100,
+            cash: 250,
+            coins: undefined,
+        },
+    },
+
+    toxic: {
+        id: "toxic",
+        category: "standard",
+        power: 98,
+        accuracy: 95,
+        spin: 80,
+        sprite: `/assets/game/cues/toxic.svg`,
+        price: {
+            cash: 400,
             coins: undefined,
         },
     },
@@ -177,10 +226,11 @@ export const CUE_DATA = {
         category: "standard",
         power: 100,
         accuracy: 100,
-        spin: 80,
+        spin: 100,
         sprite: `/assets/game/cues/palestine.svg`,
         price: {
-            cash: 200,
+            cash: 650,
+            coins: undefined,
         },
     },
 } as const;
