@@ -92,7 +92,9 @@ class PoolScene extends Phaser.Scene {
         //        Less than 0 -> ball moves to the right
         //        Greater than 0 -> ball moves to the left
         //        0 -> ball stays in place
-        const velocity = calculateShotPhysics(50, 0, 0.3);
+        const velocity = calculateShotPhysics(50, 0, 0.3, 0.3);
+
+        console.log(velocity);
 
         cueBall.setVelocity(velocity.x, velocity.y);
         cueBall.setAngularVelocity(velocity.angular);
@@ -122,7 +124,12 @@ class PoolScene extends Phaser.Scene {
     override update() {}
 }
 
-function calculateShotPhysics(powerPercentage: number, angleRadians: number, horizontalOffset: number = 0) {
+function calculateShotPhysics(
+    powerPercentage: number,
+    angleRadians: number,
+    horizontalOffset: number = 0,
+    verticalOffset: number = 0
+) {
     const clampedPower = Phaser.Math.Clamp(powerPercentage, 0, 100);
     let normalizedPower = clampedPower / 100;
 
@@ -131,19 +138,24 @@ function calculateShotPhysics(powerPercentage: number, angleRadians: number, hor
     const targetSpeedMps = normalizedPower * MAX_SPEED_MPS;
     const linearMagnitude = targetSpeedMps * METER_TO_PX_PER_FRAME;
 
-    const safeOffset = Phaser.Math.Clamp(horizontalOffset, -0.8, 0.8);
+    const horizontalSafeOffset = Phaser.Math.Clamp(horizontalOffset, -0.8, 0.8);
 
-    const angularVelocity = normalizedPower * safeOffset * MAX_SPIN_RAD_PER_SEC;
+    const angularVelocity = normalizedPower * horizontalSafeOffset * MAX_SPIN_RAD_PER_SEC;
 
     // TODO: adjust this depending on the sticks spin efficiency (pay to win xD)
     const deflectionAmount = 0.05;
-    const deflectedVx = Math.cos(angleRadians - safeOffset * deflectionAmount) * linearMagnitude;
-    const deflectedVy = Math.sin(angleRadians - safeOffset * deflectionAmount) * linearMagnitude;
+    const deflectedVx = Math.cos(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
+    const deflectedVy = Math.sin(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
+
+    const verticalSafeOffset = Phaser.Math.Clamp(verticalOffset, -0.8, 0.8);
+
+    const verticalVelocity = normalizedPower * verticalSafeOffset * MAX_SPIN_RAD_PER_SEC;
 
     return {
         x: deflectedVx,
         y: deflectedVy,
         angular: angularVelocity,
+        vertical: verticalVelocity,
     };
 }
 
