@@ -55,7 +55,8 @@ class PoolScene extends Phaser.Scene {
 
     preload() {
         this.load.setPath("assets");
-        this.load.image("ball", "/game/balls/white.svg");
+        this.load.image("white-ball", "/game/balls/white.svg");
+        this.load.image("ball-1", "/game/balls/1.svg");
     }
 
     create() {
@@ -86,16 +87,19 @@ class PoolScene extends Phaser.Scene {
 
         const cueBallX = bounds.x + bounds.width * 0.25;
         const cueBallY = rackStartY;
-        const cueBall = this.createBall(cueBallX, cueBallY);
+        const cueBall = this.createBall(cueBallX, cueBallY, true);
 
-        const velocity = calculateShotPhysics(50, 0, 0.5);
+        //        Less than 0 -> ball moves to the right
+        //        Greater than 0 -> ball moves to the left
+        //        0 -> ball stays in place
+        const velocity = calculateShotPhysics(50, 0, 0.3);
 
         cueBall.setVelocity(velocity.x, velocity.y);
         cueBall.setAngularVelocity(velocity.angular);
     }
 
-    createBall(x: number, y: number) {
-        const ball = this.matter.add.image(x, y, "ball");
+    createBall(x: number, y: number, isWhiteBall: boolean = false) {
+        const ball = this.matter.add.image(x, y, isWhiteBall ? "white-ball" : "ball-1");
 
         ball.setCircle(BALL_RADIUS_PX);
         ball.setDisplaySize(BALL_RADIUS_PX * 2, BALL_RADIUS_PX * 2);
@@ -107,7 +111,7 @@ class PoolScene extends Phaser.Scene {
                 friction: BALL_FRICTION,
                 frictionAir: CLOTH_ROLLING_RESISTANCE,
                 mass: BALL_MASS_KG,
-                label: "pool-ball",
+                label: isWhiteBall ? "white-ball" : "ball-1",
             }
         );
 
@@ -131,6 +135,7 @@ function calculateShotPhysics(powerPercentage: number, angleRadians: number, hor
 
     const angularVelocity = normalizedPower * safeOffset * MAX_SPIN_RAD_PER_SEC;
 
+    // TODO: adjust this depending on the sticks spin efficiency (pay to win xD)
     const deflectionAmount = 0.05;
     const deflectedVx = Math.cos(angleRadians - safeOffset * deflectionAmount) * linearMagnitude;
     const deflectedVy = Math.sin(angleRadians - safeOffset * deflectionAmount) * linearMagnitude;
@@ -146,8 +151,8 @@ window.onload = () => {
     new Phaser.Game({
         type: Phaser.AUTO,
         parent: "game-container",
-        width: 1024,
-        height: 768,
+        width: 1920,
+        height: 1080,
         physics: {
             default: "matter",
             matter: {
