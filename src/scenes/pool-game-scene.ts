@@ -637,12 +637,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private updateCue(): void {
-        if (!this.cue.phaserSprite || !this.service.isMyTurn()) return;
-
         const whiteBall = this.balls[this.balls.length - 1]!;
-        const { x, y } = whiteBall.phaserSprite!;
-
-        let angle: number;
 
         if (!this.input.enabled || whiteBall.isPocketed) {
             this.aimLineShadow.clear();
@@ -650,11 +645,15 @@ export class PoolGameScene extends Phaser.Scene {
             return;
         }
 
+        if (!this.cue.phaserSprite || !this.service.isMyTurn()) return;
+
         const width = this.tableWidth;
         const height = this.tableHeight;
 
         const mx = this.marginX;
         const my = this.marginY;
+
+        const { x, y } = whiteBall.phaserSprite!;
 
         if (this.isMobile && this.powerMeter.isDragging) {
             // Still show aim line with current angle
@@ -662,6 +661,8 @@ export class PoolGameScene extends Phaser.Scene {
             this.service.pull((x - mx) / width, (y - my) / height, this.cue.rotation);
             return;
         }
+
+        let angle: number;
 
         if (this.isDraggingShot) {
             angle = this.lockedAimAngle;
