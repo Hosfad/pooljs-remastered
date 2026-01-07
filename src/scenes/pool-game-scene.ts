@@ -126,8 +126,6 @@ export class PoolGameScene extends Phaser.Scene {
         this.add.text(midw, midh + 40, "Click to play again!", { fontSize: "32px" }).setOrigin(0.5);
 
         this.input.once("pointerdown", () => window.location.reload());
-
-        this.isGameStarted = false;
     }
 
     private registerEvents(service: Service): void {
