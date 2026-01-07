@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Loader, ShareIcon, UsersIcon } from "lucide-react";
+import { ArrowLeft, CheckIcon, Loader, ShareIcon, UsersIcon } from "lucide-react";
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { INIT_DISCORD_SDK } from "../../../../common/pool-constants";
@@ -27,6 +27,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
     }, []);
     const lobbyState = room?.isMatchMaking ? "matchmaking" : "lobby";
     const [visible, setVisible] = React.useState(!room?.isGameStarted);
+    const [hasCopied, setHasCopied] = React.useState(false);
 
     React.useEffect(() => {
         const lockOrientation = async () => {
@@ -65,14 +66,15 @@ export function Lobby({ service }: { service: MultiplayerService }) {
         if (INIT_DISCORD_SDK) {
             console.log("Opening invite dialog");
             service.discordSdk?.commands.openInviteDialog();
-            return;
         }
         if (!room) return;
+        setHasCopied(true);
         navigator.clipboard.writeText(window.location.href + "?room=" + room.id);
         service.showErrorModal({
             title: "Invite link copied to clipboard!",
             closeAfter: 1500,
         });
+        setTimeout(() => setHasCopied(false), 2000);
     };
     const currentPlayerIsHost = currentPlayer?.id === room?.hostId;
     const otherPlayer = players.find((p) => p.id !== currentPlayer?.id);
@@ -92,6 +94,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
         service.call(Events.KICK_PLAYER, { userId: currentPlayer.id, roomId: room.id, kickTargetId: id });
     };
     const path = useLocation().pathname;
+
     return (
         visible && (
             <div
@@ -199,7 +202,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
 
                     <div className="w-full max-w-[calc(2*20rem+3.5rem+1.5rem)] mx-auto grid grid-cols-2 items-center justify-center gap-2">
                         <Button
-                            variant="secondary"
+                            variant="dark"
                             disabled={!currentPlayerIsHost || players.length >= 2}
                             onClick={() =>
                                 lobbyState === "matchmaking" ? handleCancelMatchmaking() : handleStartMatchmaking()
@@ -232,10 +235,14 @@ export function Lobby({ service }: { service: MultiplayerService }) {
                         </Link>
                         <Button
                             onClick={handleInvite}
-                            variant="secondary"
+                            variant="dark"
                             className="landscape:w-auto md:w-auto! px-3 md:px-4! bg-dark/80 border-2 border-accent/40 hover:bg-dark hover:border-accent/60 transition-all"
                         >
-                            <ShareIcon />
+                            {hasCopied ? (
+                                <CheckIcon className="w-4 h-4 text-green-400" />
+                            ) : (
+                                <ShareIcon className="w-4 h-4" />
+                            )}
                         </Button>
                     </div>
                 </div>

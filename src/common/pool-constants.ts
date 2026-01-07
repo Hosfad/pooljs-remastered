@@ -178,7 +178,7 @@ export const CUE_DATA = {
         sprite: `/assets/game/cues/expert.svg`,
         price: {
             cash: undefined,
-            coins: 10_000,
+            coins: 100_000,
         },
     },
 

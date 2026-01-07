@@ -71,6 +71,7 @@ export function ShopDrawer({
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
+                        disabled={tab.id !== "cues"}
                         className={`py-3 px-6 rounded-lg font-semibold text-lg rounded-none transition-all ${
                             activeTab === tab.id
                                 ? "bg-accent/20 text-accent border-2 border-accent"
