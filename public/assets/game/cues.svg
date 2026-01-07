@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Generator: Adobe Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 viewBox="0 0 1400 980" style="enable-background:new 0 0 1400 980;" xml:space="preserve">
+	 viewBox="0 0 1400 2600" style="enable-background:new 0 0 1400 2600;" xml:space="preserve">
 <style type="text/css">
 	.st0{fill:#18892A;}
 	.st1{fill:#0F6D1A;}
@@ -26,6 +26,18 @@
 	.st20{fill:#7C3613;}
 	.st21{fill:#63280D;}
 	.st22{fill:#893C1A;}
+	.variant-ebony .st7 { fill:#2B1B12; }
+.variant-ebony .st4 { fill:#1A1A1A; }
+.variant-ebony .st9 { fill:#C9A24D; }
+.variant-ebony .st8 { fill:#8A6A2F; }
+.variant-carbon .st7 { fill:#2A2E35; }
+.variant-carbon .st4 { fill:#0B1220; }
+.variant-carbon .st9 { fill:#38BDF8; }
+.variant-carbon .st8 { fill:#94A3B8; }
+.variant-rosewood .st7 { fill:#7C3A1C; }
+.variant-rosewood .st4 { fill:#3B1C10; }
+.variant-rosewood .st9 { fill:#E6E7E8; }
+.variant-rosewood .st8 { fill:#B08968; }
 </style>
 	<g id="cue-1">
 		<polygon class="st7" points="1284.5,139.7 984.7,138.4 115.5,135 115.5,128.5 984.7,125.1 1284.5,123.9 		"/>
@@ -40,6 +52,7 @@
 		<g class="st10">
 			<polygon class="st11" points="115.5,128.5 115.5,132.5 1284.5,127.9 1284.5,123.9 984.7,125.1 			"/>
 		</g>
+		
 	</g>
 	<g id="cue-2">
 		<polygon class="st7" points="1284.5,282.5 984.7,281.3 115.5,277.9 115.5,271.4 984.7,268 1284.5,266.8 		"/>
@@ -230,4 +243,192 @@
 				H978.6z"/>
 		</g>
 	</g>
+
+
+
+
+<g id="cue-8" transform="translate(0 -160)">
+	<polygon class="st13" points="1284.5,1132.8 984.7,1131.6 115.5,1128.2 115.5,1121.7 984.7,1118.3 1284.5,1117.1"/>
+	<polygon class="st8" points="984.7,1114.3 984.7,1135.6 1284.5,1136.9 1284.5,1113.1"/>
+
+	<!-- decorative rings -->
+	<g>
+		<rect x="1030" y="1114.3" width="8" height="21.3" class="st9"/>
+		<rect x="1050" y="1114.3" width="8" height="21.3" class="st9"/>
+		<rect x="1070" y="1114.3" width="8" height="21.3" class="st9"/>
+	</g>
+
+	<!-- long inlay -->
+	<polygon class="st15" points="620,1118.3 620,1131.6 860,1132.3 860,1117.6"/>
+
+	<!-- butt -->
+	<path class="st13" d="M1293.4,1131.6c0,4.9-4,8.8-8.8,8.8l0,0c-4.9,0-8.8-4-8.8-8.8v-13.2c0-4.9,4-8.8,8.8-8.8l0,0
+		c4.9,0,8.8,4,8.8,8.8V1131.6z"/>
+	<polygon class="st9" points="1276.5,1136.9 1284.5,1136.9 1284.5,1117.1 1276.5,1117.1"/>
+	<polygon class="st9" points="979.4,1131.6 984.7,1131.6 984.7,1118.3 979.4,1118.3"/>
+
+	<!-- tip -->
+	<path class="st13" d="M118.2,1125.4c0,1.5-1.2,2.8-2.8,2.8l0,0c-1.5,0-2.8-1.2-2.8-2.8v-0.9c0-1.5,1.2-2.8,2.8-2.8l0,0
+		c1.5,0,2.8,1.2,2.8,2.8V1125.4z"/>
+	<rect x="115.5" y="1121.7" class="st13" width="12.4" height="6.5"/>
+
+	<g class="st10">
+		<polygon class="st11" points="984.7,1118.3 115.5,1121.7 115.5,1125.7 984.7,1122.3"/>
+	</g>
+</g>
+
+<g id="cue-9" transform="translate(0 -200)">
+	<!-- shaft -->
+	<polygon class="st7" points="1284.5,1268.5 984.7,1267.3 115.5,1263.9 115.5,1257.4 984.7,1254 1284.5,1252.8"/>
+	<polygon class="st4" points="984.7,1254 984.7,1267.3 1284.5,1268.5 1284.5,1252.8"/>
+
+	<!-- skull panel -->
+	<rect x="1040" y="1254.5" width="160" height="12.5" class="st9"/>
+
+	<!-- skull head -->
+	<ellipse cx="1120" cy="1260.7" rx="18" ry="9" class="st11"/>
+
+	<!-- eyes -->
+	<ellipse cx="1114" cy="1259.5" rx="3" ry="3.5" class="st4"/>
+	<ellipse cx="1126" cy="1259.5" rx="3" ry="3.5" class="st4"/>
+
+	<!-- nose -->
+	<polygon class="st4" points="1120,1261 1117,1266 1123,1266"/>
+
+	<!-- jaw -->
+	<rect x="1112" y="1267" width="16" height="4" class="st11"/>
+	<line x1="1116" y1="1267" x2="1116" y2="1271" class="st4"/>
+	<line x1="1120" y1="1267" x2="1120" y2="1271" class="st4"/>
+	<line x1="1124" y1="1267" x2="1124" y2="1271" class="st4"/>
+
+	<!-- butt -->
+	<path class="st4" d="M1293.4,1267.3c0,4.9-4,8.8-8.8,8.8l0,0c-4.9,0-8.8-4-8.8-8.8v-13.2c0-4.9,4-8.8,8.8-8.8l0,0
+		c4.9,0,8.8,4,8.8,8.8V1267.3z"/>
+	<polygon class="st9" points="1276.5,1268.5 1284.5,1268.5 1284.5,1252.8 1276.5,1252.8"/>
+
+	<!-- tip -->
+	<path class="st4" d="M118.2,1261.1c0,1.5-1.2,2.8-2.8,2.8l0,0c-1.5,0-2.8-1.2-2.8-2.8v-0.9c0-1.5,1.2-2.8,2.8-2.8l0,0
+		c1.5,0,2.8,1.2,2.8,2.8V1261.1z"/>
+	<rect x="115.5" y="1257.4" class="st6" width="12.4" height="6.5"/>
+
+	<!-- highlight -->
+	<g class="st10">
+		<polygon class="st11" points="984.7,1254 115.5,1257.4 115.5,1261.4 984.7,1258"/>
+	</g>
+</g>
+
+
+<g id="cue-12" transform="translate(0 -520)">
+	<polygon class="st8" points="1284.5,1690 984.7,1688.8 115.5,1685.4 115.5,1678.9 984.7,1675.5 1284.5,1674.3"/>
+	<polygon class="st4" points="984.7,1675.5 984.7,1688.8 1284.5,1690 1284.5,1674.3"/>
+
+	<!-- gears -->
+	<circle cx="640" cy="1682" r="5" class="st9"/>
+	<circle cx="670" cy="1682" r="5" class="st16"/>
+	<rect x="700" y="1678" width="40" height="8" class="st21"/>
+
+	<!-- bolts -->
+	<circle cx="620" cy="1682" r="2" class="st11"/>
+	<circle cx="760" cy="1682" r="2" class="st11"/>
+
+	<path class="st4"
+		d="M1293.4,1688.8
+		   c0,4.9-4,8.8-8.8,8.8
+		   l0,0
+		   c-4.9,0-8.8-4-8.8-8.8
+		   v-13.2
+		   c0-4.9,4-8.8,8.8-8.8
+		   l0,0
+		   c4.9,0,8.8,4,8.8,8.8
+		   V1688.8z"/>
+
+
+		<polygon class="st21" points="1276.5,1690 1284.5,1690 1284.5,1674.3 1276.5,1674.3"/>
+
+
+		<rect x="115.5" y="1678.9" class="st6" width="12.4" height="6.5"/>
+</g>
+
+
+
+<g id="cue-13" transform="translate(0 -280)">
+
+	<polygon class="st16"
+		points="1284.5,1550 984.7,1548.8 115.5,1545.4 115.5,1538.9 984.7,1535.5 1284.5,1534.3"/>
+	<polygon class="st4"
+		points="984.7,1535.5 984.7,1548.8 1284.5,1550 1284.5,1534.3"/>
+
+	<!-- tribal pattern from cue-11 -->
+	<polygon class="st18" points="400,1538 420,1548 440,1538 460,1548 480,1538"/>
+	<polygon class="st18" points="500,1538 520,1548 540,1538 560,1548 580,1538"/>
+	<polygon class="st18" points="600,1538 620,1548 640,1538 660,1548 680,1538"/>
+
+	<!-- butt from cue-13 (repositioned to match cue-11 Y) -->
+	<path class="st4"
+		d="M1293.4,1548.8
+		   c0,4.9-4,8.8-8.8,8.8
+		   l0,0
+		   c-4.9,0-8.8-4-8.8-8.8
+		   v-13.2
+		   c0-4.9,4-8.8,8.8-8.8
+		   l0,0
+		   c4.9,0,8.8,4,8.8,8.8
+		   V1548.8z"/>
+
+	<!-- butt cap -->
+	<polygon class="st18"
+		points="1276.5,1550 1284.5,1550 1284.5,1534.3 1276.5,1534.3"/>
+
+
+		<rect x="115.5" y="1538.9" class="st6" width="12.4" height="6.5"/>
+
+</g>
+
+
+<g id="cue-15" transform="translate(0 -530)">
+	<!-- shaft -->
+	<polygon class="st4" points="1284.5,1920 984.7,1918.8 115.5,1915.4 115.5,1908.9 984.7,1905.5 1284.5,1904.3"/>
+
+	<!-- constellation dots -->
+	<circle cx="620" cy="1912" r="2" class="st13"/>
+	<circle cx="650" cy="1910" r="1.8" class="st13"/>
+	<circle cx="690" cy="1913" r="2.2" class="st13"/>
+	<circle cx="720" cy="1909" r="1.6" class="st13"/>
+
+	<!-- glowing band -->
+	<rect x="1040" y="1908.9" width="180" height="6.5" class="st13"/>
+
+	<!-- butt -->
+	<path class="st4" d="M1293.4,1918.8c0,4.9-4,8.8-8.8,8.8l0,0c-4.9,0-8.8-4-8.8-8.8v-13.2c0-4.9,4-8.8,8.8-8.8l0,0
+		c4.9,0,8.8,4,8.8,8.8V1918.8z"/>
+	<polygon class="st13" points="1276.5,1920 1284.5,1920 1284.5,1904.3 1276.5,1904.3"/>
+
+	<!-- tip -->
+	<rect x="115.5" y="1908.9" class="st6" width="12.4" height="6.5"/>
+</g>
+
+
+<g id="cue-winter-1" transform="translate(0 1340)">
+    <polygon class="st6" points="1284.5,139.7 984.7,138.4 115.5,135 115.5,128.5 984.7,125.1 1284.5,123.9"/>
+    <polygon class="st14" points="984.7,125.1 984.7,138.4 1284.5,139.7 1284.5,123.9"/>
+    <path class="st9" d="M1289,135.2c0,2.5-2,4.5-4.5,4.5l0,0c-2.5,0-4.5-2-4.5-4.5v-6.7c0-2.5,2-4.5,4.5-4.5l0,0c2.5,0,4.5,2,4.5,4.5V135.2z"/>
+    <polygon class="st10" points="1276.5,139.6 1284.5,139.7 1284.5,123.9 1276.5,123.9"/>
+    <polygon class="st10" points="979.4,138.4 984.7,138.4 984.7,125.1 979.4,125.2"/>
+    <path class="st14" d="M118.2,132.3c0,1.5-1.2,2.8-2.8,2.8l0,0c-1.5,0-2.8-1.2-2.8-2.8v-0.9c0-1.5,1.2-2.8,2.8-2.8l0,0c1.5,0,2.8,1.2,2.8,2.8V132.3z"/>
+    <rect x="115.5" y="128.5" class="st13" width="12.4" height="6.5"/>
+    <g class="st10">
+        <polygon class="st11" points="115.5,128.5 115.5,132.5 1284.5,127.9 1284.5,123.9 984.7,125.1"/>
+    </g>
+    <!-- Snowflake motif accents -->
+    <g>
+        <circle cx="400" cy="131.5" r="6" fill="#CDEFFD"/>
+        <circle cx="800" cy="131.5" r="8" fill="#E0F7FF"/>
+    </g>
+</g>
+
+
+
+
+
+
 </svg>
