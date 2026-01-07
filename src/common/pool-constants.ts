@@ -29,6 +29,7 @@ export const CUSHION_CONSTANTS = {
     RAIL_POCKET_OUTER: 2.14, // Outer pocket edge divisor
     RAIL_POCKET_INNER: 2.05, // Inner pocket edge divisor
 };
+
 export const POOL_ASSETS = {
     BACKGROUND: "background",
     SOLID: {

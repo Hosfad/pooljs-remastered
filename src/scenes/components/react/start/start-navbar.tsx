@@ -6,6 +6,7 @@ import type { Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 import { CuesDrawer } from "./cue-drawer";
 import { SettingsDrawer } from "./settings-drawer";
+import { ShopDrawer } from "./shop-drwer";
 
 export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
     const me = service.me();
@@ -40,6 +41,7 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
         <div className="absolute top-0 right-0 w-full bg-black/60 bg-blur-2xl shadow-lg">
             <SettingsDrawer isOpen={isDrawerOpen && activeDrawer === "settings"} onClose={closeDrawer} service={service} />
             <CuesDrawer isOpen={isDrawerOpen && activeDrawer === "cues"} onClose={closeDrawer} service={service} />
+            <ShopDrawer isOpen={isDrawerOpen && activeDrawer === "shop"} onClose={closeDrawer} service={service} />
 
             <div className="flex items-center justify-between px-4 py-3 gap-4">
                 {/* Player Info Section */}

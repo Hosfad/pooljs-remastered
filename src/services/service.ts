@@ -12,6 +12,7 @@ export type LocalUser = {
     name: string;
     photo: string;
     access_token?: string;
+    selectedCue: CueId;
     ownedCues: CueId[];
     level: number;
     coins: number;
@@ -66,6 +67,7 @@ export abstract class Service {
             user.coins = user.coins ?? 100;
             user.cash = user.cash ?? 100;
             user.exp = user.exp ?? 0;
+            user.selectedCue = user.selectedCue ?? "basic";
 
             return user;
         }
@@ -75,6 +77,7 @@ export abstract class Service {
             name: this.generateRandomName(),
             photo: `/assets/avatars/${Math.floor(Math.random() * 6)}.png`,
             access_token: undefined,
+            selectedCue: "basic",
             ownedCues: ["basic", "advanced"],
             level: 1,
             coins: 100,
@@ -126,14 +129,16 @@ export abstract class Service {
 
     public getSettings(): GameSettings {
         const item = sessionStorage.getItem("settings");
-        return item ? JSON.parse(item) : {
-            masterVolume: 100,
-            sfxVolume: 100,
-            musicVolume: 80,
-            selectedCue: "basic",
-            showHints: true,
-            showAimLine: true,
-        };
+        return item
+            ? JSON.parse(item)
+            : {
+                  masterVolume: 100,
+                  sfxVolume: 100,
+                  musicVolume: 80,
+                  selectedCue: "basic",
+                  showHints: true,
+                  showAimLine: true,
+              };
     }
 
     public setSettings(newData: Partial<GameSettings>) {

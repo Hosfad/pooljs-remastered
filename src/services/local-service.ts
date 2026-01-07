@@ -1,5 +1,5 @@
 import type { BallType, KeyPositions } from "../common/pool-types";
-import { Events, type PoolState } from "../common/server-types";
+import { Events } from "../common/server-types";
 import type { Player } from "../server";
 import { PoolService } from "./pool-service";
 import { Service } from "./service";

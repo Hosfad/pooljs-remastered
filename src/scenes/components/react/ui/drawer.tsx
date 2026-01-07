@@ -8,9 +8,10 @@ interface DrawerProps {
     onClose: () => void;
     children: React.ReactNode;
     title?: string;
+    className?: string;
 }
 
-export function Drawer({ me, isOpen, onClose, children, title }: DrawerProps) {
+export function Drawer({ me, isOpen, onClose, children, title, className }: DrawerProps) {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -31,7 +32,7 @@ export function Drawer({ me, isOpen, onClose, children, title }: DrawerProps) {
                         animate={{ y: 0 }}
                         exit={{ y: "-100%" }}
                         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                        className="fixed top-0 left-0 right-0 z-50 bg-black/40 backdrop-blur-2xl shadow-lg"
+                        className={`fixed top-0 left-0 right-0 z-50 bg-black/40 backdrop-blur-2xl shadow-lg ${className}`}
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">

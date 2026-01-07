@@ -63,6 +63,7 @@ export class PoolGameScene extends Phaser.Scene {
     private lockedAimAngle = 0;
     private dragVector = new Vector2();
     private aimLine!: Phaser.GameObjects.Graphics;
+    private aimLineShadow!: Phaser.GameObjects.Graphics;
     private isMobile = false;
 
     private pocketedBallsRail!: {
@@ -126,8 +127,6 @@ export class PoolGameScene extends Phaser.Scene {
         this.add.text(midw, midh + 40, "Click to play again!", { fontSize: "32px" }).setOrigin(0.5);
 
         this.input.once("pointerdown", () => window.location.reload());
-
-        this.isGameStarted = false;
     }
 
     private registerEvents(service: Service): void {
@@ -139,7 +138,9 @@ export class PoolGameScene extends Phaser.Scene {
             console.log("Pool game initialized with", this.balls.length, "balls");
         });
 
-        this.service.subscribe(Events.PULL, ({ x, y, angle }) => {
+        this.service.subscribe(Events.PULL, ({ x, y, angle, userId }) => {
+            if (userId === this.service.me()?.id) return;
+
             const width = this.tableWidth;
             const height = this.tableHeight;
 
@@ -149,7 +150,9 @@ export class PoolGameScene extends Phaser.Scene {
             this.updateCueBullback(x * width + mx, y * height + my, angle);
         });
 
-        this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
+        this.service.subscribe(Events.HITS, ({ keyPositions, state, userId }) => {
+            if (userId === this.service.me()?.id) return;
+
             this.keyPositions.push.apply(this.keyPositions, keyPositions);
             this.service.timerStop();
             this.service.setState(state);
@@ -222,24 +225,26 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createBalls(): void {
-        const ROWS = 3;
+        const ROWS = 5;
         const r = BALL_RADIUS;
         const DIAMETER = r * 2;
         const ROW_SPACING = DIAMETER * 0.8;
         const COL_SPACING = DIAMETER * 0.8;
 
-        const rackOrigin = { x: this.tableWidth / 4, y: this.tableHeight / 2 };
+        const rackOrigin = new Vector2(this.tableWidth / 4, this.tableHeight / 2);
         const solids = Object.values(POOL_ASSETS.SOLID);
         const stripes = Object.values(POOL_ASSETS.STRIPES);
 
         // --- Create racked balls (triangle) ---
+        let count = 0;
+
         for (let row = 0; row < ROWS; row++) {
             const ballsInRow = ROWS - row;
             const x = rackOrigin.x + row * COL_SPACING;
             const startY = rackOrigin.y - ((ballsInRow - 1) * ROW_SPACING) / 2;
 
             for (let i = 0; i < ballsInRow; i++) {
-                const isSolid = i % 2 === 0;
+                const isSolid = ++count % 2 === 0;
                 const ballType: BallType = isSolid ? "solid" : "striped";
                 const texture = isSolid ? solids.shift() : stripes.shift();
 
@@ -248,9 +253,34 @@ export class PoolGameScene extends Phaser.Scene {
             }
         }
 
-        const eightBall = this.balls[this.balls.length - 1]!;
-        eightBall.ballType = "black";
-        eightBall.phaserSprite.setTexture(POOL_ASSETS.BLACK_BALL);
+        // Blackball
+        const blackBall = this.balls[this.balls.length - 1]!;
+        blackBall.ballType = "black";
+        blackBall.phaserSprite.setTexture(POOL_ASSETS.BLACK_BALL);
+
+        let closestBall = blackBall;
+        let closestDistance = Infinity;
+
+        const distToOrigin = blackBall.phaserSprite.x - rackOrigin.x;
+        const origin = new Vector2(rackOrigin.x + distToOrigin * 0.9, blackBall.phaserSprite.y);
+
+        for (const ball of this.balls) {
+            if (ball.ballType === "black") continue;
+
+            const { x, y } = ball.phaserSprite;
+            const ballPos = new Vector2(x, y);
+            const dist = ballPos.distance(origin);
+
+            if (dist < closestDistance) {
+                closestBall = ball;
+                closestDistance = dist;
+            }
+        }
+
+        // Swap black with closest to origin
+        const closestPosition = new Vector2(closestBall.phaserSprite.x, closestBall.phaserSprite.y);
+        closestBall.phaserSprite.setPosition(blackBall.phaserSprite.x, blackBall.phaserSprite.y);
+        blackBall.phaserSprite.setPosition(closestPosition.x, closestPosition.y);
 
         //  whiteball ball ---
         const cueX = this.tableWidth * 0.75;
@@ -260,6 +290,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createCue(): void {
+        this.aimLineShadow = this.add.graphics();
         this.aimLine = this.add.graphics();
 
         const whiteBall = this.balls[this.balls.length - 1]!;
@@ -483,6 +514,53 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
 
+    private getTableEdges(): { left: number; right: number; top: number; bottom: number } {
+        const tw = this.tableWidth;
+        const th = this.tableHeight;
+
+        const mx = this.marginX;
+        const my = this.marginY;
+
+        const xRatio = tw / 16;
+        const yRatio = th / 12;
+
+        return {
+            left: mx + xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS,
+            right: mx + tw - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS,
+            top: my + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y + BALL_RADIUS * 1.5,
+            bottom: my + th - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y + BALL_RADIUS * 1.5,
+        };
+    }
+
+    private canPlaceBall(px: number, py: number): boolean {
+        const { left, right, top, bottom } = this.getTableEdges();
+        if (px < left || px > right || py < top || py > bottom) return false;
+
+        const pos = new Vector2(px, py);
+
+        for (const hole of this.holes) {
+            const {
+                sprite: { position },
+            } = hole;
+            const holePos = new Vector2(position.x, position.y);
+
+            if (holePos.distance(pos) <= HOLE_RADIUS * 1) {
+                return false;
+            }
+        }
+
+        for (const ball of this.balls) {
+            const { x, y } = ball.phaserSprite;
+            const ballPos = new Vector2(x, y);
+
+            if (ballPos.distance(pos) <= BALL_RADIUS * 1.5) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
@@ -492,30 +570,7 @@ export class PoolGameScene extends Phaser.Scene {
 
             const whiteBall = this.balls[this.balls.length - 1]!;
 
-            if (whiteBall.isPocketed) {
-                const xRatio = this.tableWidth / 16;
-                const yRatio = this.tableHeight / 12;
-
-                // Draw a circle on marginX and y 60
-
-                const leftEdge = this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
-                const rightEdge = this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS;
-
-                if (px < leftEdge || px > rightEdge) {
-                    return;
-                }
-
-                const pos = new Vector2(px, py);
-
-                for (const ball of this.balls) {
-                    const { x, y } = ball.phaserSprite;
-                    const ballPos = new Vector2(x, y);
-
-                    if (ballPos.distance(pos) <= BALL_RADIUS * 1.5) {
-                        return;
-                    }
-                }
-
+            if (whiteBall.isPocketed && this.canPlaceBall(px, py)) {
                 const mx = this.marginX;
                 const my = this.marginY;
 
@@ -539,30 +594,7 @@ export class PoolGameScene extends Phaser.Scene {
             const { x: px, y: py } = pointer;
 
             // Hand Stuff
-            if (whiteBall.isPocketed) {
-                const xRatio = this.tableWidth / 16;
-                const yRatio = this.tableHeight / 12;
-
-                if (
-                    px < this.marginX + xRatio * CUSHION_CONSTANTS.SIDE_INNER_X ||
-                    px > this.marginX + this.tableWidth - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X ||
-                    py < this.marginY + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y ||
-                    py > this.marginY + this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y
-                ) {
-                    return;
-                }
-
-                const pos = new Vector2(px, py);
-
-                for (const ball of this.balls) {
-                    const { x, y } = ball.phaserSprite;
-                    const ballPos = new Vector2(x, y);
-
-                    if (ballPos.distance(pos) <= BALL_RADIUS * 1.5) {
-                        return;
-                    }
-                }
-
+            if (whiteBall.isPocketed && this.canPlaceBall(px, py)) {
                 whiteBall.phaserSprite.visible = true;
                 whiteBall.phaserSprite.setPosition(px, py);
                 whiteBall.isPocketed = this.hand.visible = false;
@@ -617,17 +649,15 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private updateCue(): void {
-        if (!this.cue.phaserSprite || !this.service.isMyTurn()) return;
-
         const whiteBall = this.balls[this.balls.length - 1]!;
-        const { x, y } = whiteBall.phaserSprite!;
-
-        let angle: number;
 
         if (!this.input.enabled || whiteBall.isPocketed) {
+            this.aimLineShadow.clear();
             this.aimLine.clear();
             return;
         }
+
+        if (!this.cue.phaserSprite || !this.service.isMyTurn()) return;
 
         const width = this.tableWidth;
         const height = this.tableHeight;
@@ -635,12 +665,16 @@ export class PoolGameScene extends Phaser.Scene {
         const mx = this.marginX;
         const my = this.marginY;
 
+        const { x, y } = whiteBall.phaserSprite!;
+
         if (this.isMobile && this.powerMeter.isDragging) {
             // Still show aim line with current angle
             this.drawAimLine(x, y, this.cue.rotation);
             this.service.pull((x - mx) / width, (y - my) / height, this.cue.rotation);
             return;
         }
+
+        let angle: number;
 
         if (this.isDraggingShot) {
             angle = this.lockedAimAngle;
@@ -671,85 +705,138 @@ export class PoolGameScene extends Phaser.Scene {
         this.service.pull((x - mx) / width, (y - my) / height, angle);
     }
 
+    private lineStyle(width: number, color: number, alpha: number = 1): void {
+        this.aimLineShadow.lineStyle(width * 3, 0x000000, alpha);
+        this.aimLine.lineStyle(width, color, alpha);
+    }
+
+    private strokePath(): void {
+        this.aimLineShadow.strokePath();
+        this.aimLine.strokePath();
+    }
+
+    private beginPath(): void {
+        this.aimLineShadow.beginPath();
+        this.aimLine.beginPath();
+    }
+
+    private moveTo(x: number, y: number): void {
+        this.aimLineShadow.moveTo(x, y);
+        this.aimLine.moveTo(x, y);
+    }
+
+    private lineTo(x: number, y: number): void {
+        this.aimLineShadow.lineTo(x, y);
+        this.aimLine.lineTo(x, y);
+    }
+
     private drawAimLine(ballX: number, ballY: number, angle: number): void {
+        this.aimLineShadow.clear();
         this.aimLine.clear();
 
         const aimDir = new Vector2(Math.cos(angle), Math.sin(angle));
-        const aimStartX = ballX + aimDir.x * (BALL_RADIUS + 2);
-        const aimStartY = ballY + aimDir.y * (BALL_RADIUS + 2);
+        const ballRadius = { x: BALL_RADIUS + 2, y: BALL_RADIUS + 2 };
 
-        let currentPos = new Vector2(aimStartX, aimStartY);
-        let rayDirection = aimDir.clone();
-        const maxDistance = 2000;
+        const currentPos = aimDir.clone().multiply(ballRadius).add({ x: ballX, y: ballY });
+        const rayDirection = aimDir.clone();
 
-        let hitDetected = false;
-        let hitPosition = new Vector2(0, 0);
-        let hitType: "ball" | "wall" | null = null;
-
-        const whiteBallIndex = this.balls.findIndex((ball) => ball.ballType === "white");
         let closestBallDistance = Infinity;
         let closestBallHitPos = new Vector2(0, 0);
+        let hitBall: Ball | undefined;
 
-        for (let i = 0; i < this.balls.length; i++) {
-            if (i === whiteBallIndex) continue;
+        const BALL_SQR = BALL_RADIUS * BALL_RADIUS;
 
+        for (let i = 0; i < this.balls.length - 1; i++) {
             const ball = this.balls[i]!;
-            const ballPos = new Vector2(ball.phaserSprite.x, ball.phaserSprite.y);
+            if (ball.isPocketed) continue;
 
-            const dx = currentPos.x - ballPos.x;
-            const dy = currentPos.y - ballPos.y;
+            const delta = currentPos.clone().subtract(ball.phaserSprite);
 
-            const a = rayDirection.x * rayDirection.x + rayDirection.y * rayDirection.y;
-            const b = 2 * (dx * rayDirection.x + dy * rayDirection.y);
-            const c = dx * dx + dy * dy - BALL_RADIUS * BALL_RADIUS;
+            const a = rayDirection.lengthSq();
+            const b = delta.dot(rayDirection) * 2;
+            const c = delta.lengthSq() - BALL_SQR;
 
             const discriminant = b * b - 4 * a * c;
 
             if (discriminant >= 0) {
+                const a2 = a * 2;
                 const sqrtDisc = Math.sqrt(discriminant);
-                const t1 = (-b - sqrtDisc) / (2 * a);
-                const t2 = (-b + sqrtDisc) / (2 * a);
+
+                const t1 = (-b - sqrtDisc) / a2;
+                const t2 = (-b + sqrtDisc) / a2;
 
                 let t = Infinity;
                 if (t1 > 0 && t1 < t) t = t1;
                 if (t2 > 0 && t2 < t) t = t2;
 
-                if (t < maxDistance && t < closestBallDistance) {
+                if (t < closestBallDistance) {
                     closestBallDistance = t;
-                    closestBallHitPos = new Vector2(currentPos.x + rayDirection.x * t, currentPos.y + rayDirection.y * t);
-                    hitType = "ball";
+                    closestBallHitPos = rayDirection.clone().multiply({ x: t, y: t }).add(currentPos);
+                    hitBall = ball;
                 }
             }
         }
 
-        let closestWallDistance = Infinity;
-        let closestWallHitPos = new Vector2(0, 0);
+        const cx = currentPos.x;
+        const cy = currentPos.y;
 
-        if (closestBallDistance < Infinity || closestWallDistance < Infinity) {
-            hitDetected = true;
-            if (closestBallDistance < closestWallDistance) {
-                hitPosition = closestBallHitPos;
-                hitType = "ball";
-            } else {
-                hitPosition = closestWallHitPos;
-                hitType = "wall";
-            }
-        }
+        this.lineStyle(2, 0xffffff);
+        this.beginPath();
+        this.moveTo(cx, cy);
 
-        this.aimLine.lineStyle(2, 0xffffff, 1.5);
-        this.aimLine.beginPath();
-        this.aimLine.moveTo(aimStartX, aimStartY);
+        if (hitBall) {
+            // Drawing line to ball
+            const targetX = closestBallHitPos.x;
+            const targetY = closestBallHitPos.y;
 
-        if (hitDetected) {
-            this.aimLine.lineTo(hitPosition.x, hitPosition.y);
+            this.lineTo(targetX, targetY);
+            this.strokePath();
 
-            this.aimLine.lineStyle(3, hitType === "ball" ? 0xff0000 : 0xffff00, 1);
-            this.aimLine.strokeCircle(hitPosition.x, hitPosition.y, 5);
+            this.aimLineShadow.strokeCircle(targetX, targetY, 5);
+            this.aimLine.strokeCircle(targetX, targetY, 5);
+
+            // Drawing prediction line
+            const dx = hitBall.phaserSprite.x - targetX;
+            const dy = hitBall.phaserSprite.y - targetY;
+
+            const lineLength = BALL_RADIUS * 2.5;
+            const angle = Math.atan2(dy, dx);
+
+            const endX = targetX + Math.cos(angle) * lineLength;
+            const endY = targetY + Math.sin(angle) * lineLength;
+
+            this.moveTo(targetX, targetY);
+            this.lineTo(endX, endY);
+            this.strokePath();
+
+            let inc = Math.PI * 0.5;
+            if (dy < 0) inc = -inc;
+            if (dx > 0) inc = -inc;
+
+            // Drawing white ball prediction
+            const wAngle = Math.atan2(dy, dx) + inc;
+
+            const wendX = targetX + Math.cos(wAngle) * lineLength * 0.5;
+            const wendY = targetY + Math.sin(wAngle) * lineLength * 0.5;
+
+            this.moveTo(targetX, targetY);
+            this.lineTo(wendX, wendY);
+            this.strokePath();
         } else {
-            this.aimLine.lineTo(aimStartX + aimDir.x * maxDistance, aimStartY + aimDir.y * maxDistance);
-        }
+            // Hit wall
+            const aimX = aimDir.x;
+            const aimY = aimDir.y;
 
-        this.aimLine.strokePath();
+            const { left, right, top, bottom } = this.getTableEdges();
+
+            const dx = aimX > 0 ? right - cx : left - cx;
+            const dy = aimY > 0 ? bottom - cy : top - cy;
+
+            const t = Math.min(dx / aimX, dy / aimY);
+
+            this.lineTo(cx + aimX * t, cy + aimY * t);
+            this.strokePath();
+        }
     }
 
     private setupDebugPanel(): void {
