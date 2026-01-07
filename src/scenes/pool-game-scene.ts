@@ -703,6 +703,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         let closestBallDistance = Infinity;
         let closestBallHitPos = new Vector2(0, 0);
+        let hitBall: Ball | undefined;
 
         const BALL_SQR = BALL_RADIUS * BALL_RADIUS;
 
@@ -732,6 +733,7 @@ export class PoolGameScene extends Phaser.Scene {
                 if (t < closestBallDistance) {
                     closestBallDistance = t;
                     closestBallHitPos = rayDirection.clone().multiply({ x: t, y: t }).add(currentPos);
+                    hitBall = ball;
                 }
             }
         }
@@ -747,7 +749,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.aimLine.beginPath();
         this.aimLine.moveTo(cx, cy);
 
-        if (closestBallDistance < Infinity) { // Hit ball
+        if (hitBall) {
             const targetX = closestBallHitPos.x;
             const targetY = closestBallHitPos.y;
 
@@ -759,6 +761,25 @@ export class PoolGameScene extends Phaser.Scene {
 
             this.aimLineShadow.strokeCircle(targetX, targetY, 5);
             this.aimLine.strokeCircle(targetX, targetY, 5);
+
+            const dx = hitBall.phaserSprite.x - targetX;
+            const dy = hitBall.phaserSprite.y - targetY;
+
+            const angle = Math.atan2(dy, dx);
+
+            const lineLength = BALL_RADIUS * 2.5;
+            const endX = targetX + Math.cos(angle) * lineLength;
+            const endY = targetY + Math.sin(angle) * lineLength;
+
+            this.aimLineShadow.moveTo(targetX, targetY);
+            this.aimLineShadow.lineTo(endX, endY);
+
+            this.aimLine.moveTo(targetX, targetY);
+            this.aimLine.lineTo(endX, endY);
+
+            this.aimLineShadow.strokePath();
+            this.aimLine.strokePath();
+
         } else { // Hit wall
             const tw = this.tableWidth;
             const th = this.tableHeight;
