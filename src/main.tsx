@@ -40,6 +40,12 @@ const BALL_FRICTION = 0.01; // ball (μ)
 const CLOTH_ROLLING_RESISTANCE = 0.012; // cloth (frictionAir)
 const RAIL_RESTITUTION = 0.75; // rail (e)
 
+// Velocity limits
+const MAX_SPEED_MPS = 16;
+const PHYSICS_FPS = 60;
+const METER_TO_PX_PER_FRAME = PIXELS_PER_METER / PHYSICS_FPS;
+const MAX_SPIN_RAD_PER_SEC = 35;
+
 class PoolScene extends Phaser.Scene {
     poolBalls!: Phaser.Physics.Matter.Image[];
 
@@ -81,7 +87,11 @@ class PoolScene extends Phaser.Scene {
         const cueBallX = bounds.x + bounds.width * 0.25;
         const cueBallY = rackStartY;
         const cueBall = this.createBall(cueBallX, cueBallY);
-        cueBall.setVelocity(25, 0);
+
+        const velocity = calculateShotPhysics(50, 0, 0.5);
+
+        cueBall.setVelocity(velocity.x, velocity.y);
+        cueBall.setAngularVelocity(velocity.angular);
     }
 
     createBall(x: number, y: number) {
@@ -106,6 +116,30 @@ class PoolScene extends Phaser.Scene {
     }
 
     override update() {}
+}
+
+function calculateShotPhysics(powerPercentage: number, angleRadians: number, horizontalOffset: number = 0) {
+    const clampedPower = Phaser.Math.Clamp(powerPercentage, 0, 100);
+    let normalizedPower = clampedPower / 100;
+
+    normalizedPower = Math.pow(normalizedPower, 2);
+
+    const targetSpeedMps = normalizedPower * MAX_SPEED_MPS;
+    const linearMagnitude = targetSpeedMps * METER_TO_PX_PER_FRAME;
+
+    const safeOffset = Phaser.Math.Clamp(horizontalOffset, -0.8, 0.8);
+
+    const angularVelocity = normalizedPower * safeOffset * MAX_SPIN_RAD_PER_SEC;
+
+    const deflectionAmount = 0.05;
+    const deflectedVx = Math.cos(angleRadians - safeOffset * deflectionAmount) * linearMagnitude;
+    const deflectedVy = Math.sin(angleRadians - safeOffset * deflectionAmount) * linearMagnitude;
+
+    return {
+        x: deflectedVx,
+        y: deflectedVy,
+        angular: angularVelocity,
+    };
 }
 
 window.onload = () => {
