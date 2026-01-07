@@ -119,7 +119,10 @@ export class MultiplayerService extends LocalService {
         if (!roomId) return [];
 
         const keyPositions = this.service.hitBalls(powerPercent, angle);
-        this.call(Events.HITS, { keyPositions: keyPositions, state: this.service.getState(), userId, roomId });
+        const data = { keyPositions: keyPositions, state: this.service.getState(), userId, roomId };
+
+        this.send(Events.HITS, { ...data, userId: "1" });
+        this.call(Events.HITS, data);
 
         return keyPositions;
     }
@@ -129,7 +132,10 @@ export class MultiplayerService extends LocalService {
 
         if (!roomId) return;
 
-        this.call(Events.PULL, { x, y, angle, userId, roomId });
+        const data = { x, y, angle, userId, roomId };
+
+        this.send(Events.PULL, { ...data, userId: "1" });
+        this.call(Events.PULL, data);
     }
 
     override moveHand(x: number, y: number): void {

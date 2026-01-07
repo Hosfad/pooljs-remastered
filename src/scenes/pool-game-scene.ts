@@ -138,7 +138,9 @@ export class PoolGameScene extends Phaser.Scene {
             console.log("Pool game initialized with", this.balls.length, "balls");
         });
 
-        this.service.subscribe(Events.PULL, ({ x, y, angle }) => {
+        this.service.subscribe(Events.PULL, ({ x, y, angle, userId }) => {
+            if (userId === this.service.me()?.id) return;
+
             const width = this.tableWidth;
             const height = this.tableHeight;
 
@@ -148,7 +150,9 @@ export class PoolGameScene extends Phaser.Scene {
             this.updateCueBullback(x * width + mx, y * height + my, angle);
         });
 
-        this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
+        this.service.subscribe(Events.HITS, ({ keyPositions, state, userId }) => {
+            if (userId === this.service.me()?.id) return;
+
             this.keyPositions.push.apply(this.keyPositions, keyPositions);
             this.service.timerStop();
             this.service.setState(state);
