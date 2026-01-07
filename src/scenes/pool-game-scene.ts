@@ -227,7 +227,7 @@ export class PoolGameScene extends Phaser.Scene {
         const ROW_SPACING = DIAMETER * 0.8;
         const COL_SPACING = DIAMETER * 0.8;
 
-        const rackOrigin = { x: this.tableWidth / 4, y: this.tableHeight / 2 };
+        const rackOrigin = new Vector2(this.tableWidth / 4, this.tableHeight / 2);
         const solids = Object.values(POOL_ASSETS.SOLID);
         const stripes = Object.values(POOL_ASSETS.STRIPES);
 
@@ -249,9 +249,34 @@ export class PoolGameScene extends Phaser.Scene {
             }
         }
 
-        const eightBall = this.balls[this.balls.length - 1]!;
-        eightBall.ballType = "black";
-        eightBall.phaserSprite.setTexture(POOL_ASSETS.BLACK_BALL);
+        // Blackball
+        const blackBall = this.balls[this.balls.length - 1]!;
+        blackBall.ballType = "black";
+        blackBall.phaserSprite.setTexture(POOL_ASSETS.BLACK_BALL);
+
+        let closestBall = blackBall;
+        let closestDistance = Infinity;
+
+        const distToOrigin = blackBall.phaserSprite.x - rackOrigin.x;
+        const origin = new Vector2(rackOrigin.x + distToOrigin * 0.9, blackBall.phaserSprite.y);
+
+        for (const ball of this.balls) {
+            if (ball.ballType === "black") continue;
+
+            const { x, y } = ball.phaserSprite;
+            const ballPos = new Vector2(x, y);
+            const dist = ballPos.distance(origin);
+
+            if (dist < closestDistance) {
+                closestBall = ball;
+                closestDistance = dist;
+            }
+        }
+
+        // Swap black with closest to origin
+        const closestPosition = new Vector2(closestBall.phaserSprite.x, closestBall.phaserSprite.y);
+        closestBall.phaserSprite.setPosition(blackBall.phaserSprite.x, blackBall.phaserSprite.y);
+        blackBall.phaserSprite.setPosition(closestPosition.x, closestPosition.y);
 
         //  whiteball ball ---
         const cueX = this.tableWidth * 0.75;
