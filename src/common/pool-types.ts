@@ -27,12 +27,6 @@ export interface Hole {
     body?: MatterJS.Body;
 }
 
-export interface Cue {
-    phaserSprite: Phaser.GameObjects.Sprite;
-    rotation: number;
-    power: number;
-}
-
 export interface Collider {
     sprite: {
         position: Phaser.Math.Vector2;
@@ -42,6 +36,13 @@ export interface Collider {
         visible: boolean;
     };
     phaserGraphics?: Phaser.GameObjects.Graphics;
+    body?: MatterJS.Body;
+}
+
+export interface Cue {
+    phaserSprite: Phaser.GameObjects.Sprite;
+    rotation: number;
+    power: number;
 }
 
 export type GameSettings = {

@@ -462,11 +462,9 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createBall(x: number, y: number, ballType: Ball["ballType"], texture: string): void {
-        const r = BALL_RADIUS;
         const position = this.toTableCoordinates(x, y);
-
         const sprite = this.matter.add.sprite(position.x, position.y, texture);
-        sprite.setScale((r * 1.5) / sprite.width);
+        sprite.setScale((BALL_RADIUS * 1.5) / sprite.width);
         sprite.setBody(
             { type: "circle", radius: BALL_RADIUS },
             {
