@@ -103,6 +103,7 @@ export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;
 export const BALL_RESTITUTION = 0.998; // ball (e)
 export const BALL_FRICTION = 0.01; // ball (μ)
 export const CLOTH_ROLLING_RESISTANCE = 0.012; // cloth (frictionAir)
+export const RAIL_RESTITUTION = 0.75; // rail (e)
 
 // Physics constants
 export const MAX_POWER = 30;

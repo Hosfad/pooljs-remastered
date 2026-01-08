@@ -19,22 +19,14 @@ export interface Ball {
 export interface Hole {
     sprite: {
         position: Phaser.Math.Vector2;
-        color: Color;
         size: { r: number };
-        visible: boolean;
     };
     phaserGraphics?: Phaser.GameObjects.Graphics;
     body?: MatterJS.Body;
 }
 
 export interface Collider {
-    sprite: {
-        position: Phaser.Math.Vector2;
-        size: { points: Phaser.Math.Vector2[] };
-        normal: Phaser.Math.Vector2;
-        color: Color;
-        visible: boolean;
-    };
+    sprite: { size: { points: Phaser.Math.Vector2[] }; };
     phaserGraphics?: Phaser.GameObjects.Graphics;
     body?: MatterJS.Body;
 }
