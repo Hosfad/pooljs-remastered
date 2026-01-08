@@ -386,23 +386,23 @@ export class PoolGameScene extends Phaser.Scene {
         const frame = this.keyPositions.shift()!;
         const tw = this.tableWidth;
         const th = this.tableHeight;
-        const wb = this.balls.length - 1;
 
         if (!this.keyPositions.length) this.service.timerStart();
 
-        frame.forEach((key, i) => {
-            const sprite = this.balls[i]!.phaserSprite;
-            if (!sprite.visible && i < wb) return;
+        frame.forEach(({ position: { x, y }, collision, hidden }, i) => {
+            if (hidden) return;
 
-            const pos = { x: key.position.x * tw + this.marginX, y: key.position.y * th + this.marginY };
+            const sprite = this.balls[i]!.phaserSprite;
+            const pos = { x: x * tw + this.marginX, y: y * th + this.marginY };
 
             // increment rotation angle of sprite
             const spd = Math.abs((pos.x + pos.y) - (sprite.x + sprite.y));
             if (spd != 0) sprite.rotation += spd / BALL_RADIUS * 2;
-            sprite.setPosition(pos.x, pos.y);
 
-            if (this.playedSounds[i] === undefined && key.collision !== undefined) {
-                switch (key.collision) {
+            if (!hidden) sprite.setPosition(pos.x, pos.y);
+
+            if (this.playedSounds[i] === undefined && collision !== undefined) {
+                switch (collision) {
                     case "wall":
                         this.sound.play(POOL_ASSETS.SOUND_EFFECTS.BALL_HITTING_TABLE_EDGE);
                         break;
