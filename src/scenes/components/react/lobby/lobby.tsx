@@ -8,6 +8,7 @@ import { Events } from "../../../../common/server-types";
 import type { Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 import GameLayout from "../game/game-layout";
+import { PlayerInfoWidget } from "../start/start-navbar";
 import { Button } from "../ui/button";
 
 export function Lobby({ service }: { service: MultiplayerService }) {
@@ -108,6 +109,8 @@ export function Lobby({ service }: { service: MultiplayerService }) {
                         backgroundRepeat: "no-repeat",
                     }}
                 >
+                    <PlayerInfoWidget service={service} />
+
                     {/* Main content */}
                     <div className="w-full flex flex-col gap-4">
                         <div className="md:min-h-[25vh] min-h-[40vh]">

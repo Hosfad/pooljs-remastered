@@ -39,15 +39,15 @@ export function CuesDrawer({
 
     return (
         <Drawer title="Cues" isOpen={isOpen} onClose={onClose} me={me}>
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-3  mb-6">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`py-3 px-6 rounded-lg font-semibold text-lg transition-all ${
+                        className={`py-3 px-6 rounded-lg font-semibold text-lg rounded-none transition-all ${
                             activeTab === tab.id
                                 ? "bg-accent/20 text-accent border-2 border-accent"
-                                : "bg-white/5 text-white/60 border-2 border-white/10 hover:bg-white/10 hover:text-white/80"
+                                : "bg-white/5 text-white/60 border-2 border-white/10 hover:bg-accent/10 hover:text-accent/80"
                         }`}
                     >
                         {tab.label}
