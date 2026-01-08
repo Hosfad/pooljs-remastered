@@ -300,10 +300,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         const whiteBall = this.balls[this.balls.length - 1]!;
         const { x, y } = this.toTableCoordinates(whiteBall.phaserSprite.x, whiteBall.phaserSprite.y);
-        const config = this.service.getSettings();
-        const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUES.BASIC);
-        cueSprite.setOrigin(1, 0.5);
-        cueSprite.setFlipX(true);
+        const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUES.BASIC).setOrigin(1, 0.5).setFlipX(true);
 
         this.cue = { phaserSprite: cueSprite, rotation: 0, power: 0 };
     }
@@ -350,46 +347,31 @@ export class PoolGameScene extends Phaser.Scene {
             let graphics: Phaser.GameObjects.Graphics | undefined;
 
             if (DEBUG_GRAPHICS) {
-                graphics = this.add.graphics();
-                graphics.fillStyle(0xff0000, 0.5);
-                graphics.beginPath();
-
                 const firstPoint = this.toTableCoordinates(points[0]!.x, points[0]!.y);
-                graphics.moveTo(firstPoint.x, firstPoint.y);
+
+                graphics = this.add.graphics().fillStyle(0xff0000, 0.5).beginPath()
+                    .moveTo(firstPoint.x, firstPoint.y);
 
                 for (let i = 1; i < points.length; i++) {
                     const point = this.toTableCoordinates(points[i]!.x, points[i]!.y);
                     graphics.lineTo(point.x, point.y);
                 }
 
-                graphics.closePath();
-                graphics.fillPath();
+                graphics.closePath().fillPath();
             }
 
             // Convert to table/world coordinates
-            const worldPoints = points.map((p) => this.toTableCoordinates(p.x, p.y));
+            const worldPoints = points.map((p) => new Vector2(this.toTableCoordinates(p.x, p.y)));
 
             // Compute centroid
-            const center = worldPoints.reduce(
-                (acc, p) => {
-                    acc.x += p.x;
-                    acc.y += p.y;
-                    return acc;
-                },
-                { x: 0, y: 0 }
-            );
-
-            center.x /= worldPoints.length;
-            center.y /= worldPoints.length;
+            const center = worldPoints.reduce((acc, p) => acc.add(p), new Vector2(0, 0));
+            center.divide({ x: worldPoints.length, y: worldPoints.length });
 
             // Convert to local space
-            const localVerts = worldPoints.map((p) => ({
-                x: p.x - center.x,
-                y: p.y - center.y,
-            }));
+            const localVerts = worldPoints.map((p) => ({ x: p.x - center.x, y: p.y - center.y }));
 
             const collider: Collider = {
-                sprite: { size: { points: worldPoints.map((p) => new Vector2(p.x, p.y)) } },
+                sprite: { size: { points: worldPoints } },
                 phaserGraphics: graphics,
                 body: this.matter.add.fromVertices(
                     center.x,
