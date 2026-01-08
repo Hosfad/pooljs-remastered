@@ -33,7 +33,6 @@ const BallRail = ({ service, maxBalls = 15 }: { service: MultiplayerService; max
         return `/assets/game/balls/${finalIndex}.svg`;
     };
 
-    // Function to trigger a new ball drop
     const dropBall = useCallback(
         (ballIndex: number) => {
             if (!railRef.current) return;
@@ -43,8 +42,6 @@ const BallRail = ({ service, maxBalls = 15 }: { service: MultiplayerService; max
             setBalls((prev) => {
                 if (prev.length >= maxBalls) return prev;
 
-                // Calculate resting position:
-                // Total height - (number of balls already there + 1) * ball size
                 const restingY = railHeight - (prev.length + 1) * BALL_SIZE;
 
                 const newBall: BallData = {

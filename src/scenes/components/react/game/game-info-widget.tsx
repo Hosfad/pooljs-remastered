@@ -1,30 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Events, type PoolState } from "../../../../common/server-types";
+import { type PoolState } from "../../../../common/server-types";
 import type { Player, Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 
 const ROUND_TIME = 30;
 const SCALED_BALL_SIZE = 22;
 
-export function GameInfoWidget({ service }: { service: MultiplayerService }) {
-    const [room, setRoom] = useState<Room | null>(service.getCurrentRoom());
+export function GameInfoWidget({ room, service }: { room: Room; service: MultiplayerService }) {
     const [state, setState] = useState<PoolState | null>(service.getState());
     const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
-
-    useEffect(() => {
-        service.subscribe(Events.INIT, (data) => {
-            setRoom(data);
-            setState(service.getState());
-        });
-        service.subscribe(Events.UPDATE_ROOM, (data) => {
-            setRoom(data);
-            setState(service.getState());
-        });
-
-        service.subscribe(Events.HITS, () => setState(service.getState()));
-    }, [service]);
 
     useEffect(() => {
         if (!room) return;

@@ -9,13 +9,8 @@ import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { INIT_DISCORD_SDK } from "../common/pool-constants";
 import { LoadingPage } from "../scenes/components/react/loading/loading-page";
-import BallRail from "../scenes/components/react/lobby/ball-rail";
-import { GameInfoWidget } from "../scenes/components/react/lobby/game-info-widget";
-import { Lobby } from "../scenes/components/react/lobby/game-lobby";
-import PowerMeter from "../scenes/components/react/lobby/power-meter";
-import SpinIndicator from "../scenes/components/react/lobby/spin-selector";
+import { Lobby } from "../scenes/components/react/lobby/lobby";
 import MainScreen from "../scenes/components/react/start/main-screen";
-import { PlayerInfoWidget } from "../scenes/components/react/start/start-navbar";
 
 interface Preferences {
     ballType: BallType;
@@ -45,11 +40,6 @@ export class MultiplayerService extends LocalService {
                                     <Route path="/" element={<MainScreen service={this} />}></Route>
                                     <Route path="/lobby" element={<Lobby service={this} />}></Route>
                                 </Routes>
-                                <PowerMeter service={this} />
-                                <BallRail service={this} />
-                                <PlayerInfoWidget service={this} />
-                                <GameInfoWidget service={this} />
-                                <SpinIndicator service={this} />
                             </BrowserRouter>
                         </React.StrictMode>
                     );
@@ -218,7 +208,6 @@ export class MultiplayerService extends LocalService {
             if (type === "error") {
                 return console.error("Error joining room", data);
             }
-            console.log("Joined room", data);
             const roomIdFromUrl = this.getRoomId();
             this.instanciateRoom(data.data);
             if (roomIdFromUrl !== data.data.id) {

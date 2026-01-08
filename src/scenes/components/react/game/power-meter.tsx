@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Events } from "../../../../common/server-types";
 import type { Service } from "../../../../services/service";
 
-// SVG Icon for the handle
 const ChevronDownIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
         <path
@@ -13,10 +12,9 @@ const ChevronDownIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-// Pattern for the arrows inside the bar
 const chevronPattern = `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 28L0 8L20 28L40 8' stroke='rgba(255,255,255,0.4)' stroke-width='4' fill='none'/%3E%3C/svg%3E")`;
 
-const KNOB_HEIGHT = 56; // 56px equals h-14 in Tailwind
+const KNOB_HEIGHT = 56;
 
 const PowerMeter = ({ service }: { service: Service }) => {
     const [power, setPower] = useState<number>(0);
@@ -26,7 +24,6 @@ const PowerMeter = ({ service }: { service: Service }) => {
 
     const trackRef = useRef<HTMLDivElement>(null);
 
-    // Measure track height on mount and resize
     useEffect(() => {
         if (trackRef.current) {
             setTrackHeight(trackRef.current.clientHeight);
@@ -42,6 +39,12 @@ const PowerMeter = ({ service }: { service: Service }) => {
             setPixelOffset(calculatePoistionFromPower(finalPower));
             setPower(finalPower);
             setTimeout(() => setIsDragging(false), 200);
+        });
+
+        service.subscribe(Events.HITS, () => {
+            setIsDragging(false);
+            setPixelOffset(0);
+            setPower(0);
         });
 
         window.addEventListener("resize", handleResize);
