@@ -309,6 +309,9 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createColliders(): void {
+        const tw = this.tableWidth;
+        const th = this.tableHeight;
+
         const xRatio = this.tableWidth / 16;
         const yRatio = this.tableHeight / 12;
 
@@ -316,11 +319,8 @@ export class PoolGameScene extends Phaser.Scene {
             const leftCushionPoints = [
                 { x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X, y: yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y },
                 { x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X, y: yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y },
-                {
-                    x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X,
-                    y: this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
-                },
-                { x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X, y: this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y },
+                { x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X, y: th - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y },
+                { x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X, y: th - yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y },
             ];
 
             const topLeftPoints = [
@@ -330,19 +330,19 @@ export class PoolGameScene extends Phaser.Scene {
                     y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
                 },
                 {
-                    x: this.tableWidth / CUSHION_CONSTANTS.RAIL_POCKET_OUTER,
+                    x: tw / CUSHION_CONSTANTS.RAIL_POCKET_OUTER,
                     y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
                 },
-                { x: this.tableWidth / CUSHION_CONSTANTS.RAIL_POCKET_INNER, y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y },
+                { x: tw / CUSHION_CONSTANTS.RAIL_POCKET_INNER, y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y },
             ];
 
             return [
                 leftCushionPoints,
-                leftCushionPoints.map((p) => ({ x: this.tableWidth - p.x, y: p.y })),
+                leftCushionPoints.map((p) => ({ x: tw - p.x, y: p.y })),
                 topLeftPoints,
-                topLeftPoints.map((p) => ({ x: p.x, y: this.tableHeight - p.y })),
-                topLeftPoints.map((p) => ({ x: this.tableWidth - p.x, y: p.y })),
-                topLeftPoints.map((p) => ({ x: this.tableWidth - p.x, y: this.tableHeight - p.y })),
+                topLeftPoints.map((p) => ({ x: p.x, y: th - p.y })),
+                topLeftPoints.map((p) => ({ x: tw - p.x, y: p.y })),
+                topLeftPoints.map((p) => ({ x: tw - p.x, y: th - p.y })),
             ];
         };
 
@@ -396,7 +396,7 @@ export class PoolGameScene extends Phaser.Scene {
                     center.y,
                     localVerts,
                     {
-                        isSensor: true, // Until activated to use matter for collisions
+                        isSensor: true, // NOTE: Until activated to use matter for collisions
                         isStatic: true,
                         restitution: RAIL_RESTITUTION,
                         friction: 0.1,
@@ -460,7 +460,7 @@ export class PoolGameScene extends Phaser.Scene {
         sprite.setBody(
             { type: "circle", radius: BALL_RADIUS },
             {
-                isSensor: true, // Until activated to use matter for collisions
+                isSensor: true, // NOTE: Until activated to use matter for collisions
                 restitution: BALL_RESTITUTION,
                 friction: BALL_FRICTION,
                 frictionAir: CLOTH_ROLLING_RESISTANCE,
