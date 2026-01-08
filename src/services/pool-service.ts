@@ -50,13 +50,6 @@ export class PoolService {
             paused: true,
             loop: true,
         });
-
-        console.log(
-            Object.keys(this.totals)
-                .map((t) => `${t}: ${this.totals[t as BallType]}`)
-                .join(", ")
-        );
-        console.log("Players", Object.values(this.turns).join(", "));
     }
 
     public winner(): string | undefined {
@@ -75,10 +68,6 @@ export class PoolService {
 
     public setInHole(index: number, inHole: boolean) {
         this.inHole[index] = inHole;
-        const ball = this.balls[index]!;
-        if (index === this.balls.length - 1) return; // white ball
-
-        console.log("Setting ball inHole", index, inHole, ball.phaserSprite.texture.key);
     }
 
     public getState(): PoolState {
@@ -282,14 +271,7 @@ export class PoolService {
         return keyPositions;
     }
 
-    private getNormal(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): { x: number; y: number } {
+    private getNormal(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): { x: number; y: number } {
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -314,14 +296,7 @@ export class PoolService {
         return closestNormal;
     }
 
-    public isPointInPolygon(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): boolean {
+    public isPointInPolygon(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): boolean {
         const { x, y } = b;
 
         let inside = false;
