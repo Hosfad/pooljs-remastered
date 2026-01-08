@@ -91,12 +91,12 @@ const targetWidth = 1920;
 const screenRatio = width / targetWidth;
 
 // Game dimensions
-export const BALL_RADIUS = 15 * screenRatio;
+export const BALL_RADIUS = 25 * screenRatio;
 export const HOLE_RADIUS = 50 * screenRatio;
 
 // Physics constants
 export const MAX_POWER = 30;
-export const MAX_STEPS = 350;
+export const MAX_STEPS = 600;
 export const TIMER_DURATION = 30;
 
 export const COLORS = {

@@ -103,9 +103,10 @@ export class MultiplayerService extends LocalService {
     }
 
     override isMyTurn(): boolean {
-        const imHost = this.room?.hostId === this.me()?.id;
-        const index = this.service.getState().turnIndex;
-        return imHost ? index == 0 : index == 1;
+        // const imHost = this.room?.hostId === this.me()?.id;
+        // const index = this.service.getState().turnIndex;
+        // return imHost ? index == 0 : index == 1;
+        return true;
     }
 
     override winner(): string | undefined {

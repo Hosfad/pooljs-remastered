@@ -153,7 +153,7 @@ export class PoolService {
 
     private simulate(velocities: Phaser.Math.Vector2[]): KeyPositions {
         const friction = 0.99;
-        const minVelocity = 0.01;
+        const minVelocity = 0.1;
         const collisionDamping = 0.98;
 
         const keyPositions: KeyPositions = [this.getKeyPosition()];
