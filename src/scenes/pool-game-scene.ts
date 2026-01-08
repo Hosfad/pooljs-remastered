@@ -58,7 +58,6 @@ export class PoolGameScene extends Phaser.Scene {
     // Graphics
     private hand!: Phaser.GameObjects.Sprite;
     private background!: Phaser.GameObjects.Image;
-    private holeBalls: Phaser.GameObjects.Sprite[] = [];
     private playedSounds: (number | undefined)[] = [];
 
     // Input state
@@ -269,8 +268,7 @@ export class PoolGameScene extends Phaser.Scene {
         // Get the closest ball to the centroid
         const closestBall = this.balls.reduce((acc, ball) => {
             const distance = new Vector2(ball.phaserSprite).distance(centroid);
-            if (distance < acc.distance) return { distance, ball };
-            return acc;
+            return distance < acc.distance ? { distance, ball } : acc;
         }, { distance: Infinity, ball: blackBall });
 
         const position = new Vector2(blackBall.phaserSprite);
@@ -386,25 +384,22 @@ export class PoolGameScene extends Phaser.Scene {
         if (!this.keyPositions.length) return;
 
         const frame = this.keyPositions.shift()!;
+        const tw = this.tableWidth;
+        const th = this.tableHeight;
+        const wb = this.balls.length - 1;
 
         if (!this.keyPositions.length) this.service.timerStart();
 
         frame.forEach((key, i) => {
             const sprite = this.balls[i]!.phaserSprite;
-            if (!sprite.visible && i < this.balls.length - 1) return;
+            if (!sprite.visible && i < wb) return;
 
-            const pos = {
-                x: key.position.x * this.tableWidth + this.marginX,
-                y: key.position.y * this.tableHeight + this.marginY,
-            };
+            const pos = { x: key.position.x * tw + this.marginX, y: key.position.y * th + this.marginY };
 
             // increment rotation angle of sprite
             const spd = Math.abs((pos.x + pos.y) - (sprite.x + sprite.y));
             if (spd != 0) sprite.rotation += spd / BALL_RADIUS * 2;
             sprite.setPosition(pos.x, pos.y);
-            sprite.visible = !key.hidden;
-
-            if (key.hidden) this.holeBalls[i]?.setAlpha(1);
 
             if (this.playedSounds[i] === undefined && key.collision !== undefined) {
                 switch (key.collision) {
@@ -879,7 +874,7 @@ export class PoolGameScene extends Phaser.Scene {
         const ballSprites: Phaser.GameObjects.Sprite[] = [];
         const ballPositions: Array<{ x: number; y: number }> = [];
 
-        const totalBalls = 14;
+        const totalBalls = this.balls.length - 1;
         for (let i = 0; i < totalBalls; i++) {
             const t = 0.3 + i * 0.05;
             const pos = path.getPoint(t);
@@ -924,6 +919,17 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private animateBallToRail(ball: Ball): void {
+        // ball falling into pocket animation
+        this.tweens.add({
+            targets: ball.phaserSprite,
+            scale: 0,
+            duration: 200,
+            onComplete: () => {
+                ball.phaserSprite.setVisible(false);
+                this.matter.world.remove(ball.phaserSprite.body as MatterJS.BodyType);
+            },
+        });
+
         const { ballPositions, pocketedBalls } = this.pocketedBallsRail;
         const positionIndex = ballPositions.length - 1 - pocketedBalls.length;
 
@@ -1069,27 +1075,6 @@ export class PoolGameScene extends Phaser.Scene {
             this.setPower(0);
             this.powerMeter.isDragging = false;
         });
-
-        this.updatePowerMeterFromPower();
-    }
-
-    private updatePowerMeterFromPower(): void {
-        // const { power, fill, handle } = this.powerMeter;
-        // const { x, y } = this.powerMeter.position;
-        // const { width, height, handleHeight } = this.powerMeter.size;
-        // const minY = y;
-        // const maxY = y + height - handleHeight;
-        // const usableHeight = maxY - minY - handleHeight;
-        // const handleY = minY + handleHeight / 2 + usableHeight * power;
-        // handle.y = handleY;
-        // fill.clear();
-        // if (power <= 0) return;
-        // let color = 0x00ff00; // Green
-        // if (power > 0.66) color = 0xff0000; // Red
-        // else if (power > 0.33) color = 0xffff00; // Yellow
-        // const fillHeight = usableHeight * power;
-        // fill.fillRoundedRect(x + 5, minY + 5, width - 10, fillHeight, 5);
-        // fill.fillStyle(color, 0.7);
     }
 
     private isTouchingPowerMeter({ x: px, y: py }: Phaser.Input.Pointer): boolean {
@@ -1099,6 +1084,5 @@ export class PoolGameScene extends Phaser.Scene {
 
     private setPower(power: number): void {
         this.powerMeter.power = power;
-        this.updatePowerMeterFromPower();
     }
 }
