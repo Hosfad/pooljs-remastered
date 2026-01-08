@@ -263,29 +263,19 @@ export class PoolGameScene extends Phaser.Scene {
         blackBall.ballType = "black";
         blackBall.phaserSprite.setTexture(POOL_ASSETS.BLACK_BALL);
 
-        let closestBall = blackBall;
-        let closestDistance = Infinity;
+        const centroid = this.balls.reduce((acc, ball) => acc.add(ball.phaserSprite), new Vector2(0, 0));
+        centroid.divide({ x: this.balls.length, y: this.balls.length });
 
-        const distToOrigin = blackBall.phaserSprite.x - rackOrigin.x;
-        const origin = new Vector2(rackOrigin.x + distToOrigin * 0.9, blackBall.phaserSprite.y);
+        // Get the closest ball to the centroid
+        const closestBall = this.balls.reduce((acc, ball) => {
+            const distance = new Vector2(ball.phaserSprite).distance(centroid);
+            if (distance < acc.distance) return { distance, ball };
+            return acc;
+        }, { distance: Infinity, ball: blackBall });
 
-        for (const ball of this.balls) {
-            if (ball.ballType === "black") continue;
-
-            const { x, y } = ball.phaserSprite;
-            const ballPos = new Vector2(x, y);
-            const dist = ballPos.distance(origin);
-
-            if (dist < closestDistance) {
-                closestBall = ball;
-                closestDistance = dist;
-            }
-        }
-
-        // Swap black with closest to origin
-        const closestPosition = new Vector2(closestBall.phaserSprite.x, closestBall.phaserSprite.y);
-        closestBall.phaserSprite.setPosition(blackBall.phaserSprite.x, blackBall.phaserSprite.y);
-        blackBall.phaserSprite.setPosition(closestPosition.x, closestPosition.y);
+        const position = new Vector2(blackBall.phaserSprite);
+        blackBall.phaserSprite.setPosition(closestBall.ball.phaserSprite.x, closestBall.ball.phaserSprite.y);
+        closestBall.ball.phaserSprite.setPosition(position.x, position.y);
 
         //  whiteball ball ---
         const cueX = this.tableWidth * 0.75;
@@ -343,7 +333,7 @@ export class PoolGameScene extends Phaser.Scene {
             ];
         };
 
-        createMirroredColliders().forEach((points) => {
+        this.colliders = createMirroredColliders().map((points) => {
             let graphics: Phaser.GameObjects.Graphics | undefined;
 
             if (DEBUG_GRAPHICS) {
@@ -370,7 +360,7 @@ export class PoolGameScene extends Phaser.Scene {
             // Convert to local space
             const localVerts = worldPoints.map((p) => ({ x: p.x - center.x, y: p.y - center.y }));
 
-            const collider: Collider = {
+            return {
                 sprite: { size: { points: worldPoints } },
                 phaserGraphics: graphics,
                 body: this.matter.add.fromVertices(
@@ -386,9 +376,7 @@ export class PoolGameScene extends Phaser.Scene {
                     },
                     true
                 ),
-            };
-
-            this.colliders.push(collider);
+            } as Collider;
         });
 
         console.log("Created", this.colliders.length, "colliders");
