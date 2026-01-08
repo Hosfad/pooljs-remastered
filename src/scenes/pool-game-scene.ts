@@ -801,13 +801,13 @@ export class PoolGameScene extends Phaser.Scene {
         this.beginPath();
         this.moveTo(cx, cy);
 
-        if (hitBall) {
+        if (hitBall && false) {
             // Drawing line to ball
             const targetX = closestBallHitPos.x;
             const targetY = closestBallHitPos.y;
 
-            this.lineTo(targetX, targetY);
-            this.strokePath();
+            // this.lineTo(targetX, targetY);
+            // this.strokePath();
 
             this.aimLineShadow.strokeCircle(targetX, targetY, 5);
             this.aimLine.strokeCircle(targetX, targetY, 5);
@@ -822,9 +822,9 @@ export class PoolGameScene extends Phaser.Scene {
             const endX = targetX + Math.cos(angle) * lineLength;
             const endY = targetY + Math.sin(angle) * lineLength;
 
-            this.moveTo(targetX, targetY);
-            this.lineTo(endX, endY);
-            this.strokePath();
+            // this.moveTo(targetX, targetY);
+            // this.lineTo(endX, endY);
+            // this.strokePath();
 
             let inc = Math.PI * 0.5;
             if (dy < 0) inc = -inc;
@@ -836,9 +836,9 @@ export class PoolGameScene extends Phaser.Scene {
             const wendX = targetX + Math.cos(wAngle) * lineLength * 0.5;
             const wendY = targetY + Math.sin(wAngle) * lineLength * 0.5;
 
-            this.moveTo(targetX, targetY);
-            this.lineTo(wendX, wendY);
-            this.strokePath();
+            // this.moveTo(targetX, targetY);
+            // this.lineTo(wendX, wendY);
+            // this.strokePath();
         } else {
             // Hit wall
             const aimX = aimDir.x;

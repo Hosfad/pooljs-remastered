@@ -365,7 +365,7 @@ function calculateShotPhysics(
     horizontalOffset: number = 0,
     verticalOffset: number = 0
 ) {
-    const clampedPower = Phaser.Math.Clamp(powerPercentage, 0, 50);
+    const clampedPower = Phaser.Math.Clamp(powerPercentage, 0, 100);
     let normalizedPower = clampedPower / 100;
 
     normalizedPower = Math.pow(normalizedPower, 2);

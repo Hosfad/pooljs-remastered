@@ -91,7 +91,7 @@ const targetWidth = 1920;
 const screenRatio = width / targetWidth;
 
 // Game dimensions
-export const BALL_RADIUS = 15 * screenRatio;
+export const BALL_RADIUS = 30 * screenRatio;
 export const HOLE_RADIUS = 25 * screenRatio;
 
 // Physics constants
@@ -223,7 +223,7 @@ export const PIXELS_PER_METER = 300;
 export const INCH_TO_METER = 0.0254;
 export const OZ_TO_KG = 0.0283495;
 
-export const BALL_DIAMETER_IN = 2.25;
+export const BALL_DIAMETER_IN = 2.25 * 2;
 export const BALL_MASS_OZ = 6;
 
 export const BALL_RADIUS_PX = (BALL_DIAMETER_IN * INCH_TO_METER * PIXELS_PER_METER) / 2;
@@ -236,7 +236,7 @@ export const CLOTH_ROLLING_RESISTANCE = 0.012; // cloth (frictionAir)
 export const RAIL_RESTITUTION = 0.75; // rail (e)
 
 // Velocity limits
-export const MAX_SPEED_MPS = 16;
+export const MAX_SPEED_MPS = 8;
 export const PHYSICS_FPS = 60;
 export const METER_TO_PX_PER_FRAME = PIXELS_PER_METER / PHYSICS_FPS;
 export const MAX_SPIN_RAD_PER_SEC = 35;

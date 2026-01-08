@@ -54,7 +54,7 @@ const CLOTH_ROLLING_RESISTANCE = 0.012; // cloth (frictionAir)
 const RAIL_RESTITUTION = 0.75; // rail (e)
 
 // Velocity limits
-const MAX_SPEED_MPS = 16;
+const MAX_SPEED_MPS = 30;
 const PHYSICS_FPS = 60;
 const METER_TO_PX_PER_FRAME = PIXELS_PER_METER / PHYSICS_FPS;
 const MAX_SPIN_RAD_PER_SEC = 35;
@@ -105,7 +105,7 @@ class PoolScene extends Phaser.Scene {
         //        Less than 0 -> ball moves to the right
         //        Greater than 0 -> ball moves to the left
         //        0 -> ball stays in place
-        const velocity = calculateShotPhysics(50, 0, 0.3, 0.3);
+        const velocity = calculateShotPhysics(100, 0, 0.3, 0.3);
 
         console.log(velocity);
 
@@ -134,7 +134,7 @@ class PoolScene extends Phaser.Scene {
         return ball;
     }
 
-    override update() {}
+    override update() { }
 }
 
 function calculateShotPhysics(
