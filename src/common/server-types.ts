@@ -1,5 +1,5 @@
 import type { Room } from "../server";
-import type { BallType, KeyPositions } from "./pool-types";
+import type { BallType } from "./pool-types";
 
 type MiddlewareResponse<TOutput> =
     | {
@@ -94,7 +94,7 @@ export type EventsData = {
     [Events.PLAYER_DISCONNECT]: RoomEventBodyOptions;
     [Events.PLAYER_DISCONNECT_RESPONSE]: WebsocketRespone<Room>;
 
-    [Events.HITS]: RoomEventBodyOptions & { keyPositions: KeyPositions; state: PoolState };
+    [Events.HITS]: RoomEventBodyOptions & { powerPercent: number; angle: number };
     [Events.PULL]: RoomEventBodyOptions & { x: number; y: number; angle: number };
     [Events.INIT]: Room;
     [Events.HAND]: RoomEventBodyOptions & { x: number; y: number };

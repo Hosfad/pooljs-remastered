@@ -4,13 +4,19 @@
 
 import * as Phaser from "phaser";
 import {
+    BALL_FRICTION,
+    BALL_MASS_KG,
     BALL_RADIUS,
+    BALL_RADIUS_PX,
+    BALL_RESTITUTION,
+    CLOTH_ROLLING_RESISTANCE,
     CUSHION_CONSTANTS,
     DEBUG_GRAPHICS,
     HOLE_RADIUS,
     MODAL_OPEN,
     POOL_ASSETS,
     POOL_SCENE_KEYS,
+    RAIL_RESTITUTION,
 } from "../common/pool-constants";
 import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
 import { Events } from "../common/server-types";
@@ -92,7 +98,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         // Initialize game objects
         this.createHoles();
-        this.createColliders();
+        this.createMatterColliders();
         this.createBalls();
 
         // Create UI
@@ -150,12 +156,10 @@ export class PoolGameScene extends Phaser.Scene {
             this.updateCueBullback(x * width + mx, y * height + my, angle);
         });
 
-        this.service.subscribe(Events.HITS, ({ keyPositions, state, userId }) => {
+        this.service.subscribe(Events.HITS, ({ powerPercent, angle, userId }) => {
             if (userId === this.service.me()?.id) return;
-
-            this.keyPositions.push.apply(this.keyPositions, keyPositions);
+            this.service.hitBallsMatter(powerPercent, angle);
             this.service.timerStop();
-            this.service.setState(state);
             this.checkWinner();
         });
 
@@ -303,117 +307,93 @@ export class PoolGameScene extends Phaser.Scene {
         this.cue = { phaserSprite: cueSprite, rotation: 0, power: 0 };
     }
 
-    private createColliders(): void {
+    private createMatterColliders(): void {
         const xRatio = this.tableWidth / 16;
         const yRatio = this.tableHeight / 12;
 
         const createMirroredColliders = () => {
-            // LEFT CUSHION (vertical rail)
-            const leftCushion = {
-                points: [
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X,
-                        y: yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y,
-                    },
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X,
-                        y: yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
-                    },
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X,
-                        y: this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
-                    },
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X,
-                        y: this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y,
-                    },
-                ],
-                normal: new Vector2(1, 0),
-            };
+            const leftCushionPoints = [
+                { x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X, y: yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y },
+                { x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X, y: yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y },
+                {
+                    x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X,
+                    y: this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
+                },
+                { x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X, y: this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y },
+            ];
 
-            const rightCushion = {
-                points: leftCushion.points.map((p) => ({ x: this.tableWidth - p.x, y: p.y })),
-                normal: new Vector2(-1, 0),
-            };
+            const topLeftPoints = [
+                { x: xRatio * CUSHION_CONSTANTS.RAIL_SIDE_X, y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y },
+                {
+                    x: xRatio * CUSHION_CONSTANTS.RAIL_CORNER_X,
+                    y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
+                },
+                {
+                    x: this.tableWidth / CUSHION_CONSTANTS.RAIL_POCKET_OUTER,
+                    y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
+                },
+                { x: this.tableWidth / CUSHION_CONSTANTS.RAIL_POCKET_INNER, y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y },
+            ];
 
-            const topLeftCushion = {
-                points: [
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.RAIL_SIDE_X,
-                        y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y,
-                    },
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.RAIL_CORNER_X,
-                        y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
-                    },
-                    {
-                        x: this.tableWidth / CUSHION_CONSTANTS.RAIL_POCKET_OUTER,
-                        y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
-                    },
-                    {
-                        x: this.tableWidth / CUSHION_CONSTANTS.RAIL_POCKET_INNER,
-                        y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y,
-                    },
-                ],
-                normal: new Vector2(0, 1),
-            };
-
-            const bottomLeftCushion = {
-                points: topLeftCushion.points.map((p) => ({ x: p.x, y: this.tableHeight - p.y })),
-                normal: new Vector2(0, -1),
-            };
-
-            const topRightCushion = {
-                points: topLeftCushion.points.map((p) => ({ x: this.tableWidth - p.x, y: p.y })),
-                normal: new Vector2(0, 1),
-            };
-
-            const bottomRightCushion = {
-                points: topLeftCushion.points.map((p) => ({ x: this.tableWidth - p.x, y: this.tableHeight - p.y })),
-                normal: new Vector2(0, -1),
-            };
-
-            return [leftCushion, rightCushion, topLeftCushion, bottomLeftCushion, topRightCushion, bottomRightCushion];
+            return [
+                leftCushionPoints,
+                leftCushionPoints.map((p) => ({ x: this.tableWidth - p.x, y: p.y })),
+                topLeftPoints,
+                topLeftPoints.map((p) => ({ x: p.x, y: this.tableHeight - p.y })),
+                topLeftPoints.map((p) => ({ x: this.tableWidth - p.x, y: p.y })),
+                topLeftPoints.map((p) => ({ x: this.tableWidth - p.x, y: this.tableHeight - p.y })),
+            ];
         };
 
-        const colliderDefinitions = createMirroredColliders();
+        const definitions = createMirroredColliders();
 
-        colliderDefinitions.forEach((def) => {
-            let graphics: Phaser.GameObjects.Graphics | undefined;
+        definitions.forEach((points) => {
+            // Convert to table/world coordinates
+            const worldPoints = points.map((p) => this.toTableCoordinates(p.x, p.y));
 
+            // Compute centroid
+            const center = worldPoints.reduce(
+                (acc, p) => {
+                    acc.x += p.x;
+                    acc.y += p.y;
+                    return acc;
+                },
+                { x: 0, y: 0 }
+            );
+
+            center.x /= worldPoints.length;
+            center.y /= worldPoints.length;
+
+            // Convert to local space
+            const localVerts = worldPoints.map((p) => ({
+                x: p.x - center.x,
+                y: p.y - center.y,
+            }));
+
+            // Create Matter body
+            const cushion = this.matter.add.fromVertices(
+                center.x,
+                center.y,
+                localVerts,
+                {
+                    isStatic: true,
+                    restitution: RAIL_RESTITUTION,
+                    friction: 0.1,
+                    label: "cushion",
+                },
+                true
+            );
+
+            // Debug draw (optional)
             if (DEBUG_GRAPHICS) {
-                graphics = this.add.graphics();
-                graphics.fillStyle(0xff0000, 0.5);
+                const graphics = this.add.graphics();
+                graphics.fillStyle(0x00ff00, 0.3);
                 graphics.beginPath();
-
-                const firstPoint = this.toTableCoordinates(def.points[0]!.x, def.points[0]!.y);
-                graphics.moveTo(firstPoint.x, firstPoint.y);
-
-                for (let i = 1; i < def.points.length; i++) {
-                    const point = this.toTableCoordinates(def.points[i]!.x, def.points[i]!.y);
-                    graphics.lineTo(point.x, point.y);
-                }
-
+                worldPoints.forEach((p, i) => (i === 0 ? graphics.moveTo(p.x, p.y) : graphics.lineTo(p.x, p.y)));
                 graphics.closePath();
                 graphics.fillPath();
             }
-
-            const adjustedPoints = def.points.map((p) => this.toTableCoordinates(p.x, p.y));
-            const collider: Collider = {
-                sprite: {
-                    position: new Vector2(adjustedPoints[0]!.x, adjustedPoints[0]!.y),
-                    size: { points: adjustedPoints.map((p) => new Vector2(p.x, p.y)) },
-                    normal: def.normal,
-                    color: "brown",
-                    visible: true,
-                },
-                phaserGraphics: graphics,
-            };
-
-            this.colliders.push(collider);
         });
-
-        console.log("Created", this.colliders.length, "colliders");
     }
 
     private updateKeyPositions(): void {
@@ -460,10 +440,22 @@ export class PoolGameScene extends Phaser.Scene {
         const r = BALL_RADIUS;
         const position = this.toTableCoordinates(x, y);
 
-        const sprite = this.add.sprite(position.x, position.y, texture);
-        sprite.setScale((r * 1.5) / sprite.width);
+        const ball = this.matter.add.image(position.x, position.y, texture);
+        ball.setCircle(BALL_RADIUS_PX);
+        ball.setDisplaySize(BALL_RADIUS_PX * 2, BALL_RADIUS_PX * 2);
+        const label = `${texture}-${ballType}-ball`;
+        ball.setBody(
+            { type: "circle", radius: BALL_RADIUS_PX },
+            {
+                restitution: BALL_RESTITUTION,
+                friction: BALL_FRICTION,
+                frictionAir: CLOTH_ROLLING_RESISTANCE,
+                mass: BALL_MASS_KG,
+                label,
+            }
+        );
 
-        this.balls.push({ ballType, phaserSprite: sprite, isPocketed: false });
+        this.balls.push({ ballType, label, phaserSprite: ball, isPocketed: false });
     }
 
     private createHoles(): void {
@@ -493,8 +485,13 @@ export class PoolGameScene extends Phaser.Scene {
         holePositions.forEach((pos) => {
             const position = this.toTableCoordinates(pos.x, pos.y);
 
-            let graphics: Phaser.GameObjects.Graphics | undefined;
+            const holeBody = this.matter.add.circle(position.x, position.y, HOLE_RADIUS, {
+                isStatic: true,
+                isSensor: true,
+                label: "hole",
+            });
 
+            let graphics: Phaser.GameObjects.Graphics | undefined;
             if (DEBUG_GRAPHICS) {
                 graphics = this.add.graphics();
                 graphics.fillStyle(0x008000, 0.8);
@@ -509,8 +506,28 @@ export class PoolGameScene extends Phaser.Scene {
                     visible: true,
                 },
                 phaserGraphics: graphics,
+                body: holeBody,
             };
             this.holes.push(hole);
+        });
+
+        this.setupHoleListener();
+    }
+    private setupHoleListener(): void {
+        this.matter.world.on("collisionstart", (event: Phaser.Physics.Matter.Events.CollisionStartEvent) => {
+            event.pairs.forEach((pair) => {
+                const { bodyA, bodyB } = pair;
+
+                const ballBody = bodyA.label.includes("ball") ? bodyA : bodyB.label.includes("ball") ? bodyB : null;
+                const holeBody = bodyA.label === "hole" ? bodyA : bodyB.label === "hole" ? bodyB : null;
+
+                const ball = this.balls.find((b) => b.label === ballBody?.label);
+                if (!ball || ball?.isPocketed) return;
+
+                if (ballBody && holeBody) {
+                    this.animateBallToRail(ball);
+                }
+            });
         });
     }
 
@@ -935,6 +952,20 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private animateBallToRail(ball: Ball): void {
+        if (ball.isPocketed) return;
+        ball.isPocketed = true;
+
+        // ball falling into pocket animation
+        this.tweens.add({
+            targets: ball.phaserSprite,
+            scale: 0,
+            duration: 200,
+            onComplete: () => {
+                ball.phaserSprite.setVisible(false);
+                this.matter.world.remove(ball.phaserSprite.body as MatterJS.BodyType);
+            },
+        });
+
         const { ballPositions, pocketedBalls } = this.pocketedBallsRail;
         const positionIndex = ballPositions.length - 1 - pocketedBalls.length;
 

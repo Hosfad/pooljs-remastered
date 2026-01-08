@@ -21,7 +21,20 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
         touch: true,
     },
 
+    physics: {
+        default: "matter",
+        matter: {
+            gravity: { x: 0, y: 0 },
+            debug: true,
+            enableSleeping: false,
+        },
+    },
+
     scene: [PoolPreLoadScene, PoolGameScene],
+};
+
+window.onload = () => {
+    const game = new Phaser.Game(gameConfig);
 };
 
 const PIXELS_PER_METER = 300;
@@ -159,20 +172,20 @@ function calculateShotPhysics(
     };
 }
 
-window.onload = () => {
-    new Phaser.Game({
-        type: Phaser.AUTO,
-        parent: "game-container",
-        width: 1920,
-        height: 1080,
-        physics: {
-            default: "matter",
-            matter: {
-                gravity: { x: 0, y: 0 },
-                debug: true,
-                enableSleeping: false,
-            },
-        },
-        scene: [PoolScene],
-    });
-};
+// window.onload = () => {
+//     new Phaser.Game({
+//         type: Phaser.AUTO,
+//         parent: "game-container",
+//         width: 1920,
+//         height: 1080,
+//         physics: {
+//             default: "matter",
+//             matter: {
+//                 gravity: { x: 0, y: 0 },
+//                 debug: true,
+//                 enableSleeping: false,
+//             },
+//         },
+//         scene: [PoolScene],
+//     });
+// };

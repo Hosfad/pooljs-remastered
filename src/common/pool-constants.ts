@@ -1,7 +1,7 @@
 /**
  * Pool game specific constants
  */
-export let DEBUG_GRAPHICS = true;
+export let DEBUG_GRAPHICS = false;
 
 export function setDebugGraphics(debug: boolean) {
     DEBUG_GRAPHICS = debug;
@@ -15,7 +15,7 @@ export function setGlobalModalOpenVariable(open: boolean) {
 
 export const CUSHION_CONSTANTS = {
     SIDE_INNER_X: 0, // Inner edge x position
-    SIDE_OUTER_X: 1.0, // Outer edge x position
+    SIDE_OUTER_X: 0.9, // Outer edge x position
     SIDE_THICKNESS_X: 0, // Thickness in x direction
     SIDE_TOP_Y: 0.8, // Top inset
     SIDE_BOTTOM_Y: 1.8, // Bottom inset
@@ -25,8 +25,8 @@ export const CUSHION_CONSTANTS = {
     RAIL_INNER_Y: 1.3, // Inner edge y position
     RAIL_THICKNESS_Y: 1.3, // Thickness in y direction (RAIL_INNER_Y - RAIL_OUTER_Y adjusted)
     RAIL_SIDE_X: 0.6, // Side inset
-    RAIL_CORNER_X: 1.4, // Corner diagonal inset
-    RAIL_POCKET_OUTER: 2.14, // Outer pocket edge divisor
+    RAIL_CORNER_X: 1.3, // Corner diagonal inset
+    RAIL_POCKET_OUTER: 2.17, // Outer pocket edge divisor
     RAIL_POCKET_INNER: 2.05, // Inner pocket edge divisor
 };
 
@@ -92,7 +92,7 @@ const screenRatio = width / targetWidth;
 
 // Game dimensions
 export const BALL_RADIUS = 15 * screenRatio;
-export const HOLE_RADIUS = 50 * screenRatio;
+export const HOLE_RADIUS = 25 * screenRatio;
 
 // Physics constants
 export const MAX_POWER = 30;
@@ -217,3 +217,26 @@ export const CASH_PACKS: ShopPack[] = [
     { id: "m5", base: 40, bonusPercent: 20, total: 48, price: "$4.99", currency: "cash" },
     { id: "m6", base: 15, bonusPercent: 10, total: 17, price: "$1.99", currency: "cash" },
 ];
+
+// REAL LIFE PHYSICS CONSTANTS
+export const PIXELS_PER_METER = 300;
+export const INCH_TO_METER = 0.0254;
+export const OZ_TO_KG = 0.0283495;
+
+export const BALL_DIAMETER_IN = 2.25;
+export const BALL_MASS_OZ = 6;
+
+export const BALL_RADIUS_PX = (BALL_DIAMETER_IN * INCH_TO_METER * PIXELS_PER_METER) / 2;
+export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;
+
+// Coefficients
+export const BALL_RESTITUTION = 0.998; // ball (e)
+export const BALL_FRICTION = 0.01; // ball (μ)
+export const CLOTH_ROLLING_RESISTANCE = 0.012; // cloth (frictionAir)
+export const RAIL_RESTITUTION = 0.75; // rail (e)
+
+// Velocity limits
+export const MAX_SPEED_MPS = 16;
+export const PHYSICS_FPS = 60;
+export const METER_TO_PX_PER_FRAME = PIXELS_PER_METER / PHYSICS_FPS;
+export const MAX_SPIN_RAD_PER_SEC = 35;

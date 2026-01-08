@@ -12,7 +12,8 @@ export type BallType = "solid" | "striped" | "white" | "black";
 
 export interface Ball {
     ballType: BallType;
-    phaserSprite: Phaser.GameObjects.Sprite;
+    label: string;
+    phaserSprite: Phaser.Physics.Matter.Image;
     isPocketed?: boolean;
 }
 
@@ -24,6 +25,7 @@ export interface Hole {
         visible: boolean;
     };
     phaserGraphics?: Phaser.GameObjects.Graphics;
+    body?: MatterJS.Body;
 }
 
 export interface Cue {

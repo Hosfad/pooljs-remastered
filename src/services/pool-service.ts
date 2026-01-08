@@ -1,5 +1,13 @@
 import * as Phaser from "phaser";
-import { BALL_RADIUS, MAX_POWER, MAX_STEPS, TIMER_DURATION } from "../common/pool-constants";
+import {
+    BALL_RADIUS,
+    MAX_POWER,
+    MAX_SPEED_MPS,
+    MAX_SPIN_RAD_PER_SEC,
+    MAX_STEPS,
+    METER_TO_PX_PER_FRAME,
+    TIMER_DURATION,
+} from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 import type { PoolState } from "../common/server-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
@@ -122,6 +130,16 @@ export class PoolService {
         }
 
         return keyPositions;
+    }
+
+    public hitBallsMatter(powerPercent: number, angle: number) {
+        const velocities = calculateShotPhysics(powerPercent * 100, angle);
+        const whiteball = this.balls[this.balls.length - 1]!;
+        console.log(velocities);
+
+        whiteball.phaserSprite.setVelocity(velocities.x, velocities.y);
+
+        return velocities;
     }
 
     public timerStart() {
@@ -339,4 +357,39 @@ export class PoolService {
         }
         return inside;
     }
+}
+
+function calculateShotPhysics(
+    powerPercentage: number,
+    angleRadians: number,
+    horizontalOffset: number = 0,
+    verticalOffset: number = 0
+) {
+    const clampedPower = Phaser.Math.Clamp(powerPercentage, 0, 50);
+    let normalizedPower = clampedPower / 100;
+
+    normalizedPower = Math.pow(normalizedPower, 2);
+
+    const targetSpeedMps = normalizedPower * MAX_SPEED_MPS;
+    const linearMagnitude = targetSpeedMps * METER_TO_PX_PER_FRAME;
+
+    const horizontalSafeOffset = Phaser.Math.Clamp(horizontalOffset, -0.8, 0.8);
+
+    const angularVelocity = normalizedPower * horizontalSafeOffset * MAX_SPIN_RAD_PER_SEC;
+
+    // TODO: adjust this depending on the sticks spin efficiency (pay to win xD)
+    const deflectionAmount = 0.05;
+    const deflectedVx = Math.cos(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
+    const deflectedVy = Math.sin(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
+
+    const verticalSafeOffset = Phaser.Math.Clamp(verticalOffset, -0.8, 0.8);
+
+    const verticalVelocity = normalizedPower * verticalSafeOffset * MAX_SPIN_RAD_PER_SEC;
+
+    return {
+        x: deflectedVx,
+        y: deflectedVy,
+        angular: angularVelocity,
+        vertical: verticalVelocity,
+    };
 }

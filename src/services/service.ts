@@ -3,7 +3,7 @@ import * as Phaser from "phaser";
 import type { DiscordSDK } from "@discord/embedded-app-sdk";
 import { v4 as uuid } from "uuid";
 import { INIT_DISCORD_SDK, type CueId } from "../common/pool-constants";
-import type { BallType, GameSettings, KeyPositions } from "../common/pool-types";
+import type { BallType, GameSettings } from "../common/pool-types";
 import { Events, type EventsData } from "../common/server-types";
 import type { Player, Room } from "../server";
 
@@ -34,8 +34,17 @@ export abstract class Service {
     abstract whoseTurn(): BallType;
     abstract isMyTurn(): boolean;
 
-    abstract hitBalls(powerPercent: number, angle: number): KeyPositions;
+    abstract hitBalls(
+        powerPercent: number,
+        angle: number
+    ): {
+        x: number;
+        y: number;
+        angular: number;
+        vertical: number;
+    };
     // abstract disconnect(): void;
+    abstract hitBallsMatter(powerPercent: number, angle: number): void;
 
     abstract setState<T>(state: T): void;
     abstract getState<T>(): T;

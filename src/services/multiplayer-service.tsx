@@ -1,6 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { type BallType, type KeyPositions } from "../common/pool-types";
+import { type BallType } from "../common/pool-types";
 import { Events, type EventsData, type TEventKey } from "../common/server-types";
 import type { Player } from "../server";
 import { LocalService } from "./local-service";
@@ -116,17 +116,16 @@ export class MultiplayerService extends LocalService {
         return this.service.whoseTurn();
     }
 
-    override hitBalls(powerPercent: number, angle: number): KeyPositions {
+    override hitBalls(powerPercent: number, angle: number) {
         const { userId, roomId } = this.getRoomConfig();
-        if (!roomId) return [];
+        // const keyPositions = this.service.hitBalls(powerPercent, angle);
+        // const data = { keyPositions: keyPositions, state: this.service.getState(), userId, roomId };
 
-        const keyPositions = this.service.hitBalls(powerPercent, angle);
-        const data = { keyPositions: keyPositions, state: this.service.getState(), userId, roomId };
+        const velocities = this.service.hitBallsMatter(powerPercent, angle);
+        this.send(Events.HITS, { powerPercent, angle, userId: "1", roomId: "1" });
+        this.call(Events.HITS, { powerPercent, angle, userId, roomId });
 
-        this.send(Events.HITS, { ...data, userId: "1" });
-        this.call(Events.HITS, data);
-
-        return keyPositions;
+        return velocities;
     }
 
     override pull(x: number, y: number, angle: number): void {

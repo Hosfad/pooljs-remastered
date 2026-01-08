@@ -68,7 +68,6 @@ export function GameInfoWidget({ service }: { service: MultiplayerService }) {
         return false;
     });
 
-    console.log({ state, player1ScoredBalls, player2ScoredBalls });
     return (
         room?.isGameStarted && (
             <div

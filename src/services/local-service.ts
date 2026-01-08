@@ -1,4 +1,4 @@
-import type { BallType, KeyPositions } from "../common/pool-types";
+import type { BallType } from "../common/pool-types";
 import { Events } from "../common/server-types";
 import type { Player } from "../server";
 import { PoolService } from "./pool-service";
@@ -89,14 +89,13 @@ export class LocalService extends Service {
         this.send(Events.PULL, { x, y, angle, userId: LOCAL_USER_ID, roomId: LOCAL_USER_ID });
     }
 
-    override hitBalls(powerPercent: number, angle: number): KeyPositions {
-        const keyPositions = this.service.hitBalls(powerPercent, angle);
-        this.send(Events.HITS, {
-            keyPositions,
-            state: { ...this.service.getState() },
-            userId: LOCAL_USER_ID,
-            roomId: LOCAL_USER_ID,
-        });
-        return keyPositions;
+    override hitBalls(powerPercent: number, angle: number) {
+        const velocities = this.service.hitBallsMatter(powerPercent, angle);
+        this.send(Events.HITS, { powerPercent, angle, userId: LOCAL_USER_ID, roomId: LOCAL_USER_ID });
+        return velocities;
+    }
+
+    override hitBallsMatter(powerPercent: number, angle: number): void {
+        const velocities = this.service.hitBallsMatter(powerPercent, angle);
     }
 }
