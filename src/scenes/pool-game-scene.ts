@@ -867,46 +867,56 @@ export class PoolGameScene extends Phaser.Scene {
 
     private createPocketedBallsRail(): void {
         const railWidth = 40;
-        const railHeight = this.tableHeight * 0.8;
-        const railX = this.marginX - railWidth - 20;
-        const railY = this.marginY + (this.tableHeight - railHeight) / 2;
+        const innerPadding = 4; // Space between the balls and the rail walls
+        const verticalHeight = this.tableHeight * 0.5;
+        const horizontalWidth = 61;
+        const cornerRadius = 20;
+
+        const startX = this.marginX - railWidth - 20;
+        const startY = this.marginY + (this.tableHeight - verticalHeight) / 2;
+
+        const graphics = this.add.graphics();
+
+        const path = new Phaser.Curves.Path(startX + horizontalWidth, startY);
+        path.lineTo(startX + cornerRadius, startY);
+        path.ellipseTo(cornerRadius, cornerRadius, 270, 180, true);
+        path.lineTo(startX, startY + verticalHeight);
+
+        graphics.lineStyle(railWidth, 0x332211, 1);
+        path.draw(graphics);
+
+        graphics.lineStyle(railWidth - innerPadding, 0x1a1a1a, 1);
+        path.draw(graphics);
+
+        graphics.lineStyle(2, 0x5e4a37, 0.5);
+
+        const outerPath = new Phaser.Curves.Path(startX + horizontalWidth, startY - railWidth / 2);
+        outerPath.lineTo(startX + cornerRadius, startY - railWidth / 2);
+        outerPath.ellipseTo(cornerRadius + railWidth / 2, cornerRadius + railWidth / 2, 270, 180, true);
+        outerPath.lineTo(startX - railWidth / 2, startY + verticalHeight);
+        outerPath.draw(graphics);
+
         const ballRadius = BALL_RADIUS * 0.75;
-
-        const background = this.add
-            .graphics()
-            .fillStyle(0x1a1a1a, 0.9)
-            .fillRoundedRect(railX, railY, railWidth, railHeight, 10)
-
-            .fillStyle(0x1a1a1a, 0.9)
-            .fillRoundedRect(railX + 3, railY + 3, railWidth - 6, railHeight - 6, 8)
-
-            .lineStyle(3, 0x4a3520, 1)
-            .strokeRoundedRect(railX, railY, railWidth, railHeight, 10);
-
-        const columns = 1;
-        const rows = 14;
-        const verticalSpacing = ballRadius * 1.5;
-        const startX = railX + railWidth / 2;
-        const startY = railY + ballRadius + 10;
-
+        const ballSprites: Phaser.GameObjects.Sprite[] = [];
         const ballPositions: Array<{ x: number; y: number }> = [];
 
-        for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < columns; col++) {
-                ballPositions.push({ x: startX, y: startY + row * verticalSpacing });
-            }
-        }
+        const totalBalls = 14;
+        for (let i = 0; i < totalBalls; i++) {
+            const t = 0.3 + i * 0.05;
+            const pos = path.getPoint(t);
 
-        const ballSprites: Phaser.GameObjects.Sprite[] = ballPositions.map((pos) =>
-            this.add
+            const sprite = this.add
                 .sprite(pos.x, pos.y, POOL_ASSETS.WHITE_BALL)
                 .setScale((ballRadius * 2) / 256)
                 .setAlpha(0)
-                .setVisible(false)
-        );
+                .setVisible(false);
+
+            ballPositions.push({ x: pos.x, y: pos.y });
+            ballSprites.push(sprite);
+        }
 
         this.pocketedBallsRail = {
-            background,
+            background: graphics,
             ballPositions,
             ballSprites,
             pocketedBalls: [],
@@ -1019,37 +1029,32 @@ export class PoolGameScene extends Phaser.Scene {
 
     private createPowerMeter(): void {
         const powerMeterWidth = 60;
-        const powerMeterHeight = 550;
-        const handleHeight = 50;
+        const powerMeterHeight = this.tableHeight;
         const powerMeterX = this.marginX + this.tableWidth + 50;
         const powerMeterY = this.marginY + this.tableHeight / 2 - powerMeterHeight / 2;
-        const minY = powerMeterY;
-        const maxY = powerMeterY + powerMeterHeight - handleHeight;
 
-        // Background of power meter
+        // Background
         const background = this.add
             .graphics()
             .fillStyle(0x1a1a1a, 0.9)
-            .fillRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10)
-            .lineStyle(3, 0x4a3520, 1)
-            .strokeRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
+            .fillRoundedRect(powerMeterX, powerMeterY, powerMeterWidth, powerMeterHeight, 10);
 
         const fill = this.add.graphics();
+
+        // Handle (Cue Stick)
         const handle = this.add
-            .sprite(powerMeterX + powerMeterWidth / 2, minY + handleHeight / 2, POOL_ASSETS.DRAG_ICON)
-            .setScale(0.05)
-            .setRotation(Math.PI / 2)
+            .sprite(powerMeterX + powerMeterWidth / 2, powerMeterY, POOL_ASSETS.CUES.BASIC)
+            .setScale(1)
+            .setRotation(Math.PI / 2) // Makes it vertical
             .setInteractive({ draggable: true, useHandCursor: true });
 
-        // Add power label
-        this.add
-            .text(powerMeterX + powerMeterWidth / 2, powerMeterY - 30, "POWER", {
-                fontFamily: "Arial",
-                fontSize: "18px",
-                color: "#d4af37",
-                fontStyle: "bold",
-            })
-            .setOrigin(0.5, 0.5);
+        /** * MATH FIX: Calculate bounds based on the visual height of the rotated cue.
+         * displayHeight refers to the height of the sprite on screen after scaling/rotation.
+         */
+        const visualHandleHeight = handle.displayHeight;
+        const minY = powerMeterY + visualHandleHeight / 2;
+        const maxY = powerMeterY + powerMeterHeight - visualHandleHeight / 2;
+        const totalTravelDistance = maxY - minY;
 
         this.powerMeter = {
             background,
@@ -1057,72 +1062,55 @@ export class PoolGameScene extends Phaser.Scene {
             handle,
             isDragging: false,
             power: 0,
-            position: {
-                x: powerMeterX,
-                y: powerMeterY,
-            },
-            size: {
-                width: powerMeterWidth,
-                height: powerMeterHeight,
-                handleHeight,
-            },
+            position: { x: powerMeterX, y: powerMeterY },
+            size: { width: powerMeterWidth, height: powerMeterHeight, handleHeight: visualHandleHeight },
         };
 
-        // Setup drag events
-        handle.on("dragstart", () => {
-            if (MODAL_OPEN) return;
-            this.powerMeter.isDragging = true;
-        });
-
-        handle.on("dragend", () => {
-            if (MODAL_OPEN) return;
-            if (this.powerMeter.power <= 0) {
-                this.powerMeter.isDragging = false;
-                return;
-            }
-
-            this.powerMeter.isDragging = false;
-            this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
-            this.setPower(0);
-        });
-
-        handle.on("drag", (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
+        handle.on("drag", (_pointer: Phaser.Input.Pointer, _dragX: number, dragY: number) => {
             if (MODAL_OPEN) return;
 
-            const usableHeight = maxY - minY - handleHeight;
-            const clampedY = Phaser.Math.Clamp(dragY, minY + handleHeight / 2, maxY - handleHeight / 2);
-            const power = (clampedY - (minY + handleHeight / 2)) / usableHeight;
+            // 1. Clamp the drag position so the cue doesn't leave the meter background
+            const clampedY = Phaser.Math.Clamp(dragY, minY, maxY);
+
+            // 2. Update sprite position
+            handle.y = clampedY;
+
+            // 3. Calculate power (0 at top, 1 at bottom)
+            const power = (clampedY - minY) / totalTravelDistance;
+
+            // Use your existing setter to update visuals/logic
             this.setPower(power);
+        });
 
-            handle.x = powerMeterX + powerMeterWidth / 2; // Keep handle centered horizontally
+        // Reset logic on drag end
+        handle.on("dragend", () => {
+            if (this.powerMeter.power > 0) {
+                this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
+            }
+            this.setPower(0);
+            this.powerMeter.isDragging = false;
         });
 
         this.updatePowerMeterFromPower();
     }
 
     private updatePowerMeterFromPower(): void {
-        const { power, fill, handle } = this.powerMeter;
-        const { x, y } = this.powerMeter.position;
-        const { width, height, handleHeight } = this.powerMeter.size;
-
-        const minY = y;
-        const maxY = y + height - handleHeight;
-
-        const usableHeight = maxY - minY - handleHeight;
-        const handleY = minY + handleHeight / 2 + usableHeight * power;
-        handle.y = handleY;
-
-        fill.clear();
-
-        if (power <= 0) return;
-
-        let color = 0x00ff00; // Green
-        if (power > 0.66) color = 0xff0000; // Red
-        else if (power > 0.33) color = 0xffff00; // Yellow
-
-        const fillHeight = usableHeight * power;
-        fill.fillRoundedRect(x + 5, minY + 5, width - 10, fillHeight, 5);
-        fill.fillStyle(color, 0.7);
+        // const { power, fill, handle } = this.powerMeter;
+        // const { x, y } = this.powerMeter.position;
+        // const { width, height, handleHeight } = this.powerMeter.size;
+        // const minY = y;
+        // const maxY = y + height - handleHeight;
+        // const usableHeight = maxY - minY - handleHeight;
+        // const handleY = minY + handleHeight / 2 + usableHeight * power;
+        // handle.y = handleY;
+        // fill.clear();
+        // if (power <= 0) return;
+        // let color = 0x00ff00; // Green
+        // if (power > 0.66) color = 0xff0000; // Red
+        // else if (power > 0.33) color = 0xffff00; // Yellow
+        // const fillHeight = usableHeight * power;
+        // fill.fillRoundedRect(x + 5, minY + 5, width - 10, fillHeight, 5);
+        // fill.fillStyle(color, 0.7);
     }
 
     private isTouchingPowerMeter({ x: px, y: py }: Phaser.Input.Pointer): boolean {

@@ -51,11 +51,20 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
                     <div className="relative flex-shrink-0" onClick={() => openDrawer("profile")}>
                         <img src={photo} alt="Player Avatar" className="w-16 h-16 rounded-lg shadow-md" />
                         <div className="absolute -top-1 -right-1 bg-accent/50 rounded-full p-1 px-2">
-                            <p className="text-sm">{me.level}</p>
+                            <p className="text-sm text-white">{me.level}</p>
                         </div>
                     </div>
-                    <div className="min-w-0 ">
-                        <h2 className="text-white font-bold text-lg truncate">{name}</h2>
+
+                    <div className=" flex flex-col items-start justify-center">
+                        <div className="min-w-0 ">
+                            <h2 className="text-white font-bold text-lg truncate">{name}</h2>
+                        </div>
+                        <div className="w-24 h-2 bg-accent/20 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-accent to-accent/80"
+                                style={{ width: `${width}%` }}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -87,19 +96,6 @@ export function PlayerInfoWidget({ service }: { service: MultiplayerService }) {
                 </div>
 
                 <div className="flex items-center gap-4 flex-shrink-0">
-                    <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
-                        <div className="text-2xl">⚡</div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-24 h-2 bg-accent/20 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-gradient-to-r from-accent to-accent/80"
-                                    style={{ width: `${width}%` }}
-                                />
-                            </div>
-                            <span className="text-white text-xs font-bold ml-1">{me.level}</span>
-                        </div>
-                    </div>
-
                     <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
                         <div className="text-2xl">💵</div>
                         <span className="text-green-400 font-bold">{me.cash}</span>
