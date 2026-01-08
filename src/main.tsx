@@ -21,6 +21,15 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
         touch: true,
     },
 
+    physics: {
+        default: "matter",
+        matter: {
+            gravity: { x: 0, y: 0 },
+            debug: true,
+            enableSleeping: false,
+        },
+    },
+
     scene: [PoolPreLoadScene, PoolGameScene],
 };
 

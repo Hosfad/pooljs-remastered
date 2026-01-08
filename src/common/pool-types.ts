@@ -24,6 +24,7 @@ export interface Hole {
         visible: boolean;
     };
     phaserGraphics?: Phaser.GameObjects.Graphics;
+    body?: MatterJS.Body;
 }
 
 export interface Cue {

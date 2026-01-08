@@ -92,7 +92,17 @@ const screenRatio = width / targetWidth;
 
 // Game dimensions
 export const BALL_RADIUS = 25 * screenRatio;
-export const HOLE_RADIUS = 50 * screenRatio;
+export const HOLE_RADIUS = 25 * screenRatio;
+
+// REAL LIFE PHYSICS CONSTANTS
+const OZ_TO_KG = 0.0283495;
+const BALL_MASS_OZ = 6;
+export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;
+
+// Coefficients
+export const BALL_RESTITUTION = 0.998; // ball (e)
+export const BALL_FRICTION = 0.01; // ball (μ)
+export const CLOTH_ROLLING_RESISTANCE = 0.012; // cloth (frictionAir)
 
 // Physics constants
 export const MAX_POWER = 30;

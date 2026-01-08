@@ -4,7 +4,11 @@
 
 import * as Phaser from "phaser";
 import {
+    BALL_FRICTION,
+    BALL_MASS_KG,
     BALL_RADIUS,
+    BALL_RESTITUTION,
+    CLOTH_ROLLING_RESISTANCE,
     CUSHION_CONSTANTS,
     DEBUG_GRAPHICS,
     HOLE_RADIUS,
@@ -461,8 +465,19 @@ export class PoolGameScene extends Phaser.Scene {
         const r = BALL_RADIUS;
         const position = this.toTableCoordinates(x, y);
 
-        const sprite = this.add.sprite(position.x, position.y, texture);
+        const sprite = this.matter.add.sprite(position.x, position.y, texture);
         sprite.setScale((r * 1.5) / sprite.width);
+        sprite.setBody(
+            { type: "circle", radius: BALL_RADIUS },
+            {
+                isSensor: true, // Until activated to use matter for collisions
+                restitution: BALL_RESTITUTION,
+                friction: BALL_FRICTION,
+                frictionAir: CLOTH_ROLLING_RESISTANCE,
+                mass: BALL_MASS_KG,
+                label: `${texture}-${ballType}-ball`,
+            }
+        );
 
         this.balls.push({ ballType, phaserSprite: sprite, isPocketed: false });
     }
@@ -510,6 +525,11 @@ export class PoolGameScene extends Phaser.Scene {
                     visible: true,
                 },
                 phaserGraphics: graphics,
+                body: this.matter.add.circle(position.x, position.y, HOLE_RADIUS, {
+                    isStatic: true,
+                    isSensor: true,
+                    label: "hole",
+                }),
             };
             this.holes.push(hole);
         });
