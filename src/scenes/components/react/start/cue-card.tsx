@@ -33,7 +33,7 @@ export function CueCard({
                 className="flex items-center gap-4 mb-4"
                 style={{
                     backgroundImage: `url(${cue.sprite})`,
-                    backgroundSize: "70% 90%", // Shrink the image slightly                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "70% 90%",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
                 }}

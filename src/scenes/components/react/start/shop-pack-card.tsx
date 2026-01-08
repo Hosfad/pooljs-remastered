@@ -38,10 +38,8 @@ export function ShopPackCard({ pack, icon }: PackCardProps) {
                 <span className="text-white font-bold text-2xl drop-shadow-lg">{pack.total.toLocaleString()}</span>
             </div>
 
-            {/* Icon */}
             <div className="ml-2">{icon === "coin" ? "🪙" : "💵"}</div>
 
-            {/* Price Display */}
             <div
                 className="border-2 rounded px-3 py-2 min-w-24 text-center"
                 style={{ background: "linear-gradient(to bottom, #1a1a1a, #0d0d0d)" }}
@@ -51,7 +49,6 @@ export function ShopPackCard({ pack, icon }: PackCardProps) {
                 </span>
             </div>
 
-            {/* Buy Button */}
             <button
                 className="text-white font-black text-xl px-8 py-3 rounded-lg border-4 shadow-lg transform transition-transform hover:scale-105 active:scale-95 italic"
                 style={{

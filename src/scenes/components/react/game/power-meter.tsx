@@ -32,13 +32,15 @@ const PowerMeter = ({ service }: { service: Service }) => {
             if (trackRef.current) setTrackHeight(trackRef.current.clientHeight);
         };
 
+        // TODO: make a custom event for this so that we arent rerendering all the time
+
         service.subscribe(Events.PULL, (data) => {
             const { power } = data;
             const finalPower = power * 100;
             setIsDragging(true);
             setPixelOffset(calculatePoistionFromPower(finalPower));
             setPower(finalPower);
-            setTimeout(() => setIsDragging(false), 200);
+            setIsDragging(false);
         });
 
         service.subscribe(Events.HITS, () => {
