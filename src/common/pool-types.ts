@@ -13,7 +13,7 @@ export type BallType = "solid" | "striped" | "white" | "black";
 export interface Ball {
     ballType: BallType;
     phaserSprite: Phaser.GameObjects.Sprite;
-    isPocketed?: boolean;
+    isPocketed: boolean;
 }
 
 export interface Hole {
@@ -22,13 +22,13 @@ export interface Hole {
         size: { r: number };
     };
     phaserGraphics?: Phaser.GameObjects.Graphics;
-    body?: MatterJS.Body;
+    body: MatterJS.Body;
 }
 
 export interface Collider {
     sprite: { size: { points: Phaser.Math.Vector2[] }; };
     phaserGraphics?: Phaser.GameObjects.Graphics;
-    body?: MatterJS.Body;
+    body: MatterJS.Body;
 }
 
 export interface Cue {

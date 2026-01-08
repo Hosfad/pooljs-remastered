@@ -392,7 +392,7 @@ export class PoolGameScene extends Phaser.Scene {
         frame.forEach(({ position: { x, y }, collision, hidden }, i) => {
             if (hidden) return;
 
-            const sprite = this.balls[i]!.phaserSprite;
+            const sprite = this.balls[i].phaserSprite;
             const pos = { x: x * tw + this.marginX, y: y * th + this.marginY };
 
             // increment rotation angle of sprite
