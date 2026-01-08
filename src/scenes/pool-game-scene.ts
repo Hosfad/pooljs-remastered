@@ -268,6 +268,7 @@ export class PoolGameScene extends Phaser.Scene {
         const distToOrigin = blackBall.phaserSprite.x - rackOrigin.x;
         const origin = new Vector2(rackOrigin.x + distToOrigin * 0.9, blackBall.phaserSprite.y);
 
+        // TODO: Just calculate the middle of the triangle
         for (const ball of this.balls) {
             if (ball.ballType === "black") continue;
 
@@ -290,7 +291,8 @@ export class PoolGameScene extends Phaser.Scene {
         const cueX = this.tableWidth * 0.75;
         const cueY = rackOrigin.y;
 
-        this.createBall(cueX, cueY, "white", POOL_ASSETS.WHITE_BALL);
+        const ball = this.createBall(cueX, cueY, "white", POOL_ASSETS.WHITE_BALL);
+        // ball.phaserSprite.setVisible(false);
     }
 
     private createCue(): void {
@@ -436,7 +438,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
 
-    private createBall(x: number, y: number, ballType: Ball["ballType"], texture: string): void {
+    private createBall(x: number, y: number, ballType: Ball["ballType"], texture: string): Ball {
         const r = BALL_RADIUS;
         const position = this.toTableCoordinates(x, y);
 
@@ -455,7 +457,9 @@ export class PoolGameScene extends Phaser.Scene {
             }
         );
 
-        this.balls.push({ ballType, label, phaserSprite: ball, isPocketed: false });
+        const b = { ballType, label, phaserSprite: ball, isPocketed: false }
+        this.balls.push(b);
+        return b;
     }
 
     private createHoles(): void {
