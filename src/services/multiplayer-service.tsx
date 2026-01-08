@@ -9,8 +9,10 @@ import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { INIT_DISCORD_SDK } from "../common/pool-constants";
 import { LoadingPage } from "../scenes/components/react/loading/loading-page";
+import BallRail from "../scenes/components/react/lobby/ball-rail";
 import { GameInfoWidget } from "../scenes/components/react/lobby/game-info-widget";
 import { Lobby } from "../scenes/components/react/lobby/game-lobby";
+import PowerMeter from "../scenes/components/react/lobby/power-meter";
 import SpinIndicator from "../scenes/components/react/lobby/spin-selector";
 import MainScreen from "../scenes/components/react/start/main-screen";
 import { PlayerInfoWidget } from "../scenes/components/react/start/start-navbar";
@@ -43,6 +45,8 @@ export class MultiplayerService extends LocalService {
                                     <Route path="/" element={<MainScreen service={this} />}></Route>
                                     <Route path="/lobby" element={<Lobby service={this} />}></Route>
                                 </Routes>
+                                <PowerMeter service={this} />
+                                <BallRail service={this} />
                                 <PlayerInfoWidget service={this} />
                                 <GameInfoWidget service={this} />
                                 <SpinIndicator service={this} />
@@ -129,15 +133,15 @@ export class MultiplayerService extends LocalService {
         return keyPositions;
     }
 
-    override pull(x: number, y: number, angle: number): void {
+    override pull(x: number, y: number, angle: number, power: number): void {
         const { userId, roomId } = this.getRoomConfig();
 
         if (!roomId) return;
 
         const data = { x, y, angle, userId, roomId };
 
-        this.send(Events.PULL, { ...data, userId: "1" });
-        this.call(Events.PULL, data);
+        this.send(Events.PULL, { ...data, userId: "1", power: power });
+        this.call(Events.PULL, { ...data, userId: "1", power: power });
     }
 
     override moveHand(x: number, y: number): void {

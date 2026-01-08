@@ -95,7 +95,7 @@ export type EventsData = {
     [Events.PLAYER_DISCONNECT_RESPONSE]: WebsocketRespone<Room>;
 
     [Events.HITS]: RoomEventBodyOptions & { keyPositions: KeyPositions; state: PoolState };
-    [Events.PULL]: RoomEventBodyOptions & { x: number; y: number; angle: number };
+    [Events.PULL]: RoomEventBodyOptions & { x: number; y: number; angle: number; power: number };
     [Events.INIT]: Room;
     [Events.HAND]: RoomEventBodyOptions & { x: number; y: number };
 

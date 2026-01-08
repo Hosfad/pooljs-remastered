@@ -1,18 +1,19 @@
 "use client";
 
-import React from "react";
-import { COLORS } from "../../../../common/pool-constants";
+import { useEffect, useState } from "react";
 import { Events, type PoolState } from "../../../../common/server-types";
 import type { Player, Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 
 const ROUND_TIME = 30;
+const SCALED_BALL_SIZE = 22;
 
 export function GameInfoWidget({ service }: { service: MultiplayerService }) {
-    const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
-    const [state, setState] = React.useState<PoolState | null>(service.getState());
+    const [room, setRoom] = useState<Room | null>(service.getCurrentRoom());
+    const [state, setState] = useState<PoolState | null>(service.getState());
+    const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
 
-    React.useEffect(() => {
+    useEffect(() => {
         service.subscribe(Events.INIT, (data) => {
             setRoom(data);
             setState(service.getState());
@@ -22,278 +23,154 @@ export function GameInfoWidget({ service }: { service: MultiplayerService }) {
             setState(service.getState());
         });
 
-        service.subscribe(Events.HITS, (data) => {
-            setState(service.getState());
-        });
-    }, []);
+        service.subscribe(Events.HITS, () => setState(service.getState()));
+    }, [service]);
 
-    const [timeLeft, setTimeLeft] = React.useState(ROUND_TIME);
-
-    React.useEffect(() => {
+    useEffect(() => {
         if (!room) return;
         setTimeLeft(ROUND_TIME);
         const interval = setInterval(() => setTimeLeft(service.timerLeft()), 200);
         return () => clearInterval(interval);
-    }, [room]);
+    }, [room, service]);
 
-    const progress = (timeLeft / ROUND_TIME) * 100;
-    const players = room?.players ?? [];
+    if (!room?.isGameStarted || !room.players[0] || !room.players[1]) return null;
+
+    const players = room.players;
+    const imHost = room.hostId === service.me()?.id;
+    const turn = +service.isMyTurn();
 
     const player1 = players[0];
     const player2 = players[1];
-
     if (!player1 || !player2) return null;
 
-    const imHost = room?.hostId === service.me()?.id;
-    const whenHost = [player2.id, player1.id];
-    const whenGuest = [player1.id, player2.id];
+    const currentPlayerId = imHost ? [player2.id, player1.id][turn] : [player1.id, player2.id][turn];
+    const progress = (timeLeft / ROUND_TIME) * 100;
 
-    const turn = +service.isMyTurn();
-    const currentPlayerId = imHost ? whenHost[turn] : whenGuest[turn];
-
-    const player1Ball = player1.state.ballType;
-    const player2Ball = player2.state.ballType;
-
-    const ballIndexesInHole = Object.keys(state!.inHole).map((index) => +index);
-
-    const player1ScoredBalls = ballIndexesInHole.filter((index) => {
-        const ballType = index >= 9 ? "striped" : "solid";
-        if (player1Ball === ballType) return true;
-        return false;
-    });
-
-    const player2ScoredBalls = ballIndexesInHole.filter((index) => {
-        const ballType = index >= 9 ? "striped" : "solid";
-        if (player2Ball === ballType) return true;
-        return false;
-    });
-
-    console.log({ state, player1ScoredBalls, player2ScoredBalls });
     return (
-        room?.isGameStarted && (
-            <div
-                style={{
-                    display: "flex",
-                    position: "absolute",
-                    inset: 0,
-                    maxHeight: "10%",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "1.5rem 20rem",
-                }}
-            >
-                {/* Player 1 */}
-                <PlayerHUD
-                    player={player1}
-                    isActive={currentPlayerId === player1.id}
-                    progress={progress}
-                    inHole={player1ScoredBalls}
-                />
-                {/* Center Info */}
-                <div
-                    className="mt-20"
-                    style={{
-                        flex: 1,
-                        textAlign: "center",
-                        padding: "0 2rem",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                    }}
-                >
-                    {/* Current Ball Type Image */}
-                    <img
-                        src={`/assets/game/balls/${
-                            currentPlayerId === player1.id
-                                ? player1Ball === "solid"
-                                    ? "1"
-                                    : "9"
-                                : player2Ball === "solid"
-                                ? "1"
-                                : "9"
-                        }.svg`}
-                        alt={currentPlayerId === player1.id ? player1Ball : player2Ball}
-                        style={{
-                            width: 64,
-                            height: 64,
-                            filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))",
-                        }}
-                    />
+        <div className="fixed top-2 left-0 right-0 flex justify-center items-start px-8 pointer-events-none">
+            <style>{`
+                @keyframes ballDropHorizontal {
+                    0% { transform: scale(1.5) translateY(-20px); opacity: 0; }
+                    100% { transform: scale(1) translateY(0); opacity: 1; }
+                }
+                .ball-drop { animation: ballDropHorizontal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+                .bg-dark { background-color: #1a1a1a; }
+            `}</style>
 
-                    <div
-                        style={{
-                            fontSize: "0.875rem",
-                            color: `${COLORS.accent}cc`,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.05em",
-                        }}
-                    >
-                        {currentPlayerId === player1.id ? player1.name : player2.name}'s Turn
-                    </div>
+            <div className="flex items-center gap-12 bg-black/20 backdrop-blur-sm p-4 rounded-3xl border border-white/5 shadow-2xl pointer-events-auto">
+                <PlayerHUD player={player1} isActive={currentPlayerId === player1.id} progress={progress} state={state} />
 
-                    <div
-                        style={{
-                            fontSize: "1.5rem",
-                            fontWeight: "bold",
-                            color: COLORS.text,
-                            fontFamily: "monospace",
-                        }}
-                    >
-                        {String(timeLeft).padStart(2, "0")}s
+                {/* Center Timer Section */}
+                <div className="flex flex-col items-center min-w-[100px]">
+                    <div className="text-white/50 text-[10px] uppercase tracking-widest mb-1 font-bold">Time Left</div>
+                    <div className="text-3xl font-mono font-bold text-white tabular-nums drop-shadow-md">
+                        {Math.ceil(timeLeft)}s
                     </div>
                 </div>
 
-                {/* Player 2 */}
                 <PlayerHUD
                     player={player2}
                     isActive={currentPlayerId === player2.id}
                     progress={progress}
-                    reverse={true}
-                    inHole={player2ScoredBalls}
+                    state={state}
+                    reverse
                 />
             </div>
-        )
+        </div>
     );
 }
 
-function PlayerHUD({
-    player,
-    isActive,
-    progress,
-    reverse,
-    inHole,
-}: {
-    player: Player;
-    isActive: boolean;
-    progress: number;
-    reverse?: boolean;
-    inHole: number[];
-}) {
+function PlayerHUD({ player, isActive, progress, state, reverse }: any) {
+    const getPlayerBalls = (player: Player) => {
+        const ballType = player.state.ballType;
+        if (!ballType) return [];
+        return ballType === "solid"
+            ? Array.from({ length: 7 }, (_, i) => i + 1)
+            : Array.from({ length: 7 }, (_, i) => i + 9);
+    };
+
+    const playerBalls = getPlayerBalls(player);
+    const scored = state?.inHole ? Object.keys(state.inHole).map(Number) : [];
+
     return (
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem", direction: reverse ? "rtl" : "ltr" }}>
-            <PlayerAvatar player={player} isActive={isActive} progress={progress} ballType={player.state.ballType} />
+        <div className={`flex items-center gap-4 ${reverse ? "flex-row-reverse" : "flex-row"}`}>
+            <PlayerAvatar player={player} isActive={isActive} progress={progress} />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span
-                    style={{
-                        fontSize: "0.9rem",
-                        fontWeight: 600,
-                        color: isActive ? COLORS.text : `${COLORS.text}aa`,
-                    }}
-                >
-                    {player.name}
-                </span>
+            <div className={`flex flex-col ${reverse ? "items-end" : "items-start"}`}>
+                <span className={`text-sm font-bold mb-2 ${isActive ? "text-white" : "text-white/40"}`}>{player.name}</span>
 
-                {/* Scored balls */}
-                <div style={{ display: "flex", gap: "4px" }}>
-                    {inHole.map((ball) => (
-                        <img
-                            key={ball}
-                            src={`/assets/game/balls/${ball}.svg`}
-                            alt={`Ball ${ball}`}
-                            style={{
-                                width: 18,
-                                height: 18,
-                                opacity: isActive ? 1 : 0.6,
-                                filter: "drop-shadow(0 0 2px rgba(0,0,0,0.8))",
-                            }}
-                        />
-                    ))}
+                <div className="relative h-10 px-3 flex items-center bg-dark rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/5 min-w-[80%]">
+                    <div className="absolute inset-x-4 h-[2px] bg-white/5 top-1/2 -translate-y-1/2 rounded-full" />
+
+                    <div className={`flex gap-1 relative ${reverse ? "flex-row-reverse" : "flex-row"}`}>
+                        {playerBalls.map((ballIndex: number) => {
+                            const isScored = scored.includes(ballIndex);
+
+                            return (
+                                <img
+                                    key={ballIndex}
+                                    src={`/assets/game/balls/${ballIndex}.svg`}
+                                    className={`
+                                        ball-drop shadow-lg transition-all duration-500
+                                        ${isScored ? "opacity-90 mix-blend-multiply" : "opacity-100"}
+                                    `}
+                                    style={{ width: SCALED_BALL_SIZE, height: SCALED_BALL_SIZE }}
+                                    alt={`Ball ${ballIndex}`}
+                                />
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-function PlayerAvatar({
-    player,
-    isActive,
-    progress,
-    ballType,
-}: {
-    player: Player;
-    isActive: boolean;
-    progress: number;
-    ballType: string;
-}) {
-    const size = 78;
-    const strokeWidth = 4;
-    const cornerRadius = 12;
-
+function PlayerAvatar({ player, isActive, progress }: any) {
+    const size = 64;
+    const strokeWidth = 2;
+    const cornerRadius = 16;
     const perimeter = 4 * size - 8 * cornerRadius + 2 * Math.PI * cornerRadius;
     const dashOffset = perimeter * (1 - progress / 100);
 
     return (
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <div style={{ position: "relative", width: size, height: size }}>
-                {/* Animated Border */}
+        <div className="relative" style={{ width: size, height: size }}>
+            {/* Animated Progress Border */}
+            <svg
+                width={size + strokeWidth * 2}
+                height={size + strokeWidth * 2}
+                className="absolute"
+                style={{ top: -strokeWidth, left: -strokeWidth, transform: "rotate(-90deg)" }}
+            >
                 {isActive && (
-                    <svg
-                        width={size + strokeWidth}
-                        height={size + strokeWidth}
-                        style={{
-                            position: "absolute",
-                            top: -strokeWidth / 2,
-                            left: -strokeWidth / 2,
-                            pointerEvents: "none",
-                        }}
-                    >
-                        {/* Background border */}
-                        <rect
-                            x={strokeWidth / 2}
-                            y={strokeWidth / 2}
-                            width={size}
-                            height={size}
-                            rx={cornerRadius}
-                            fill="none"
-                            stroke={`${COLORS.primary}40`}
-                            strokeWidth={strokeWidth}
-                        />
-
-                        {/* Animated progress */}
-                        <rect
-                            x={strokeWidth / 2}
-                            y={strokeWidth / 2}
-                            width={size}
-                            height={size}
-                            rx={cornerRadius}
-                            fill="none"
-                            stroke="#FFD700"
-                            strokeWidth={strokeWidth}
-                            strokeDasharray={perimeter}
-                            strokeDashoffset={dashOffset}
-                            strokeLinecap="round"
-                            style={{
-                                transition: "stroke-dashoffset 0.15s linear",
-                            }}
-                        />
-                    </svg>
+                    <rect
+                        x={strokeWidth}
+                        y={strokeWidth}
+                        width={size}
+                        height={size}
+                        rx={cornerRadius}
+                        fill="none"
+                        stroke="#FFD700"
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={perimeter}
+                        strokeDashoffset={dashOffset}
+                        strokeLinecap="round"
+                        className="transition-all duration-200 linear"
+                    />
                 )}
+            </svg>
 
-                {/* Avatar */}
-                <div
-                    style={{
-                        width: "100%",
-                        height: "100%",
-                        borderRadius: cornerRadius,
-                        backgroundColor: isActive ? COLORS.primary : `${COLORS.primary}70`,
-                        backgroundImage: player.photo ? `url(${player.photo})` : "none",
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "2rem",
-                        fontWeight: 700,
-                        color: COLORS.text,
-                        position: "relative",
-                        zIndex: 1,
-                        boxShadow: isActive ? "0 0 12px rgba(255,215,0,0.45)" : "none",
-                    }}
-                >
-                    {!player.photo && player.name[0]!.toUpperCase()}
-                </div>
+            {/* Avatar Content */}
+            <div
+                className={`w-full h-full rounded-2xl overflow-hidden flex items-center justify-center text-xl font-bold transition-all duration-500
+                    ${isActive ? " shadow-[0_0_15px_rgba(255,215,0,0.3)] " : "border-white/10 opacity-60"}`}
+                style={{
+                    backgroundColor: "#222",
+                    backgroundImage: player.photo ? `url(${player.photo})` : "none",
+                    backgroundSize: "cover",
+                }}
+            >
+                {!player.photo && player.name[0]?.toUpperCase()}
             </div>
         </div>
     );

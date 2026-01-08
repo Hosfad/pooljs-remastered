@@ -85,8 +85,8 @@ export class LocalService extends Service {
         return this.service.getState();
     }
 
-    override pull(x: number, y: number, angle: number): void {
-        this.send(Events.PULL, { x, y, angle, userId: LOCAL_USER_ID, roomId: LOCAL_USER_ID });
+    override pull(x: number, y: number, angle: number, power: number): void {
+        this.send(Events.PULL, { x, y, angle, userId: LOCAL_USER_ID, roomId: LOCAL_USER_ID, power: power });
     }
 
     override hitBalls(powerPercent: number, angle: number): KeyPositions {

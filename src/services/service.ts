@@ -40,7 +40,7 @@ export abstract class Service {
     abstract setState<T>(state: T): void;
     abstract getState<T>(): T;
 
-    abstract pull(x: number, y: number, angle: number): void;
+    abstract pull(x: number, y: number, angle: number, power: number): void;
     abstract moveHand(x: number, y: number): void;
 
     abstract timerStart(): void;
