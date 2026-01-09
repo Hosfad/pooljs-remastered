@@ -576,9 +576,9 @@ export class PoolGameScene extends Phaser.Scene {
 
             // Hand Stuff
             if (whiteBall.isPocketed && this.canPlaceBall(px, py)) {
+                whiteBall.isPocketed = this.hand.visible = false;
                 whiteBall.phaserSprite.visible = true;
                 whiteBall.phaserSprite.setPosition(px, py);
-                whiteBall.isPocketed = this.hand.visible = false;
                 this.service.setInHole(wb, false);
                 return;
             }
@@ -915,7 +915,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private animateBallToRail(ball: Ball, skipRail: boolean = false): void {
-        if (ball.isAnimating) return; // FIX: this thing with the whiteball
+        if (ball.isAnimating) return;
         ball.isAnimating = true;
 
         const sprite = ball.phaserSprite;
@@ -926,16 +926,19 @@ export class PoolGameScene extends Phaser.Scene {
             return distance < acc.distance ? { distance, pos: position } : acc;
         }, { distance: Infinity, pos: new Vector2(0, 0) });
 
+        const spriteClone = this.add.sprite(sprite.x, sprite.y, sprite.texture.key).setScale(sprite.scale);
+        sprite.setVisible(false);
+
         // ball falling into pocket animation
         this.tweens.add({
-            targets: ball.phaserSprite,
+            targets: spriteClone,
             scale: 0,
             x: closestHole.pos.x,
             y: closestHole.pos.y,
             duration: 200,
             onComplete: () => {
                 ball.isAnimating = false;
-                sprite.setVisible(false);
+                spriteClone.destroy();
             },
         });
 
