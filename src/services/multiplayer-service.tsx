@@ -8,9 +8,9 @@ import { LocalService } from "./local-service";
 import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { INIT_DISCORD_SDK } from "../common/pool-constants";
+import MainScreen from "../scenes/components/react/general/main-screen";
 import { LoadingPage } from "../scenes/components/react/loading/loading-page";
 import { Lobby } from "../scenes/components/react/lobby/lobby";
-import MainScreen from "../scenes/components/react/start/main-screen";
 
 interface Preferences {
     ballType: BallType;
@@ -200,6 +200,16 @@ export class MultiplayerService extends LocalService {
         }
     }
 
+    private handleRedirect(newRoom: string) {
+        const roomIdFromUrl = this.getRoomId();
+        if (roomIdFromUrl !== newRoom) {
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set("room", newRoom);
+            sessionStorage.setItem("roomId", newRoom);
+            window.history.replaceState({}, "", newUrl.toString());
+        }
+    }
+
     registerEvents() {
         // Room events
 
@@ -208,13 +218,8 @@ export class MultiplayerService extends LocalService {
             if (type === "error") {
                 return console.error("Error joining room", data);
             }
-            const roomIdFromUrl = this.getRoomId();
             this.instanciateRoom(data.data);
-            if (roomIdFromUrl !== data.data.id) {
-                const newUrl = new URL(window.location.href);
-                newUrl.searchParams.set("room", data.data.id);
-                window.history.replaceState({}, "", newUrl.toString());
-            }
+            this.handleRedirect(data.data.id);
             this.send(Events.UPDATE_ROOM, data.data);
         });
 
@@ -224,6 +229,7 @@ export class MultiplayerService extends LocalService {
                 const { code: errCode, message: errMessage } = data;
                 return;
             }
+            this.instanciateRoom(data.data);
             this.send(Events.UPDATE_ROOM, data.data);
         });
 
@@ -256,6 +262,8 @@ export class MultiplayerService extends LocalService {
         });
 
         this.listen(Events.INIT, (data) => {
+            this.handleRedirect(data.id);
+
             this.send(Events.INIT, data);
         });
 

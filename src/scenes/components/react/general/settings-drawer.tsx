@@ -31,7 +31,7 @@ export function SettingsDrawer({
     };
 
     return (
-        <Drawer title="Game Settings" isOpen={isOpen} onClose={onClose} me={me}>
+        <Drawer title="Game Settings" isOpen={isOpen} onClose={onClose} me={me} slideFrom="bottom">
             <div className="space-y-6 max-w-2xl">
                 <div className="bg-white/10 rounded-lg p-6">
                     <h3 className="text-accent font-bold text-lg mb-4">Audio Settings</h3>

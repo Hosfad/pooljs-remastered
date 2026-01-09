@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
-import { PlayerInfoWidget } from "./start-navbar";
+import { GeneralHeader } from "./header";
 
 function MainScreen({ service }: { service: MultiplayerService }) {
     const [_] = React.useState();
@@ -38,7 +38,7 @@ function MainScreen({ service }: { service: MultiplayerService }) {
                     <div className="text-green-100 text-sm">Improve your skills</div>
                 </button>
             </div>
-            <PlayerInfoWidget service={service} />
+            <GeneralHeader service={service} />
         </div>
     );
 }

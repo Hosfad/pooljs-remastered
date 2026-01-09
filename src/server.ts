@@ -92,6 +92,48 @@ const wss = new WebSocketServer({ server, path: "/ws" });
 
 const rooms: Record<string, ServerRoom> = {};
 
+setInterval(() => {
+    // MATCH MAKING QUEUE
+    const matchMakingRooms = Object.values(rooms).filter((r) => r.isMatchMaking);
+    if (matchMakingRooms.length === 0) return;
+
+    console.log("Match making queue found", matchMakingRooms.length);
+    const groups = matchMakingRooms.reduce((acc, room, i) => {
+        if (i % 2 === 0) {
+            acc.push([room]);
+        } else {
+            acc[acc.length - 1]!.push(room);
+        }
+        return acc;
+    }, [] as ServerRoom[][]);
+
+    if (groups.length === 0) return console.log("No match making queue");
+
+    groups.forEach((group) => {
+        const combinedRoom = groupRooms(group);
+        if (!combinedRoom) return;
+        broadcastEvent({ roomId: combinedRoom.id, senderId: combinedRoom.hostId! }, Events.INIT, {
+            type: "success",
+            ...reshapeRoom(combinedRoom),
+        });
+    });
+}, 1000);
+
+const groupRooms = (rooms: ServerRoom[]) => {
+    if (rooms.length < 2) return console.error("Not enough rooms to group");
+
+    const combinedRoom = rooms[0]!;
+    const otherRoom = rooms[1]!;
+
+    combinedRoom.clients.push(...otherRoom.clients);
+    combinedRoom.isMatchMaking = false;
+    combinedRoom.isGameStarted = true;
+    delete rooms[otherRoom.id as any];
+
+    rooms[combinedRoom.id as any] = combinedRoom;
+    return combinedRoom;
+};
+
 wss.on("connection", (ws) => {
     let client: Client | null = null;
 
@@ -129,7 +171,7 @@ wss.on("connection", (ws) => {
             });
         }
 
-        const isSpectator = room.clients.length >= MAX_PLAYERS_PER_ROOM;
+        const isSpectator = room.clients.length > MAX_PLAYERS_PER_ROOM;
 
         // Update existing client (Should close the old ws connection here)
         const existingClient = room.clients.find((c) => c.id === senderId);
@@ -177,6 +219,8 @@ wss.on("connection", (ws) => {
             });
 
         room.isMatchMaking = true;
+        rooms[room.id] = room;
+
         sendEvent(ws, Events.MATCH_MAKE_START_RESPONSE, { type: "success", data: reshapeRoom(room) });
     });
 

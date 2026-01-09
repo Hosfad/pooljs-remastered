@@ -18,14 +18,14 @@ interface DrawerProps {
     tabs?: Tab[];
     title?: string;
     className?: string;
-    slideFrom?: "up" | "down";
+    slideFrom?: "top" | "bottom";
 }
 
-export function Drawer({ me, isOpen, onClose, children, tabs, title, className, slideFrom = "up" }: DrawerProps) {
+export function Drawer({ me, isOpen, onClose, children, tabs, title, className, slideFrom = "top" }: DrawerProps) {
     const [activeTabId, setActiveTabId] = useState(tabs?.[0]?.id);
 
-    const motionValue = slideFrom === "up" ? "-100%" : "100%";
-    const positionClass = slideFrom === "up" ? "top-0" : "bottom-0";
+    const motionValue = slideFrom === "top" ? "-100%" : "100%";
+    const positionClass = slideFrom === "top" ? "top-0" : "bottom-0";
 
     return (
         <AnimatePresence>
@@ -46,7 +46,7 @@ export function Drawer({ me, isOpen, onClose, children, tabs, title, className, 
                         exit={{ y: motionValue }}
                         transition={{ type: "spring", damping: 30, stiffness: 300 }}
                         className={`fixed ${positionClass} left-0 right-0 z-50 bg-black/20 backdrop-blur-2xl shadow-lg border-accent/10 ${
-                            slideFrom === "up" ? "border-b" : "border-t"
+                            slideFrom === "top" ? "border-b" : "border-t"
                         } ${className}`}
                     >
                         {/* Header */}

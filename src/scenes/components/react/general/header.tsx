@@ -1,0 +1,115 @@
+import React from "react";
+import { getEXPForLevel } from "../../../../common";
+import { Events } from "../../../../common/server-types";
+import type { Room } from "../../../../server";
+import type { MultiplayerService } from "../../../../services/multiplayer-service";
+import { Button } from "../ui/button";
+import { CuesDrawer } from "./cue-drawer";
+import { ProfileDrawer } from "./profile-drawer";
+import { SettingsDrawer } from "./settings-drawer";
+import { ShopDrawer } from "./shop-drwer";
+
+export function GeneralHeader({ service }: { service: MultiplayerService }) {
+    const me = service.me();
+    const { name, photo } = me ?? {};
+
+    const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
+    React.useEffect(() => {
+        service.subscribe(Events.INIT, (data) => {
+            setRoom(data);
+        });
+        service.subscribe(Events.UPDATE_ROOM, (data) => setRoom(data));
+    }, []);
+
+    const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+    const [activeDrawer, setActiveDrawer] = React.useState<string | null>(null);
+
+    const openDrawer = (drawer: string) => {
+        setActiveDrawer(drawer);
+        setIsDrawerOpen(true);
+    };
+
+    const closeDrawer = () => {
+        setIsDrawerOpen(false);
+        setActiveDrawer(null);
+    };
+
+    const width = (me.exp / getEXPForLevel(me.level)) * 100;
+
+    if (room?.isGameStarted) return null;
+
+    return (
+        <>
+            <SettingsDrawer isOpen={isDrawerOpen && activeDrawer === "settings"} onClose={closeDrawer} service={service} />
+            <CuesDrawer isOpen={isDrawerOpen && activeDrawer === "cues"} onClose={closeDrawer} service={service} />
+            <ShopDrawer isOpen={isDrawerOpen && activeDrawer === "shop"} onClose={closeDrawer} service={service} />
+            <ProfileDrawer isOpen={isDrawerOpen && activeDrawer === "profile"} onClose={closeDrawer} service={service} />
+            {/** Header */}
+            <div className="absolute top-0 right-0 w-full bg-black/40 bg-blur-2xl shadow-lg">
+                <div className="flex items-center justify-between px-4 py-3 gap-4">
+                    {/* Player Info Section */}
+                    <div className="flex items-center gap-4 min-w-0">
+                        <div className="relative flex-shrink-0" onClick={() => openDrawer("profile")}>
+                            <img src={photo} alt="Player Avatar" className="w-16 h-16 rounded-lg shadow-md" />
+                            <div className="absolute -top-1 -right-1 bg-accent/50 rounded-full p-1 px-2">
+                                <p className="text-sm text-white">{me.level}</p>
+                            </div>
+                        </div>
+
+                        <div className=" flex flex-col items-start justify-center">
+                            <div className="min-w-0 ">
+                                <h2 className="text-white font-bold text-lg truncate">{name}</h2>
+                            </div>
+                            <div className="w-24 h-2 bg-accent/20 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-accent to-accent/80"
+                                    style={{ width: `${width}%` }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Navigation Buttons */}
+                    <div className="flex gap-2 flex-shrink-0">
+                        <button
+                            onClick={() => openDrawer("cues")}
+                            className="flex flex-col items-center justify-center bg-accent/30 hover:bg-accent/20 rounded-lg px-6 py-2 transition-colors w-24"
+                        >
+                            <div className="text-2xl mb-1">🎱</div>
+                            <span className="text-white text-sm font-semibold">Cues</span>
+                        </button>
+
+                        <button
+                            onClick={() => openDrawer("shop")}
+                            className="flex flex-col items-center justify-center bg-accent/30 hover:bg-accent/20 rounded-lg px-6 py-2 transition-colors w-24"
+                        >
+                            <div className="text-2xl mb-1">💰</div>
+                            <span className="text-white text-sm font-semibold">Shop</span>
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-4 flex-shrink-0">
+                        <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
+                            <div className="text-2xl">💵</div>
+                            <span className="text-green-400 font-bold">{me.cash}</span>
+                        </div>
+                        {/* Coins */}
+                        <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
+                            <div className="text-2xl">🪙</div>
+                            <span className="text-yellow-400 font-bold">{me.coins}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-2 gap-2 flex items-center justify-center absolute bottom-0 right-0">
+                <Button variant="dark" onClick={() => openDrawer("cues")}>
+                    🎁
+                </Button>
+                <Button variant="dark" onClick={() => openDrawer("settings")}>
+                    ⚙️
+                </Button>
+            </div>
+        </>
+    );
+}

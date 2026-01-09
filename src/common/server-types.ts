@@ -42,6 +42,7 @@ export enum Events {
     START_GAME = "game-start",
     MATCH_MAKE_START = "match-make-start",
     MATCH_MAKE_START_RESPONSE = "match-make-start-response",
+    MATCH_FOUND = "match-found",
     MATCH_MAKE_CANCEL = "match-make-cancel",
     MATCH_MAKE_CANCEL_RESPONSE = "match-make-cancel-response",
     KICK_PLAYER = "kick-player",

@@ -8,7 +8,7 @@ import { Events } from "../../../../common/server-types";
 import type { Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 import GameLayout from "../game/game-layout";
-import { PlayerInfoWidget } from "../start/start-navbar";
+import { GeneralHeader } from "../general/header";
 import { Button } from "../ui/button";
 
 export function Lobby({ service }: { service: MultiplayerService }) {
@@ -95,6 +95,8 @@ export function Lobby({ service }: { service: MultiplayerService }) {
         if (!currentPlayerIsHost || !currentPlayer || !room) return;
         service.call(Events.KICK_PLAYER, { userId: currentPlayer.id, roomId: room.id, kickTargetId: id });
     };
+    console.log(room?.players);
+    const spectators = room?.players.filter((p) => p.isSpectator) ?? [];
 
     return (
         <>
@@ -109,7 +111,28 @@ export function Lobby({ service }: { service: MultiplayerService }) {
                         backgroundRepeat: "no-repeat",
                     }}
                 >
-                    <PlayerInfoWidget service={service} />
+                    <GeneralHeader service={service} />
+
+                    <div className="absolute left-4  flex flex-col items-center gap-4 z-10">
+                        {spectators.length > 0 && (
+                            <>
+                                <div className="flex flex-col gap-3 max-h-[60vh] overflow-x-hidden w-fit overflow-y-auto p-1 no-scrollbar">
+                                    {spectators.map((spec) => (
+                                        <div key={spec.id} className="group relative" title={spec.name}>
+                                            <img
+                                                src={spec.photo || "/placeholder.svg"}
+                                                className="w-10 h-10 md:w-14 md:h-14 rounded-full  transition-all shadow-lg object-cover"
+                                                alt={spec.name}
+                                            />
+                                            <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-dark text-text text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-accent/20">
+                                                {spec.name}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
 
                     {/* Main content */}
                     <div className="w-full flex flex-col gap-4">
