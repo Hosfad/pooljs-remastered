@@ -96,11 +96,13 @@ export class PoolService {
 
         const velX = Math.cos(angle) * powerPercent * MAX_POWER;
         const velY = Math.sin(angle) * powerPercent * MAX_POWER;
-        const wbody = this.balls[whiteball]!.phaserSprite.body as MatterJS.BodyType;
-        console.log("hitBalls", velX, velY);
-
-        this.scene.matter.body.setVelocity(wbody, { x: velX, y: velY });
         velocities[whiteball]!.set(velX, velY);
+
+        if (USE_MATTER_JS) {
+            const wbody = this.balls[whiteball]!.phaserSprite.body as MatterJS.BodyType;
+            this.scene.matter.body.setVelocity(wbody, { x: velX, y: velY });
+            this.scene.matter.body.setAngularVelocity(wbody, Math.PI / 2);
+        }
 
         const turn = this.whoseTurn();
         const points = this.players[turn];
@@ -284,6 +286,7 @@ export class PoolService {
     private matter_simulate(): KeyPositions {
         const keyPositions: KeyPositions = [this.getKeyPosition()];
         const frameRate = 16.66; // 60 fps delta
+        const minVelocity = 0.1;
 
         this.scene.matter.world.addListener("collisionstart", (event: Phaser.Physics.Matter.Events.CollisionStartEvent) => {
             event.pairs.forEach((pair) => {
@@ -307,9 +310,9 @@ export class PoolService {
 
                 if (this.inHole[i] || !ball.phaserSprite.body) continue;
 
-                const velocity = ball.phaserSprite.body.velocity;
+                const velocity = new Vector2(ball.phaserSprite.body.velocity)
 
-                if (velocity.x * velocity.x + velocity.y + velocity.y > 0.001 * MAX_POWER) {
+                if (velocity.length() > minVelocity) {
                     anyMoving = true;
                 }
             }
