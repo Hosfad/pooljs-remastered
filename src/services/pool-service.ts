@@ -90,18 +90,19 @@ export class PoolService {
         return this.turns[this.turnIndex] as BallType;
     }
 
-    public hitBalls(powerPercent: number, angle: number): KeyPositions {
+    public hitBalls(powerPercent: number, angle: number, offset: { x: number; y: number } = { x: 0, y: 0 }): KeyPositions {
         const whiteball = this.balls.length - 1;
         const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
+        const power = powerPercent * MAX_POWER;
 
-        const velX = Math.cos(angle) * powerPercent * MAX_POWER;
-        const velY = Math.sin(angle) * powerPercent * MAX_POWER;
+        const velX = Math.cos(angle) * power;
+        const velY = Math.sin(angle) * power;
         velocities[whiteball]!.set(velX, velY);
 
         if (USE_MATTER_JS) {
             const wbody = this.balls[whiteball]!.phaserSprite.body as MatterJS.BodyType;
             this.scene.matter.body.setVelocity(wbody, { x: velX, y: velY });
-            this.scene.matter.body.setAngularVelocity(wbody, Math.PI / 2);
+            // this.scene.matter.body.setAngularVelocity(wbody, angularVel);
         }
 
         const turn = this.whoseTurn();
