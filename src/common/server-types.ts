@@ -56,6 +56,8 @@ export enum Events {
     HITS = "hit",
     HAND = "hand",
 
+    DROP_BALL = "drop-ball",
+
     ERROR_ROOM_FULL = "error-room-full",
     SHOW_MODAL = "show-error-modal",
     SHOW_LOADING = "show-loading",
@@ -99,6 +101,9 @@ export type EventsData = {
     [Events.PULL]: RoomEventBodyOptions & { x: number; y: number; angle: number; power: number };
     [Events.INIT]: Room;
     [Events.HAND]: RoomEventBodyOptions & { x: number; y: number };
+
+    // UI UPDATES
+    [Events.DROP_BALL]: RoomEventBodyOptions & { ballNumber: number | "white" | "black"; ballType: BallType };
 
     // ERRORS
     [Events.ERROR_ROOM_FULL]: WebsocketRespone<RoomId>;

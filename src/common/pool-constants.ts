@@ -6,7 +6,9 @@ export let USE_MATTER_JS = true;
 export let INIT_DISCORD_SDK = false;
 
 export let MODAL_OPEN: boolean = false;
-export function setGlobalModalOpenVariable(open: boolean) { MODAL_OPEN = open; }
+export function setGlobalModalOpenVariable(open: boolean) {
+    MODAL_OPEN = open;
+}
 
 export const CUSHION_CONSTANTS = {
     SIDE_INNER_X: 0, // Inner edge x position
@@ -86,7 +88,7 @@ const targetWidth = 1920;
 const screenRatio = width / targetWidth;
 
 // Game dimensions
-export const BALL_RADIUS = 25 * screenRatio;
+export const BALL_RADIUS = 12 * screenRatio;
 export const HOLE_RADIUS = 25 * screenRatio;
 
 // REAL LIFE PHYSICS CONSTANTS

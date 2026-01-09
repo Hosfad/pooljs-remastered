@@ -34,9 +34,8 @@ export function Slider({
     return (
         <div className="mb-6">
             <div className="flex items-center gap-4 flex-wrap">
-                <label className={`text-accent text-base sm:text-lg min-w-[140px] sm:min-w-[160px] font-medium`}>
-                    {label}
-                </label>
+                <span className="text-white font-bold text-lg min-w-[140px] sm:min-w-[180px]">{label}</span>
+
                 <div className="relative flex-1 min-w-[150px] sm:min-w-[200px]">
                     <div className="w-full h-8 sm:h-9 bg-acceny/30 border-2 border-accent rounded-lg relative overflow-hidden">
                         <div

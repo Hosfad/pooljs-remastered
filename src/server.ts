@@ -325,6 +325,11 @@ wss.on("connection", (ws) => {
         broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.HAND, { type: "success", ...data });
     });
 
+    eventListener.on(Events.DROP_BALL, withRoomAuthMiddleware, (data) => {
+        const { roomId, userId: senderId } = data;
+        broadcastEvent({ roomId, senderId: senderId! }, Events.DROP_BALL, { type: "success", ...data });
+    });
+
     ws.on("close", () => {
         if (!client) return;
     });

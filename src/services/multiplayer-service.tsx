@@ -12,6 +12,7 @@ import { LoadingPage } from "../scenes/components/react/loading/loading-page";
 import { Lobby } from "../scenes/components/react/lobby/lobby";
 
 import MainScreen from "../scenes/components/react/general/main-screen";
+import { UIProvider } from "../scenes/components/react/provider";
 
 interface Preferences {
     ballType: BallType;
@@ -35,13 +36,15 @@ export class MultiplayerService extends LocalService {
                     const root = createRoot(reactRoot);
                     root.render(
                         <React.StrictMode>
-                            <BrowserRouter>
-                                <LoadingPage service={this} />
-                                <Routes>
-                                    <Route path="/" element={<MainScreen service={this} />}></Route>
-                                    <Route path="/lobby" element={<Lobby service={this} />}></Route>
-                                </Routes>
-                            </BrowserRouter>
+                            <UIProvider service={this}>
+                                <BrowserRouter>
+                                    <LoadingPage service={this} />
+                                    <Routes>
+                                        <Route path="/" element={<MainScreen service={this} />}></Route>
+                                        <Route path="/lobby" element={<Lobby service={this} />}></Route>
+                                    </Routes>
+                                </BrowserRouter>
+                            </UIProvider>
                         </React.StrictMode>
                     );
                 }

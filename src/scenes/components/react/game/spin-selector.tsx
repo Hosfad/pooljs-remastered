@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
-import { Events } from "../../../../common/server-types";
 import type { Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 
@@ -9,18 +8,19 @@ interface SpinPosition {
     y: number;
 }
 
-export default function SpinIndicator({ service }: { service: MultiplayerService }) {
+export default function SpinIndicator({
+    room,
+    service,
+    position = "right",
+}: {
+    room: Room;
+    service: MultiplayerService;
+    position?: "left" | "right";
+}) {
     const [isExpanded, setIsExpanded] = useState<boolean>(false);
     const [spinPosition, setSpinPosition] = useState<SpinPosition>({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const ballRef = useRef<HTMLDivElement>(null);
-    const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
-
-    React.useEffect(() => {
-        service.subscribe(Events.INIT, (data) => {
-            setRoom(data);
-        });
-    }, []);
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsDragging(true);
@@ -91,6 +91,8 @@ export default function SpinIndicator({ service }: { service: MultiplayerService
         }
     }, [isDragging]);
 
+    const twPosition = position === "left" ? "left-8" : "right-8";
+
     return (
         room?.isGameStarted && (
             <div className="relative w-full">
@@ -103,7 +105,7 @@ export default function SpinIndicator({ service }: { service: MultiplayerService
                             exit={{ scale: 0.8, opacity: 0 }}
                             transition={{ duration: 0.3, ease: "easeOut" }}
                             onClick={() => setIsExpanded(true)}
-                            className="fixed top-8 right-8 w-24 h-24 bg-gray-800 rounded-full cursor-pointer shadow-lg overflow-hidden"
+                            className={`fixed top-8 ${twPosition} w-24 h-24 bg-gray-800 rounded-full cursor-pointer shadow-lg overflow-hidden`}
                             style={{
                                 backgroundImage: `url(/assets/game/balls/white.svg)`,
                                 backgroundSize: "cover",

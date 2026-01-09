@@ -16,7 +16,7 @@ const chevronPattern = `url("data:image/svg+xml,%3Csvg width='40' height='40' vi
 
 const KNOB_HEIGHT = 56;
 
-const PowerMeter = ({ service }: { service: Service }) => {
+const PowerMeter = ({ service, position = "right" }: { service: Service; position?: "left" | "right" }) => {
     const [power, setPower] = useState<number>(0);
     const [pixelOffset, setPixelOffset] = useState<number>(0);
     const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -40,7 +40,6 @@ const PowerMeter = ({ service }: { service: Service }) => {
             setIsDragging(true);
             setPixelOffset(calculatePoistionFromPower(finalPower));
             setPower(finalPower);
-            setIsDragging(false);
         });
 
         service.subscribe(Events.HITS, () => {
@@ -91,6 +90,8 @@ const PowerMeter = ({ service }: { service: Service }) => {
 
     useEffect(() => {
         const handlePointerMove = (e: PointerEvent) => {
+            if (!service.isMyTurn()) return;
+
             if (isDragging) {
                 calculatePosition(e.clientY);
             }
@@ -115,8 +116,12 @@ const PowerMeter = ({ service }: { service: Service }) => {
         };
     }, [isDragging, calculatePosition]);
 
+    const twPosition = position === "left" ? "left-8" : "right-8";
+
     return (
-        <div className="fixed right-8 top-1/2 transform -translate-y-1/3 h-[60vh] z-50 flex flex-col items-center select-none">
+        <div
+            className={`fixed ${twPosition} top-1/2 transform -translate-y-1/3 h-[60vh] z-50 flex flex-col items-center select-none`}
+        >
             <div
                 className="relative h-full w-18 bg-dark rounded-xl p-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),_0_4px_8px_rgba(0,0,0,0.5)] border-2 border-dark"
                 style={{ touchAction: "none" }}
@@ -129,8 +134,8 @@ const PowerMeter = ({ service }: { service: Service }) => {
                     <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(to_bottom,_transparent_24%,_#ffffff_25%,_transparent_26%)] bg-[length:100%_25%]" />
 
                     <div
-                        className={`absolute top-0 left-0 w-full overflow-hidden pointer-events-none
-                        ${isDragging ? "duration-0" : "transition-all duration-300 ease-out"}`}
+                        className={`absolute top-0 left-0 w-full overflow-hidden pointer-events-none duration-0"
+                      `}
                         style={{
                             height: `${pixelOffset + 4}px`,
                         }}
@@ -153,13 +158,9 @@ const PowerMeter = ({ service }: { service: Service }) => {
                     <div
                         className={`absolute left-0 w-full rounded-lg flex items-center justify-center h-14
                         
-                        border-t border-slate-200 border-b-2 border-[#bdbdbd]
-                        shadow-[0_4px_6px_rgba(0,0,0,0.4)]
-                        ${
-                            isDragging
-                                ? "cursor-grabbing brightness-110 duration-0"
-                                : "cursor-grab transition-all duration-300 ease-out"
-                        }
+                        border-t  border-b-2 border-[#bdbdbd]
+                        shadow-[0_4px_6px_rgba(0,0,0,0.4)]  duration-0
+                        ${isDragging ? "cursor-grabbing brightness-110" : "cursor-grab "}
             `}
                         style={{
                             background: `linear-gradient(to bottom, #eeeeee, #bdbdbd, #9e9e9e)`,

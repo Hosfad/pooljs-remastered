@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { type PoolState } from "../../../../common/server-types";
 import type { Player, Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
+import { useUI } from "../provider";
 
 const ROUND_TIME = 30;
 const SCALED_BALL_SIZE = 22;
@@ -44,7 +45,7 @@ export function GameInfoWidget({ room, service }: { room: Room; service: Multipl
             `}</style>
 
             <div className="flex items-center gap-12 bg-black/20 backdrop-blur-sm p-4 rounded-3xl border border-white/5 shadow-2xl pointer-events-auto">
-                <PlayerHUD player={player1} isActive={currentPlayerId === player1.id} progress={progress} state={state} />
+                <PlayerHUD player={player1} isActive={currentPlayerId === player1.id} progress={progress} />
 
                 {/* Center Timer Section */}
                 <div className="flex flex-col items-center min-w-[100px]">
@@ -54,19 +55,23 @@ export function GameInfoWidget({ room, service }: { room: Room; service: Multipl
                     </div>
                 </div>
 
-                <PlayerHUD
-                    player={player2}
-                    isActive={currentPlayerId === player2.id}
-                    progress={progress}
-                    state={state}
-                    reverse
-                />
+                <PlayerHUD player={player2} isActive={currentPlayerId === player2.id} progress={progress} reverse />
             </div>
         </div>
     );
 }
 
-function PlayerHUD({ player, isActive, progress, state, reverse }: any) {
+function PlayerHUD({
+    player,
+    isActive,
+    progress,
+    reverse,
+}: {
+    player: Player;
+    isActive: boolean;
+    progress: number;
+    reverse?: boolean;
+}) {
     const getPlayerBalls = (player: Player) => {
         const ballType = player.state.ballType;
         if (!ballType) return [];
@@ -76,7 +81,7 @@ function PlayerHUD({ player, isActive, progress, state, reverse }: any) {
     };
 
     const playerBalls = getPlayerBalls(player);
-    const scored = state?.inHole ? Object.keys(state.inHole).map(Number) : [];
+    const { pocketedBalls } = useUI();
 
     return (
         <div className={`flex items-center gap-4 ${reverse ? "flex-row-reverse" : "flex-row"}`}>
@@ -89,19 +94,19 @@ function PlayerHUD({ player, isActive, progress, state, reverse }: any) {
                     <div className="absolute inset-x-4 h-[2px] bg-white/5 top-1/2 -translate-y-1/2 rounded-full" />
 
                     <div className={`flex gap-1 relative ${reverse ? "flex-row-reverse" : "flex-row"}`}>
-                        {playerBalls.map((ballIndex: number) => {
-                            const isScored = scored.includes(ballIndex);
+                        {playerBalls.map((ballNumber: number) => {
+                            const isScored = pocketedBalls.findIndex((b) => b.number === ballNumber) !== -1;
 
                             return (
                                 <img
-                                    key={ballIndex}
-                                    src={`/assets/game/balls/${ballIndex}.svg`}
+                                    key={ballNumber}
+                                    src={`/assets/game/balls/${ballNumber}.svg`}
                                     className={`
                                         ball-drop shadow-lg transition-all duration-500
                                         ${isScored ? "opacity-90 mix-blend-multiply" : "opacity-100"}
                                     `}
                                     style={{ width: SCALED_BALL_SIZE, height: SCALED_BALL_SIZE }}
-                                    alt={`Ball ${ballIndex}`}
+                                    alt={`Ball ${ballNumber}`}
                                 />
                             );
                         })}

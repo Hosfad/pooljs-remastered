@@ -138,6 +138,8 @@ export abstract class Service {
                   selectedCue: "basic",
                   showHints: true,
                   showAimLine: true,
+                  powerMeterPosition: "left",
+                  spinSelectorPosition: "right",
               };
     }
 

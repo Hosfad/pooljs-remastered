@@ -27,7 +27,7 @@ export interface Hole {
 }
 
 export interface Collider {
-    sprite: { size: { points: Phaser.Math.Vector2[] }; };
+    sprite: { size: { points: Phaser.Math.Vector2[] } };
     phaserGraphics?: Phaser.GameObjects.Graphics;
     body: MatterJS.Body;
 }
@@ -45,4 +45,7 @@ export type GameSettings = {
     selectedCue: CueId;
     showHints: boolean;
     showAimLine: boolean;
+
+    powerMeterPosition: "left" | "right";
+    spinSelectorPosition: "left" | "right";
 };

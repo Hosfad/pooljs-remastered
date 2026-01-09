@@ -1,76 +1,50 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Events, type PoolState } from "../../../../common/server-types";
-import type { MultiplayerService } from "../../../../services/multiplayer-service";
+import { useEffect, useRef, useState } from "react";
+import { useUI } from "../provider";
 
 const BALL_SIZE = 24;
 
-interface BallData {
-    id: number;
-    ballIndex: number;
-    targetY: number;
-}
-
-const BallRail = ({ service, maxBalls = 15 }: { service: MultiplayerService; maxBalls?: number }) => {
-    const [balls, setBalls] = useState<BallData[]>([]);
+const BallRail = ({ position = "right" }: { position?: "left" | "right" }) => {
+    const { pocketedBalls } = useUI();
     const railRef = useRef<HTMLDivElement>(null);
-
-    const [state, setState] = useState<PoolState | null>(service.getState());
+    const [railInfo, setRailInfo] = useState<{ ballSize: number; height: number }>({
+        ballSize: 0,
+        height: 0,
+    });
 
     useEffect(() => {
-        service.subscribe(Events.HITS, () => {
-            setState(service.getState());
-        });
-        service.subscribe(Events.UPDATE_ROOM, () => {
-            setState(service.getState());
-        });
-    }, [service]);
+        const updateHeight = () => {
+            if (railRef.current) {
+                setRailInfo({
+                    ballSize: BALL_SIZE,
+                    height: railRef.current.clientHeight,
+                });
+            }
+        };
 
-    const getBallImage = (index: number) => {
-        let finalIndex = index + 1 + "";
-        if (finalIndex === "8") finalIndex = "black";
-        if (finalIndex === "16") finalIndex = "white";
-        console.log(finalIndex);
-        return `/assets/game/balls/${finalIndex}.svg`;
+        updateHeight();
+
+        window.addEventListener("resize", updateHeight);
+        return () => window.removeEventListener("resize", updateHeight);
+    }, []);
+
+    const getBallImage = (number: number | "white" | "black") => {
+        let finalNumber = number + "";
+        if (finalNumber === "8") finalNumber = "black";
+        if (finalNumber === "16") finalNumber = "white";
+
+        console.log("Ball image", finalNumber);
+        return `/assets/game/balls/${finalNumber}.svg`;
     };
 
-    const dropBall = useCallback(
-        (ballIndex: number) => {
-            if (!railRef.current) return;
+    const getBallRestingY = (index: number) => {
+        const restingY = railInfo.height - index * railInfo.ballSize;
+        return restingY;
+    };
 
-            const railHeight = railRef.current.clientHeight;
-
-            setBalls((prev) => {
-                if (prev.length >= maxBalls) return prev;
-
-                const restingY = railHeight - (prev.length + 1) * BALL_SIZE;
-
-                const newBall: BallData = {
-                    id: Date.now(),
-                    ballIndex,
-                    targetY: restingY,
-                };
-
-                return [...prev, newBall];
-            });
-        },
-        [maxBalls]
-    );
-
-    useEffect(() => {
-        if (!state?.inHole) return;
-        const pocketedIndices = Object.keys(state.inHole)
-            .map(Number)
-            .filter((i) => i !== 8 && i !== 16);
-        const newBallsToDrop = pocketedIndices.filter((index) => !balls.some((b) => b.ballIndex === index));
-        if (newBallsToDrop.length > 0) {
-            newBallsToDrop.forEach((ballIndex) => {
-                dropBall(ballIndex);
-            });
-        }
-    }, [state]);
+    const twPosition = position === "left" ? "left-8" : "right-8";
 
     return (
-        <div className="fixed left-8 top-1/2 transform -translate-y-1/3 h-[60vh] z-40 flex flex-col items-center">
+        <div className={`fixed ${twPosition} top-1/2 transform -translate-y-1/3 h-[60vh] z-40 flex flex-col items-center`}>
             <div className="relative h-full w-12 bg-dark rounded-full p-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),_0_4px_8px_rgba(0,0,0,0.5)] border-2 border-dark">
                 <div
                     ref={railRef}
@@ -79,24 +53,26 @@ const BallRail = ({ service, maxBalls = 15 }: { service: MultiplayerService; max
                     <div className="absolute inset-y-0 left-4 w-1 bg-slate-500/30 rounded-full" />
                     <div className="absolute inset-y-0 right-4 w-1 bg-slate-500/30 rounded-full" />
 
-                    {balls.map((ball) => (
-                        <div
-                            key={ball.id}
-                            className="absolute left-1/2 -translate-x-1/2 transition-all duration-700 ease-bounce"
-                            style={{
-                                top: `${ball.targetY}px`,
-                                width: `${BALL_SIZE}px`,
-                                height: `${BALL_SIZE}px`,
-                                animation: "dropIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards",
-                            }}
-                        >
-                            <img
-                                src={getBallImage(ball.ballIndex)}
-                                alt={`Ball ${ball.ballIndex}`}
-                                className="w-full h-full drop-shadow-lg"
-                            />
-                        </div>
-                    ))}
+                    {pocketedBalls.map((ball, index) => {
+                        return (
+                            <div
+                                key={`ball-in-pocket-${ball.number}`}
+                                className="absolute left-1/2 -translate-x-1/2 transition-all duration-700 ease-bounce"
+                                style={{
+                                    top: `${getBallRestingY(index + 1)}px`,
+                                    width: `${BALL_SIZE}px`,
+                                    height: `${BALL_SIZE}px`,
+                                    animation: "dropIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards",
+                                }}
+                            >
+                                <img
+                                    src={getBallImage(ball.number ?? ball.ballType)}
+                                    alt={`Ball ${ball.number}`}
+                                    className="w-full h-full drop-shadow-lg"
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 

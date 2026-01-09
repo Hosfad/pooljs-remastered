@@ -24,14 +24,13 @@ import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyP
 import { Events } from "../common/server-types";
 import { MultiplayerService } from "../services/multiplayer-service.tsx";
 import { PoolService } from "../services/pool-service";
-import type { Service } from "../services/service";
 import { DebugPanelModal } from "./components/debug-panel-modal";
 
 const Vector2 = Phaser.Math.Vector2;
 
 export class PoolGameScene extends Phaser.Scene {
     private debugPanel?: DebugPanelModal;
-    private service!: Service;
+    private service!: MultiplayerService;
     private keyPositions: KeyPositions = [];
 
     private isGameStarted = false;
@@ -52,9 +51,9 @@ export class PoolGameScene extends Phaser.Scene {
         isDragging: boolean;
         power: number;
     } = {
-            isDragging: false,
-            power: 0,
-        };
+        isDragging: false,
+        power: 0,
+    };
 
     // Graphics
     private hand!: Phaser.GameObjects.Sprite;
@@ -124,7 +123,7 @@ export class PoolGameScene extends Phaser.Scene {
         this.input.once("pointerdown", () => window.location.reload());
     }
 
-    private registerEvents(service: Service): void {
+    private registerEvents(service: MultiplayerService): void {
         this.service = service;
 
         this.service.subscribe(Events.INIT, () => {
@@ -243,7 +242,7 @@ export class PoolGameScene extends Phaser.Scene {
                 const texture = isSolid ? solids.shift() : stripes.shift();
 
                 const y = startY + i * ROW_SPACING;
-                this.createBall(x, y, ballType, texture || POOL_ASSETS.WHITE_BALL);
+                this.createBall(x, y, ballType, texture || POOL_ASSETS.WHITE_BALL, r);
             }
         }
 
@@ -256,10 +255,13 @@ export class PoolGameScene extends Phaser.Scene {
         centroid.divide({ x: this.balls.length, y: this.balls.length });
 
         // Get the closest ball to the centroid
-        const closestBall = this.balls.reduce((acc, ball) => {
-            const distance = new Vector2(ball.phaserSprite).distance(centroid);
-            return distance < acc.distance ? { distance, ball } : acc;
-        }, { distance: Infinity, ball: blackBall });
+        const closestBall = this.balls.reduce(
+            (acc, ball) => {
+                const distance = new Vector2(ball.phaserSprite).distance(centroid);
+                return distance < acc.distance ? { distance, ball } : acc;
+            },
+            { distance: Infinity, ball: blackBall }
+        );
 
         const position = new Vector2(blackBall.phaserSprite);
         blackBall.phaserSprite.setPosition(closestBall.ball.phaserSprite.x, closestBall.ball.phaserSprite.y);
@@ -269,7 +271,7 @@ export class PoolGameScene extends Phaser.Scene {
         const cueX = this.tableWidth * 0.75;
         const cueY = rackOrigin.y;
 
-        this.createBall(cueX, cueY, "white", POOL_ASSETS.WHITE_BALL);
+        this.createBall(cueX, cueY, "white", POOL_ASSETS.WHITE_BALL, r);
     }
 
     private createCue(): void {
@@ -299,7 +301,7 @@ export class PoolGameScene extends Phaser.Scene {
             left: mx + cushionEdgeX,
             right: mx + tw - cushionEdgeX,
             top: my + cushionEdgeY,
-            bottom: my + th - cushionEdgeY
+            bottom: my + th - cushionEdgeY,
         };
     }
 
@@ -347,8 +349,7 @@ export class PoolGameScene extends Phaser.Scene {
             if (DEBUG_GRAPHICS) {
                 const firstPoint = this.toTableCoordinates(points[0]!.x, points[0]!.y);
 
-                graphics = this.add.graphics().fillStyle(0xff0000, 0.5).beginPath()
-                    .moveTo(firstPoint.x, firstPoint.y);
+                graphics = this.add.graphics().fillStyle(0xff0000, 0.5).beginPath().moveTo(firstPoint.x, firstPoint.y);
 
                 for (let i = 1; i < points.length; i++) {
                     const point = this.toTableCoordinates(points[i]!.x, points[i]!.y);
@@ -411,8 +412,8 @@ export class PoolGameScene extends Phaser.Scene {
             const pos = { x: x * tw + this.marginX, y: y * th + this.marginY };
 
             // increment rotation angle of sprite
-            const spd = Math.abs((pos.x + pos.y) - (sprite.x + sprite.y));
-            if (spd != 0) sprite.rotation += spd / BALL_RADIUS * 2;
+            const spd = Math.abs(pos.x + pos.y - (sprite.x + sprite.y));
+            if (spd != 0) sprite.rotation += (spd / BALL_RADIUS) * 2;
             sprite.setPosition(pos.x, pos.y);
 
             if (this.playedSounds[i] === undefined && collision !== undefined) {
@@ -432,10 +433,10 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
 
-    private createBall(x: number, y: number, ballType: Ball["ballType"], texture: string): void {
+    private createBall(x: number, y: number, ballType: Ball["ballType"], texture: string, r: number): void {
         const position = this.toTableCoordinates(x, y);
         const sprite = this.matter.add.sprite(position.x, position.y, texture);
-        sprite.setScale((BALL_RADIUS * 1.5) / sprite.width);
+        sprite.setDisplaySize(r * 2, r * 2);
         sprite.setBody(
             { type: "circle", radius: BALL_RADIUS },
             {
@@ -509,7 +510,9 @@ export class PoolGameScene extends Phaser.Scene {
         const pos = new Vector2(px, py);
 
         for (const hole of this.holes) {
-            const { sprite: { position } } = hole;
+            const {
+                sprite: { position },
+            } = hole;
             const holePos = new Vector2(position.x, position.y);
 
             if (holePos.distance(pos) <= HOLE_RADIUS * 1) {
@@ -839,13 +842,22 @@ export class PoolGameScene extends Phaser.Scene {
         const sprite = ball.phaserSprite;
         const pos = new Vector2(sprite);
 
-        const closestHole = this.holes.reduce((acc, { sprite: { position } }) => {
-            const distance = pos.distance(position);
-            return distance < acc.distance ? { distance, pos: position } : acc;
-        }, { distance: Infinity, pos: new Vector2(0, 0) });
+        const closestHole = this.holes.reduce(
+            (acc, { sprite: { position } }) => {
+                const distance = pos.distance(position);
+                return distance < acc.distance ? { distance, pos: position } : acc;
+            },
+            { distance: Infinity, pos: new Vector2(0, 0) }
+        );
 
         const spriteClone = this.add.sprite(sprite.x, sprite.y, sprite.texture.key).setScale(sprite.scale);
         sprite.setVisible(false);
+        const textureSplit = ball.phaserSprite.texture.key.split("-");
+        const ballNumber = parseInt(textureSplit[textureSplit.length - 1]!);
+
+        const roomData = this.service.getRoomConfig();
+
+        this.service.call(Events.DROP_BALL, { ...roomData, ballNumber, ballType: ball.ballType });
 
         // ball falling into pocket animation
         this.tweens.add({
@@ -861,8 +873,6 @@ export class PoolGameScene extends Phaser.Scene {
 
         if (!skipRail && sprite.body) this.matter.world.remove(sprite.body as MatterJS.BodyType);
     }
-
-    // POWER METER
 
     private setPower(power: number): void {
         this.powerMeter.power = power;

@@ -3,6 +3,7 @@ import type { GameSettings } from "../../../../common/pool-types";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 import { Button } from "../ui/button";
 import { Drawer } from "../ui/drawer";
+import { RadioGroup } from "../ui/radio-group";
 import { Slider } from "../ui/slider";
 
 export function SettingsDrawer({
@@ -26,14 +27,14 @@ export function SettingsDrawer({
         setSettings(service.getSettings());
     };
 
-    const changeSetting = (key: keyof GameSettings, value: number) => {
+    const changeSetting = (key: keyof GameSettings, value: number | boolean | string) => {
         setSettings({ ...settings, [key]: value });
     };
 
     return (
         <Drawer title="Game Settings" isOpen={isOpen} onClose={onClose} me={me} slideFrom="bottom">
-            <div className="space-y-6 max-w-2xl">
-                <div className="bg-white/10 rounded-lg p-6">
+            <div className="space-y-6 grid grid-cols-2  gap-4 px-12">
+                <div className="bg-white/5 border border-white/10 rounded-lg rounded-lg p-6 col-span-2">
                     <h3 className="text-accent font-bold text-lg mb-4">Audio Settings</h3>
                     <div className="space-y-4">
                         <Slider
@@ -61,31 +62,64 @@ export function SettingsDrawer({
                         />
                     </div>
                 </div>
-                <div className="bg-white/10 rounded-lg p-6">
-                    <h3 className="text-accent font-bold text-lg mb-4">Game Settings</h3>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <span className="text-white">Show Hints</span>
-                            <input
-                                type="checkbox"
-                                className="accent-accent" // Change to any color you want
-                                checked={settings.showHints}
-                                onChange={(e) => setSettings((prev) => ({ ...prev, showHints: e.target.checked }))}
-                            />
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-white">Aim Line</span>
-                            <input
-                                type="checkbox"
-                                className="accent-accent" // Change to any color you want
-                                checked={settings.showAimLine}
-                                onChange={(e) => setSettings((prev) => ({ ...prev, showAimLine: e.target.checked }))}
-                            />
-                        </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+                    <h3 className="text-accent font-bold text-lg mb-4">Game UI</h3>
+                    <div className="space-y-2">
+                        <RadioGroup
+                            label="Power Meter Position"
+                            selectedValue={settings.powerMeterPosition}
+                            options={[
+                                { label: "Left", value: "left" },
+                                { label: "Right", value: "right" },
+                            ]}
+                            onChange={(val) => changeSetting("powerMeterPosition", val)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <RadioGroup
+                            label="Pocketed Balls Position"
+                            selectedValue={settings.powerMeterPosition === "left" ? "right" : "left"}
+                            options={[
+                                { label: "Left", value: "left" },
+                                { label: "Right", value: "right" },
+                            ]}
+                            onChange={(val) => {
+                                changeSetting("powerMeterPosition", val === "left" ? "right" : "left");
+                            }}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <RadioGroup
+                            label="Spin Selector Position"
+                            selectedValue={settings.spinSelectorPosition}
+                            options={[
+                                { label: "Left", value: "left" },
+                                { label: "Right", value: "right" },
+                            ]}
+                            onChange={(val) => {
+                                changeSetting("spinSelectorPosition", val);
+                            }}
+                        />
                     </div>
                 </div>
 
-                <div className="flex gap-4 pt-4">
+                <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+                    <h3 className="text-accent font-bold text-lg mb-4">Game Settings</h3>
+                    <div className="space-y-2">
+                        <RadioGroup
+                            label="Aim Line"
+                            selectedValue={settings.powerMeterPosition}
+                            options={[
+                                { label: "On", value: "on" },
+                                { label: "Off", value: "off" },
+                            ]}
+                            onChange={(val) => changeSetting("powerMeterPosition", val)}
+                        />
+                    </div>
+                </div>
+
+                <div className="flex gap-4 p-6 col-span-2 bg-white/5 border border-white/10 rounded-lg">
                     <Button onClick={handleSave} variant="dark">
                         Save Settings
                     </Button>
