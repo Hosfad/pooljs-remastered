@@ -1,13 +1,20 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { type BallType, type KeyPositions } from "../common/pool-types";
-import { Events, type EventsData, type TEventKey } from "../common/server-types";
+import {
+    BroadcastEvent,
+    Events,
+    type EventsData,
+    type RoomEventBodyOptions,
+    type TEventKey,
+    type WebsocketError,
+} from "../common/server-types";
 import type { Player } from "../server";
 import { LocalService } from "./local-service";
 
 import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { DEBUG_GRAPHICS, INIT_DISCORD_SDK } from "../common/pool-constants";
+import { INIT_DISCORD_SDK } from "../common/pool-constants";
 import { LoadingPage } from "../scenes/components/react/loading/loading-page";
 import { Lobby } from "../scenes/components/react/lobby/lobby";
 
@@ -80,19 +87,41 @@ export class MultiplayerService extends LocalService {
         }
     }
 
-    public listen<T extends keyof EventsData>(event: T, callback: (data: EventsData[T]) => void) {
+    public listen<T extends TEventKey>(
+        event: T,
+        callback: (
+            body:
+                | {
+                      type: "success";
+                      data: EventsData[T] & RoomEventBodyOptions;
+                  }
+                | {
+                      type: "error";
+                      data: { message: string; code: WebsocketError } & RoomEventBodyOptions;
+                  }
+        ) => void
+    ) {
         if (!this.eventHandlers.has(event)) {
             this.eventHandlers.set(event, new Set());
         }
         this.eventHandlers.get(event)!.add(callback);
     }
 
-    public call<T extends keyof EventsData>(event: T, data: EventsData[T]) {
+    public call<T extends keyof EventsData>(
+        event: T,
+        data: EventsData[T],
+        broadcastEvent: BroadcastEvent = BroadcastEvent.ALL
+    ) {
         if (!this.ws) {
             console.error("WebSocket is not open");
             return;
         }
-        this.ws.send(JSON.stringify({ event, data }));
+        const roomData = this.getRoomConfig();
+        if (!roomData.roomId || !roomData.userId) return;
+
+        this.ws.send(
+            JSON.stringify({ event, data: { ...data, broadcastEvent, roomId: roomData.roomId, senderId: roomData.userId } })
+        );
     }
 
     public override getPlayers(): Player[] {
@@ -100,10 +129,9 @@ export class MultiplayerService extends LocalService {
     }
 
     override isMyTurn(): boolean {
-        if (DEBUG_GRAPHICS) return true;
-
         const imHost = this.room?.hostId === this.me()?.id;
         const index = this.service.getState().turnIndex;
+
         return imHost ? index == 0 : index == 1;
     }
 
@@ -116,13 +144,9 @@ export class MultiplayerService extends LocalService {
     }
 
     override hitBalls(powerPercent: number, angle: number): KeyPositions {
-        const { userId, roomId } = this.getRoomConfig();
-        if (!roomId) return [];
-
         const keyPositions = this.service.hitBalls(powerPercent, angle);
-        const data = { keyPositions: keyPositions, state: this.service.getState(), userId, roomId };
-
-        this.send(Events.HITS, { ...data, userId: "1" });
+        const data = { keyPositions: keyPositions, state: this.service.getState() };
+        this.send(Events.HITS, { ...data });
 
         const POS_PER_SENT = 100;
         for (let i = 0; i < keyPositions.length; i += POS_PER_SENT) {
@@ -132,23 +156,18 @@ export class MultiplayerService extends LocalService {
         return keyPositions;
     }
 
-    override pull(x: number, y: number, angle: number, power: number): void {
+    override pull(x: number, y: number, angle: number, power: number, sendMultiplayer: boolean = true): void {
         const { userId, roomId } = this.getRoomConfig();
-
         if (!roomId) return;
 
-        const data = { x, y, angle, userId, roomId };
+        const data = { x, y, angle, power };
 
-        this.send(Events.PULL, { ...data, userId: "1", power: power });
-        this.call(Events.PULL, { ...data, userId: "1", power: power });
+        this.send(Events.PULL, { ...data });
+        if (sendMultiplayer) this.call(Events.PULL, { ...data });
     }
 
     override moveHand(x: number, y: number): void {
-        const { userId, roomId } = this.getRoomConfig();
-
-        if (!roomId) return;
-
-        this.call(Events.HAND, { x, y, userId, roomId });
+        this.call(Events.HAND, { x, y });
     }
 
     public isConnected(): boolean {
@@ -222,66 +241,69 @@ export class MultiplayerService extends LocalService {
     registerEvents() {
         // Room events
 
-        this.listen(Events.JOIN_ROOM_RESPONSE, (data) => {
-            const { type } = data;
+        this.listen(Events.JOIN_ROOM_RESPONSE, (body) => {
+            const { type } = body;
             if (type === "error") {
-                return console.error("Error joining room", data);
+                return console.error("Error joining room", body);
             }
-            this.instanciateRoom(data.data);
-            this.handleRedirect(data.data.id);
-            this.send(Events.UPDATE_ROOM, data.data);
-        });
+            const { data } = body;
 
-        this.listen(Events.MATCH_MAKE_START_RESPONSE, (data) => {
-            const { type } = data;
-            if (type === "error") {
-                const { code: errCode, message: errMessage } = data;
-                return;
-            }
-            this.instanciateRoom(data.data);
-            this.send(Events.UPDATE_ROOM, data.data);
-        });
-
-        this.listen(Events.MATCH_MAKE_CANCEL_RESPONSE, (data) => {
-            const { type } = data;
-            if (type === "error") {
-                const { code: errCode, message: errMessage } = data;
-                return;
-            }
-            this.send(Events.UPDATE_ROOM, data.data);
-        });
-
-        this.listen(Events.PLAYER_DISCONNECT_RESPONSE, (data) => {
-            const { type } = data;
-            if (type === "error") {
-                const { code: errCode, message: errMessage } = data;
-                return;
-            }
-            this.send(Events.UPDATE_ROOM, data.data);
-        });
-
-        this.listen(Events.UPDATE_ROOM, (data) => {
             this.instanciateRoom(data);
+            this.handleRedirect(data.id);
             this.send(Events.UPDATE_ROOM, data);
         });
 
+        this.listen(Events.MATCH_MAKE_START_RESPONSE, (body) => {
+            const { type } = body;
+            if (type === "error") {
+                return console.error("Error in MATCH_MAKE_START_RESPONSE", body);
+            }
+            this.instanciateRoom(body.data);
+            this.send(Events.UPDATE_ROOM, body.data);
+        });
+
+        this.listen(Events.MATCH_MAKE_CANCEL_RESPONSE, (body) => {
+            const { type } = body;
+            if (type === "error") {
+                return console.error("Error in MATCH_MAKE_CANCEL_RESPONSE", body);
+            }
+            this.send(Events.UPDATE_ROOM, body.data);
+        });
+
+        this.listen(Events.PLAYER_DISCONNECT_RESPONSE, (body) => {
+            if (body.type === "error") {
+                return console.error("Error in PLAYER_DISCONNECT_RESPONSE", body);
+            }
+            this.send(Events.UPDATE_ROOM, body.data);
+        });
+
+        this.listen(Events.UPDATE_ROOM, (body) => {
+            if (body.type === "error") return console.error("Error in UPDATE_ROOM", body);
+            this.instanciateRoom(body.data);
+            this.send(Events.UPDATE_ROOM, body.data);
+        });
+
         // Game events
-        this.listen(Events.HAND, (data) => {
-            this.send(Events.HAND, data);
+        this.listen(Events.HAND, (body) => {
+            if (body.type === "error") return console.error("Error in HAND", body);
+            this.send(Events.HAND, body.data);
         });
 
-        this.listen(Events.INIT, (data) => {
-            this.handleRedirect(data.id);
+        this.listen(Events.INIT, (body) => {
+            if (body.type === "error") return console.error("Error in INIT", body);
+            this.handleRedirect(body.data.id);
 
-            this.send(Events.INIT, data);
+            this.send(Events.INIT, body.data);
         });
 
-        this.listen(Events.PULL, (data) => {
-            this.send(Events.PULL, data);
+        this.listen(Events.PULL, (body) => {
+            if (body.type === "error") return console.error("Error in PULL", body);
+            this.send(Events.PULL, body.data);
         });
 
-        this.listen(Events.HITS, (data) => {
-            this.send(Events.HITS, data);
+        this.listen(Events.HITS, (body) => {
+            if (body.type === "error") return console.error("Error in HITS", body);
+            this.send(Events.HITS, body.data);
         });
     }
 }

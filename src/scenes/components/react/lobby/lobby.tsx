@@ -16,7 +16,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
 
     useEffect(() => {
         const me = service.me();
-        service.call(Events.JOIN_ROOM, { ...me, userId: me.id, roomId: service.getRoomId()! });
+        service.call(Events.JOIN_ROOM, { ...me });
 
         service.subscribe(Events.UPDATE_ROOM, (data) => {
             setRoom(data);
@@ -93,7 +93,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
     };
     const handleKickPlayer = (id: string) => {
         if (!currentPlayerIsHost || !currentPlayer || !room) return;
-        service.call(Events.KICK_PLAYER, { userId: currentPlayer.id, roomId: room.id, kickTargetId: id });
+        service.call(Events.KICK_PLAYER, { kickTargetId: id });
     };
     console.log(room?.players);
     const spectators = room?.players.filter((p) => p.isSpectator) ?? [];

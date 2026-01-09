@@ -48,10 +48,8 @@ export class PoolGameScene extends Phaser.Scene {
     public marginY!: number;
 
     private powerMeter: {
-        isDragging: boolean;
         power: number;
     } = {
-        isDragging: false,
         power: 0,
     };
 
@@ -132,9 +130,7 @@ export class PoolGameScene extends Phaser.Scene {
             console.log("Pool game initialized with", this.balls.length, "balls");
         });
 
-        this.service.subscribe(Events.PULL, ({ x, y, angle, userId }) => {
-            if (userId === this.service.me()?.id) return;
-
+        this.service.subscribe(Events.PULL, ({ x, y, angle }) => {
             const width = this.tableWidth;
             const height = this.tableHeight;
 
@@ -144,18 +140,14 @@ export class PoolGameScene extends Phaser.Scene {
             this.updateCueBullback(x * width + mx, y * height + my, angle);
         });
 
-        this.service.subscribe(Events.HITS, ({ keyPositions, state, userId }) => {
-            if (userId === this.service.me()?.id) return;
-
+        this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
             this.keyPositions.push.apply(this.keyPositions, keyPositions);
             this.service.timerStop();
             this.service.setState(state);
             this.checkWinner();
         });
 
-        this.service.subscribe(Events.HAND, ({ x, y, userId }) => {
-            if (userId === this.service.me()?.id) return;
-
+        this.service.subscribe(Events.HAND, ({ x, y }) => {
             const width = this.tableWidth;
             const height = this.tableHeight;
 
@@ -206,12 +198,11 @@ export class PoolGameScene extends Phaser.Scene {
         return { x: this.marginX + x, y: this.marginY + y };
     }
 
-    public override update(): void {
+    public override update(time: number, delta: number): void {
         if (!this.isGameStarted) return;
 
         this.input.enabled = !this.keyPositions.length;
-
-        this.updateCue();
+        this.updateCue(time, delta);
         this.updateKeyPositions();
 
         this.debugPanel?.update();
@@ -504,8 +495,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private canPlaceBall(px: number, py: number): boolean {
-        const { left, right, top, bottom } = this.getTableEdges();
-        if (px < left || px > right || py < top || py > bottom) return false;
+        if (!this.isClickingTable(px, py)) return false;
 
         const pos = new Vector2(px, py);
 
@@ -532,10 +522,15 @@ export class PoolGameScene extends Phaser.Scene {
         return true;
     }
 
+    private isClickingTable(px: number, py: number): boolean {
+        const { left, right, top, bottom } = this.getTableEdges();
+        if (px < left || px > right || py < top || py > bottom) return false;
+        return true;
+    }
+
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
-
             const { x: px, y: py } = pointer;
             this.mousePosition.set(px, py);
 
@@ -551,7 +546,7 @@ export class PoolGameScene extends Phaser.Scene {
                 return;
             }
 
-            if (this.isMobile && this.isDraggingShot && !this.powerMeter.isDragging) {
+            if (this.isMobile && this.isDraggingShot && this.isClickingTable(px, py)) {
                 const { x, y } = whiteBall.phaserSprite!;
                 this.lockedAimAngle = Math.atan2(py - y, px - x);
             }
@@ -594,7 +589,7 @@ export class PoolGameScene extends Phaser.Scene {
                 return;
             }
 
-            if ((this.isMobile && this.powerMeter.isDragging) || (!this.isMobile && this.isDraggingShot)) {
+            if (!this.isMobile && this.isDraggingShot) {
                 this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
                 this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
                 this.setPower(0);
@@ -617,7 +612,12 @@ export class PoolGameScene extends Phaser.Scene {
         this.cue.rotation = angle;
     }
 
-    private updateCue(): void {
+    private updateCue(time: number, delta: number): void {
+        // broadcast interval
+        const interval = 100;
+        const currentBucket = Math.floor(time / interval);
+        const previousBucket = Math.floor((time - delta) / interval);
+        const shouldBroadcast = currentBucket > previousBucket;
         const whiteBall = this.balls[this.balls.length - 1]!;
 
         if (!this.input.enabled || whiteBall.isPocketed) {
@@ -636,10 +636,16 @@ export class PoolGameScene extends Phaser.Scene {
 
         const { x, y } = whiteBall.phaserSprite!;
 
-        if (this.isMobile && this.powerMeter.isDragging) {
+        if (this.isMobile) {
             // Still show aim line with current angle
             this.drawAimLine(x, y, this.cue.rotation);
-            this.service.pull((x - mx) / width, (y - my) / height, this.cue.rotation, this.powerMeter.power);
+            this.service.pull(
+                (x - mx) / width,
+                (y - my) / height,
+                this.cue.rotation,
+                this.powerMeter.power,
+                shouldBroadcast
+            );
             return;
         }
 
@@ -671,7 +677,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         // Aim line
         this.drawAimLine(x, y, angle);
-        this.service.pull((x - mx) / width, (y - my) / height, angle, this.powerMeter.power);
+        this.service.pull((x - mx) / width, (y - my) / height, angle, this.powerMeter.power, shouldBroadcast);
     }
 
     private lineStyle(width: number, color: number, alpha: number = 1): void {
@@ -811,12 +817,8 @@ export class PoolGameScene extends Phaser.Scene {
     private setupDebugPanel(): void {
         this.debugPanel = new DebugPanelModal(this, 0, 0, {
             INPUT_STATE: () => {
-                const draggingPowerMeter = this.powerMeter.isDragging;
                 const draggingShot = this.isDraggingShot;
-                return (
-                    `[${this.service.whoseTurn().toUpperCase()}] - ` +
-                    ((draggingShot && !this.isMobile) || draggingPowerMeter ? "AIMING" : "IDLE")
-                );
+                return `[${this.service.whoseTurn().toUpperCase()}] - ` + (draggingShot ? "AIMING" : "IDLE");
             },
 
             BALL_RADIUS: () => BALL_RADIUS,

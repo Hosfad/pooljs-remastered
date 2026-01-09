@@ -4,7 +4,7 @@ import type { DiscordSDK } from "@discord/embedded-app-sdk";
 import { v4 as uuid } from "uuid";
 import { INIT_DISCORD_SDK, type CueId } from "../common/pool-constants";
 import type { BallType, GameSettings, KeyPositions } from "../common/pool-types";
-import { Events, type EventsData } from "../common/server-types";
+import { Events, type EventsData, type RoomEventBodyOptions } from "../common/server-types";
 import type { Player, Room } from "../server";
 
 export type LocalUser = {
@@ -40,7 +40,7 @@ export abstract class Service {
     abstract setState<T>(state: T): void;
     abstract getState<T>(): T;
 
-    abstract pull(x: number, y: number, angle: number, power: number): void;
+    abstract pull(x: number, y: number, angle: number, power: number, sendMultiplayer?: boolean): void;
     abstract moveHand(x: number, y: number): void;
 
     abstract timerStart(): void;
@@ -54,7 +54,9 @@ export abstract class Service {
     }
 
     public send<T extends keyof EventsData>(event: T, data: EventsData[T]) {
-        this.events.emit(event, data);
+        const roomData = this.getRoomConfig();
+
+        this.events.emit(event, { ...data, roomId: roomData.roomId, senderId: roomData.userId });
     }
 
     public me(): LocalUser {
@@ -119,7 +121,7 @@ export abstract class Service {
         sessionStorage.setItem("user", JSON.stringify(newUser));
     }
 
-    public instanciateRoom(room: Room) {
+    public instanciateRoom(room: Room & RoomEventBodyOptions) {
         this.room = room;
     }
 

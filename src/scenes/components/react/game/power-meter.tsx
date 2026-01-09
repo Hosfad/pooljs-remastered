@@ -18,38 +18,34 @@ const KNOB_HEIGHT = 56;
 
 const PowerMeter = ({ service, position = "right" }: { service: Service; position?: "left" | "right" }) => {
     const [power, setPower] = useState<number>(0);
+
     const [pixelOffset, setPixelOffset] = useState<number>(0);
-    const [isDragging, setIsDragging] = useState<boolean>(false);
     const [trackHeight, setTrackHeight] = useState<number>(0);
+
+    const isManualDraggingRef = useRef(false);
+    const [isDragging, setIsDragging] = useState<boolean>(false);
 
     const trackRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (trackRef.current) {
-            setTrackHeight(trackRef.current.clientHeight);
-        }
-        const handleResize = () => {
-            if (trackRef.current) setTrackHeight(trackRef.current.clientHeight);
-        };
-
-        // TODO: make a custom event for this so that we arent rerendering all the time
+        if (trackRef.current) setTrackHeight(trackRef.current.clientHeight);
 
         service.subscribe(Events.PULL, (data) => {
+            if (isManualDraggingRef.current) return;
             const { power } = data;
             const finalPower = power * 100;
+
             setIsDragging(true);
             setPixelOffset(calculatePoistionFromPower(finalPower));
             setPower(finalPower);
         });
 
         service.subscribe(Events.HITS, () => {
+            isManualDraggingRef.current = false;
             setIsDragging(false);
             setPixelOffset(0);
             setPower(0);
         });
-
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
     }, []);
 
     const calculatePosition = useCallback((clientY: number) => {
@@ -84,6 +80,7 @@ const PowerMeter = ({ service, position = "right" }: { service: Service; positio
 
     const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
         e.preventDefault();
+        isManualDraggingRef.current = true;
         setIsDragging(true);
         calculatePosition(e.clientY);
     };
@@ -91,7 +88,6 @@ const PowerMeter = ({ service, position = "right" }: { service: Service; positio
     useEffect(() => {
         const handlePointerMove = (e: PointerEvent) => {
             if (!service.isMyTurn()) return;
-
             if (isDragging) {
                 calculatePosition(e.clientY);
             }
@@ -99,6 +95,7 @@ const PowerMeter = ({ service, position = "right" }: { service: Service; positio
 
         const handlePointerUp = () => {
             setIsDragging(false);
+            isManualDraggingRef.current = false;
             setPower(0);
             setPixelOffset(0);
         };

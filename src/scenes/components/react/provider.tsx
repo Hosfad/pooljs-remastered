@@ -42,7 +42,11 @@ export const UIProvider: React.FC<UIProviderProps> = ({ service, children }) => 
 
     // LISTENERS
     useEffect(() => {
-        service.listen(Events.DROP_BALL, (data) => {
+        service.listen(Events.DROP_BALL, (body) => {
+            const { type, data } = body;
+
+            if (type === "error") return console.error("Error in DROP_BALL", body);
+
             const { ballNumber, ballType } = data;
             dropBall(ballNumber, ballType);
 

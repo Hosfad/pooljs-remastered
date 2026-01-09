@@ -42,7 +42,7 @@ export class LocalService extends Service {
     }
 
     override moveHand(x: number, y: number): void {
-        this.send(Events.HAND, { x, y, userId: LOCAL_USER_ID, roomId: LOCAL_USER_ID });
+        this.send(Events.HAND, { x, y });
     }
 
     override setInHole(index: number, inHole: boolean): void {
@@ -85,8 +85,8 @@ export class LocalService extends Service {
         return this.service.getState();
     }
 
-    override pull(x: number, y: number, angle: number, power: number): void {
-        this.send(Events.PULL, { x, y, angle, userId: LOCAL_USER_ID, roomId: LOCAL_USER_ID, power: power });
+    override pull(x: number, y: number, angle: number, power: number, sendMultiplayer: boolean = false): void {
+        this.send(Events.PULL, { x, y, angle, power: power });
     }
 
     override hitBalls(powerPercent: number, angle: number): KeyPositions {
@@ -94,8 +94,6 @@ export class LocalService extends Service {
         this.send(Events.HITS, {
             keyPositions,
             state: { ...this.service.getState() },
-            userId: LOCAL_USER_ID,
-            roomId: LOCAL_USER_ID,
         });
         return keyPositions;
     }

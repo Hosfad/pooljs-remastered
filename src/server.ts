@@ -4,6 +4,7 @@ import WebSocket, { WebSocketServer } from "ws";
 import { Experience } from "./common";
 import type { BallType } from "./common/pool-types";
 import {
+    BroadcastEvent,
     Events,
     type EventsData,
     type Middleware,
@@ -12,6 +13,7 @@ import {
     type RoomEventBodyOptions,
     type TEventKey,
     type TEventListener,
+    type WebsocketError,
 } from "./common/server-types";
 
 const MAX_PLAYERS_PER_ROOM = 2;
@@ -112,10 +114,6 @@ setInterval(() => {
     groups.forEach((group) => {
         const combinedRoom = groupRooms(group);
         if (!combinedRoom) return;
-        broadcastEvent({ roomId: combinedRoom.id, senderId: combinedRoom.hostId! }, Events.INIT, {
-            type: "success",
-            ...reshapeRoom(combinedRoom),
-        });
     });
 }, 1000);
 
@@ -142,33 +140,47 @@ wss.on("connection", (ws) => {
     const eventListener = createEventListener(ws);
     const withRoomAuthMiddleware = roomAuthMiddleware();
 
-    eventListener.on(Events.JOIN_ROOM, (data) => {
-        const { roomId, userId: senderId, name, photo } = data;
+    const error = (options: RoomEventBodyOptions, message: string, code: WebsocketError) => {
+        return {
+            type: "error",
+            data: {
+                ...options,
+                message,
+                code,
+            },
+        } as const;
+    };
+    function success<TData>(options: RoomEventBodyOptions, data: TData) {
+        return {
+            type: "success",
+            data: {
+                ...data,
+                ...options,
+            },
+        } as const;
+    }
+
+    eventListener.on(Events.JOIN_ROOM, withRoomAuthMiddleware, (data) => {
+        const { roomId, senderId, name, photo } = data;
         const room = roomId ? getRoom(roomId) : null;
 
         if (!room) {
             const newRoom = createNewRoom({ userId: senderId, name, photo }, ws, roomId);
-            sendEvent(ws, Events.JOIN_ROOM_RESPONSE, {
-                type: "success",
-                data: reshapeRoom(newRoom),
-            });
-            return;
+            return respondToEvent(Events.JOIN_ROOM_RESPONSE, success(data, reshapeRoom(newRoom)));
         }
 
         if (room.isMatchMaking) {
-            return sendEvent(ws, Events.JOIN_ROOM_RESPONSE, {
-                type: "error",
-                message: "Match making is already in progress",
-                code: "match-making-in-progress",
-            });
+            return respondToEvent(
+                Events.JOIN_ROOM_RESPONSE,
+                error(data, "Match making is already in progress", "match-making-in-progress")
+            );
         }
 
         if (room.kickedPlayers?.includes(senderId)) {
-            return sendEvent(ws, Events.JOIN_ROOM_RESPONSE, {
-                type: "error",
-                message: "You were kicked from the lobby",
-                code: "kicked-from-lobby",
-            });
+            return respondToEvent(
+                Events.JOIN_ROOM_RESPONSE,
+                error(data, "You were kicked from the lobby", "kicked-from-lobby")
+            );
         }
 
         const isSpectator = room.clients.length > MAX_PLAYERS_PER_ROOM;
@@ -193,49 +205,40 @@ wss.on("connection", (ws) => {
 
         rooms[room.id] = room;
 
-        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.JOIN_ROOM_RESPONSE, {
-            type: "success",
-            data: reshapeRoom(room),
-        });
+        respondToEvent(Events.JOIN_ROOM_RESPONSE, success(data, reshapeRoom(room)));
     });
 
-    eventListener.on(Events.MATCH_MAKE_START, (data) => {
-        const { roomId, userId: senderId } = data;
+    eventListener.on(Events.MATCH_MAKE_START, withRoomAuthMiddleware, (data) => {
+        const { roomId, senderId, broadcastEvent } = data;
         const room = getRoom(roomId);
         // Room not found
-        if (!room)
-            return sendEvent(ws, Events.MATCH_MAKE_START_RESPONSE, {
-                type: "error",
-                message: "Room not found (match make start)",
-                code: "room-not-found",
-            });
+        if (!room) return respondToEvent(Events.MATCH_MAKE_START_RESPONSE, error(data, "Room not found", "room-not-found"));
 
         // Room is full
         if (room.clients.length === 2)
-            return sendEvent(ws, Events.MATCH_MAKE_START_RESPONSE, {
-                type: "error",
-                message: "Room is full (match make start). Please wait for the current match to end",
-                code: "room-full-match-in-progress",
-            });
+            return respondToEvent(
+                Events.MATCH_MAKE_START_RESPONSE,
+                error(data, "Room is full", "room-full-match-in-progress")
+            );
 
         room.isMatchMaking = true;
         rooms[room.id] = room;
 
-        sendEvent(ws, Events.MATCH_MAKE_START_RESPONSE, { type: "success", data: reshapeRoom(room) });
+        respondToEvent(Events.MATCH_MAKE_START_RESPONSE, success(data, reshapeRoom(room)));
     });
 
-    eventListener.on(Events.MATCH_MAKE_CANCEL, (data) => {
-        const { roomId, userId: senderId } = data;
+    eventListener.on(Events.MATCH_MAKE_CANCEL, withRoomAuthMiddleware, (data) => {
+        const { roomId, senderId } = data;
         const room = getRoom(roomId);
         if (!room) return console.error("Room not found (match make cancel)", roomId);
         if (room.clients.length === 2) return console.error("Match already found (match make cancel)", roomId);
 
         room.isMatchMaking = false;
-        sendEvent(ws, Events.MATCH_MAKE_CANCEL_RESPONSE, { type: "success", data: reshapeRoom(room) });
+        respondToEvent(Events.MATCH_MAKE_CANCEL_RESPONSE, success(data, reshapeRoom(room)));
     });
 
     eventListener.on(Events.KICK_PLAYER, withRoomAuthMiddleware, (data) => {
-        const { roomId, userId: senderId, kickTargetId } = data;
+        const { roomId, senderId, kickTargetId } = data;
         const room = getRoom(roomId);
         if (!room) return console.error("Room not found (kick player)", roomId);
         if (room.hostId !== senderId) return console.error("Only the host can kick players", roomId);
@@ -245,17 +248,7 @@ wss.on("connection", (ws) => {
         if (!client) return console.error("Client not found", roomId);
         room.clients = room.clients.filter((c) => c.id !== kickTargetId);
 
-        broadcastEvent(
-            {
-                roomId,
-                senderId,
-            },
-            Events.UPDATE_ROOM,
-            {
-                type: "success",
-                ...reshapeRoom(room),
-            }
-        );
+        respondToEvent(Events.UPDATE_ROOM, success(data, reshapeRoom(room)));
         room.kickedPlayers = room.kickedPlayers ?? [];
         room.kickedPlayers.push(kickTargetId);
         client.ws.close();
@@ -264,7 +257,7 @@ wss.on("connection", (ws) => {
     });
 
     eventListener.on(Events.PLAYER_DISCONNECT, withRoomAuthMiddleware, (data) => {
-        const { roomId, userId: senderId } = data;
+        const { roomId, senderId } = data;
         const room = getRoom(roomId);
         if (!room) return;
         const client = room.clients.find((c) => c.id === senderId);
@@ -284,50 +277,43 @@ wss.on("connection", (ws) => {
         room.clients = room.clients.filter((c) => c.id !== senderId);
         rooms[room.id] = room;
 
-        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.PLAYER_DISCONNECT_RESPONSE, {
-            type: "success",
-            data: reshapeRoom(room),
-        });
+        respondToEvent(Events.PLAYER_DISCONNECT_RESPONSE, success(data, reshapeRoom(room)));
     });
 
     eventListener.on(Events.START_GAME, withRoomAuthMiddleware, (data) => {
-        const { roomId, userId: senderId } = data;
+        const { roomId, senderId } = data;
         const room = getRoom(roomId);
 
         if (!room) return;
         room.isGameStarted = true;
         rooms[room.id] = room;
 
-        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.INIT, {
-            type: "success",
-            ...reshapeRoom(room),
-        });
+        respondToEvent(Events.INIT, success(data, reshapeRoom(room)));
     });
 
     eventListener.on(Events.PULL, withRoomAuthMiddleware, (data) => {
-        const { roomId, userId: senderId } = data;
+        const { roomId, senderId } = data;
         const room = getRoom(roomId);
         if (!room) return;
-        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.PULL, { type: "success", ...data });
+        respondToEvent(Events.PULL, success(data, data));
     });
 
     eventListener.on(Events.HITS, withRoomAuthMiddleware, (data) => {
-        const { roomId, userId: senderId } = data;
+        const { roomId, senderId } = data;
         const room = getRoom(roomId)!;
-
-        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.HITS, { type: "success", ...data });
+        respondToEvent(Events.HITS, success(data, data));
     });
 
     eventListener.on(Events.HAND, withRoomAuthMiddleware, (data) => {
-        const { roomId, userId: senderId } = data;
+        const { roomId, senderId } = data;
         const room = getRoom(roomId)!;
 
-        broadcastEvent({ roomId: room.id, senderId: senderId! }, Events.HAND, { type: "success", ...data });
+        respondToEvent(Events.HAND, success(data, data));
     });
 
     eventListener.on(Events.DROP_BALL, withRoomAuthMiddleware, (data) => {
-        const { roomId, userId: senderId } = data;
-        broadcastEvent({ roomId, senderId: senderId! }, Events.DROP_BALL, { type: "success", ...data });
+        const { roomId, senderId } = data;
+        respondToEvent(Events.DROP_BALL, success(data, data));
     });
 
     ws.on("close", () => {
@@ -368,14 +354,17 @@ const createNewRoom = (user: { userId: string; name: string; photo: string }, ws
     return room;
 };
 
-function roomAuthMiddleware<TInput extends RoomEventBodyOptions>(existigUserOnly = true) {
-    const middleware: Middleware<TInput> = (data) => {
-        const { roomId, userId } = data;
+function roomAuthMiddleware(existigUserOnly = true) {
+    const middleware: Middleware<
+        RoomEventBodyOptions & EventsData[TEventKey],
+        RoomEventBodyOptions & EventsData[TEventKey]
+    > = (data) => {
+        const { roomId, senderId } = data;
         const room = getRoom(roomId);
         if (existigUserOnly && !room) return { error: "Room not found" };
-        if (existigUserOnly && !room?.clients.find((c) => c.id === userId)) return { error: "User not found" };
+        if (existigUserOnly && !room?.clients.find((c) => c.id === senderId)) return { error: "User not found" };
 
-        return { success: true, data: { yoooo: "yoooo" } };
+        return { success: true, data: data };
     };
     return middleware;
 }
@@ -408,9 +397,9 @@ function reshapePlayer(c: Client) {
 }
 
 function createEventListener(ws: WebSocket): TEventListener {
-    type EventListeners<T extends TEventKey> = {
-        middlewares: Middleware<EventsData[T]>[];
-        handler: (data: EventsData[T]) => void;
+    type EventListeners<T extends TEventKey, TData = RoomEventBodyOptions & EventsData[T]> = {
+        middlewares: Middleware<TData>[];
+        handler: (data: TData) => void;
     };
 
     const listeners: { [K in TEventKey]?: EventListeners<K>[] } = {} as any;
@@ -420,6 +409,7 @@ function createEventListener(ws: WebSocket): TEventListener {
             const parsed = JSON.parse(raw) as {
                 event: TEventKey;
                 data: EventsData[TEventKey];
+                broadcastEvent: BroadcastEvent;
             };
 
             return reshapeData(parsed.event, parsed.data);
@@ -450,12 +440,6 @@ function createEventListener(ws: WebSocket): TEventListener {
                 const result = await promise;
                 if (result.error) {
                     console.error("Error in middleware", result.error);
-                    sendEvent(ws, event, {
-                        type: "error",
-                        message: result.error,
-                        code: "middleware-error",
-                    });
-
                     break;
                 }
             }
@@ -465,10 +449,10 @@ function createEventListener(ws: WebSocket): TEventListener {
     });
 
     return {
-        async on<T extends TEventKey>(
+        async on<T extends TEventKey, TData extends EventsData[T] & RoomEventBodyOptions>(
             event: T,
-            middlewareOrHandler: MiddlewareInput<EventsData[T]> | ((data: EventsData[T]) => void),
-            maybeHandler?: (data: EventsData[T]) => void
+            middlewareOrHandler: MiddlewareInput<TData> | ((data: TData) => void),
+            maybeHandler?: (data: TData) => void
         ) {
             const eventListeners: EventListeners<T>[] = (listeners[event] ??= []);
             if (!eventListeners) return console.error("Event listeners not found, something fucky must have happened");
@@ -476,38 +460,50 @@ function createEventListener(ws: WebSocket): TEventListener {
             if (maybeHandler !== undefined) {
                 // We have middleware(s) and a handler
                 const middlewares = Array.isArray(middlewareOrHandler)
-                    ? (middlewareOrHandler as Middleware<EventsData[T]>[])
-                    : [middlewareOrHandler as Middleware<EventsData[T]>];
+                    ? (middlewareOrHandler as Middleware<TData>[])
+                    : [middlewareOrHandler as Middleware<TData>];
 
-                const eventListeners: EventListeners<T>[] = (listeners[event] ??= []);
-                eventListeners.push({ middlewares: middlewares, handler: maybeHandler });
+                const eventListeners: EventListeners<T>[] = (listeners[event] ??= []) as EventListeners<T>[];
+
+                // TODO: as any to make it work, idk why typescript is complaining when i save  EventsData[T] & {broadcastEvent: BroadcastEvent} as TData
+                eventListeners.push({ middlewares: middlewares as any, handler: maybeHandler as any });
             } else {
-                const handler = middlewareOrHandler as (data: EventsData[T]) => void;
-                eventListeners.push({ middlewares: [], handler });
+                const handler = middlewareOrHandler as (data: TData) => void;
+                eventListeners.push({ middlewares: [], handler: handler as any });
             }
-        },
-
-        send<T extends TEventKey>(event: T, data: EventsData[T]) {
-            ws.send(JSON.stringify({ event, data }));
         },
     };
 }
 
-function sendEvent<T extends TEventKey>(ws: WebSocket, event: T, data: EventsData[T] & { type: "success" | "error" }) {
-    const str = JSON.stringify({ type: data.type, event, data });
-    ws.send(str);
-}
-
-function broadcastEvent<T extends TEventKey>(
-    options: { roomId: string; senderId: string },
+function respondToEvent<T extends TEventKey, TResonse extends "success" | "error">(
     event: T,
-    body: EventsData[T] & { type: "success" | "error" }
+    body: {
+        type: TResonse;
+        data: TResonse extends "success"
+            ? EventsData[T] & RoomEventBodyOptions
+            : { message: string; code: WebsocketError } & RoomEventBodyOptions;
+    }
 ) {
-    const { roomId, senderId } = options;
-    const room = getRoom(roomId);
-    if (!room) return;
+    const { type, data } = body;
 
-    room.clients.forEach((c) => sendEvent(c.ws, event, body));
+    const { broadcastEvent, roomId, senderId } = data;
+    const room = getRoom(roomId);
+
+    if (!room) return console.error("Room not found", roomId);
+
+    const targetClients = room.clients.filter((c) => {
+        if (broadcastEvent === BroadcastEvent.ALL) return true;
+        if (broadcastEvent === BroadcastEvent.HOST && c.id === room.hostId) return true;
+        if (broadcastEvent === BroadcastEvent.OTHERS && c.id !== senderId) return true;
+        return false;
+    });
+
+    const send = (ws: WebSocket) => {
+        const str = JSON.stringify({ type, event, data: body });
+        ws.send(str);
+    };
+
+    targetClients.forEach((c) => send(c.ws));
 }
 
 export async function getDiscordOauth2Information(access_token: String) {
