@@ -7,7 +7,7 @@ import { LocalService } from "./local-service";
 
 import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { INIT_DISCORD_SDK } from "../common/pool-constants";
+import { DEBUG_GRAPHICS, INIT_DISCORD_SDK } from "../common/pool-constants";
 import { LoadingPage } from "../scenes/components/react/loading/loading-page";
 import { GameInfoWidget } from "../scenes/components/react/lobby/game-info-widget";
 import { Lobby } from "../scenes/components/react/lobby/game-lobby";
@@ -89,7 +89,6 @@ export class MultiplayerService extends LocalService {
         this.eventHandlers.get(event)!.add(callback);
     }
 
-    // TODO: Skip one step, and override this.send
     public call<T extends keyof EventsData>(event: T, data: EventsData[T]) {
         if (!this.ws) {
             console.error("WebSocket is not open");
@@ -103,10 +102,11 @@ export class MultiplayerService extends LocalService {
     }
 
     override isMyTurn(): boolean {
-        // const imHost = this.room?.hostId === this.me()?.id;
-        // const index = this.service.getState().turnIndex;
-        // return imHost ? index == 0 : index == 1;
-        return true;
+        if (DEBUG_GRAPHICS) return true;
+
+        const imHost = this.room?.hostId === this.me()?.id;
+        const index = this.service.getState().turnIndex;
+        return imHost ? index == 0 : index == 1;
     }
 
     override winner(): string | undefined {
@@ -125,7 +125,11 @@ export class MultiplayerService extends LocalService {
         const data = { keyPositions: keyPositions, state: this.service.getState(), userId, roomId };
 
         this.send(Events.HITS, { ...data, userId: "1" });
-        this.call(Events.HITS, data);
+
+        const POS_PER_SENT = 100;
+        for (let i = 0; i < keyPositions.length; i += POS_PER_SENT) {
+            this.call(Events.HITS, { ...data, keyPositions: keyPositions.slice(i, i + POS_PER_SENT) });
+        }
 
         return keyPositions;
     }

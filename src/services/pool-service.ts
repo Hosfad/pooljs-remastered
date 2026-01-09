@@ -1,5 +1,5 @@
 import * as Phaser from "phaser";
-import { BALL_LABEL, BALL_RADIUS, HOLE_LABEL, MAX_POWER, MAX_STEPS, TIMER_DURATION, USE_MATTER_JS } from "../common/pool-constants";
+import { BALL_RADIUS, HOLE_LABEL, MAX_POWER, MAX_STEPS, TIMER_DURATION, USE_MATTER_JS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 import type { PoolState } from "../common/server-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
@@ -97,6 +97,7 @@ export class PoolService {
         const velX = Math.cos(angle) * powerPercent * MAX_POWER;
         const velY = Math.sin(angle) * powerPercent * MAX_POWER;
         const wbody = this.balls[whiteball]!.phaserSprite.body as MatterJS.BodyType;
+        console.log("hitBalls", velX, velY);
 
         this.scene.matter.body.setVelocity(wbody, { x: velX, y: velY });
         velocities[whiteball]!.set(velX, velY);
@@ -299,6 +300,8 @@ export class PoolService {
         for (let step = 0; step < MAX_STEPS; step++) {
             let anyMoving = false;
 
+            this.scene.matter.world.step(frameRate)
+
             for (let i = 0; i < this.balls.length; i++) {
                 const ball = this.balls[i]!;
 
@@ -306,12 +309,10 @@ export class PoolService {
 
                 const velocity = ball.phaserSprite.body.velocity;
 
-                if (velocity.x * velocity.x + velocity.y + velocity.y > 0.1) {
+                if (velocity.x * velocity.x + velocity.y + velocity.y > 0.001 * MAX_POWER) {
                     anyMoving = true;
                 }
             }
-
-            this.scene.matter.world.step(frameRate)
 
             keyPositions.push(this.getKeyPosition());
 

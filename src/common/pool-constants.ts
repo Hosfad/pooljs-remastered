@@ -1,7 +1,7 @@
 /**
  * Pool game specific constants
  */
-export let DEBUG_GRAPHICS = false;
+export let DEBUG_GRAPHICS = true;
 export let USE_MATTER_JS = true;
 export let INIT_DISCORD_SDK = false;
 
@@ -102,7 +102,7 @@ export const RAIL_RESTITUTION = 0.75; // rail (e)
 
 // Physics constants
 export const MAX_POWER = 30;
-export const MAX_STEPS = 600;
+export const MAX_STEPS = 1000;
 export const TIMER_DURATION = 30;
 
 // Label Constants
