@@ -296,6 +296,26 @@ export class PoolGameScene extends Phaser.Scene {
         this.cue = { phaserSprite: cueSprite, rotation: 0, power: 0 };
     }
 
+    private getTableEdges(): { left: number; right: number; top: number; bottom: number } {
+        const tw = this.tableWidth;
+        const th = this.tableHeight;
+        const mx = this.marginX;
+        const my = this.marginY;
+
+        const xRatio = tw / 16;
+        const yRatio = th / 12;
+
+        const cushionEdgeX = xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X;
+        const cushionEdgeY = yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y);
+
+        return {
+            left: mx + cushionEdgeX,
+            right: mx + tw - cushionEdgeX,
+            top: my + cushionEdgeY,
+            bottom: my + th - cushionEdgeY
+        };
+    }
+
     private createColliders(): void {
         const tw = this.tableWidth;
         const th = this.tableHeight;
@@ -493,24 +513,6 @@ export class PoolGameScene extends Phaser.Scene {
             };
             this.holes.push(hole);
         });
-    }
-
-    private getTableEdges(): { left: number; right: number; top: number; bottom: number } {
-        const tw = this.tableWidth;
-        const th = this.tableHeight;
-
-        const mx = this.marginX;
-        const my = this.marginY;
-
-        const xRatio = tw / 16;
-        const yRatio = th / 12;
-
-        return {
-            left: mx + xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS,
-            right: mx + tw - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS,
-            top: my + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y + BALL_RADIUS * 1.5,
-            bottom: my + th - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y + BALL_RADIUS * 1.5,
-        };
     }
 
     private canPlaceBall(px: number, py: number): boolean {
