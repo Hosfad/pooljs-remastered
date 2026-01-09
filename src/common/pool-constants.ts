@@ -105,6 +105,10 @@ export const MAX_POWER = 30;
 export const MAX_STEPS = 600;
 export const TIMER_DURATION = 30;
 
+// Label Constants
+export const HOLE_LABEL = "hole";
+export const BALL_LABEL = "ball";
+
 export const COLORS = {
     primary: "#2C5530",
     dark: "#1A1A1A",

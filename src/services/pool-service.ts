@@ -1,5 +1,5 @@
 import * as Phaser from "phaser";
-import { BALL_RADIUS, MAX_POWER, MAX_STEPS, TIMER_DURATION, USE_MATTER_JS } from "../common/pool-constants";
+import { BALL_LABEL, BALL_RADIUS, HOLE_LABEL, MAX_POWER, MAX_STEPS, TIMER_DURATION, USE_MATTER_JS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 import type { PoolState } from "../common/server-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
@@ -284,6 +284,18 @@ export class PoolService {
         const keyPositions: KeyPositions = [this.getKeyPosition()];
         const frameRate = 16.66; // 60 fps delta
 
+        this.scene.matter.world.addListener("collisionstart", (event: Phaser.Physics.Matter.Events.CollisionStartEvent) => {
+            event.pairs.forEach((pair) => {
+                const { bodyA, bodyB } = pair;
+
+                if (bodyA.label === HOLE_LABEL || bodyB.label === HOLE_LABEL) {
+                    const targetBody = bodyA.label === HOLE_LABEL ? bodyB : bodyA;
+                    const ball = this.balls.findIndex((b) => b.phaserSprite.body === targetBody);
+                    if (ball >= 0) this.inHole[ball] = true;
+                }
+            });
+        });
+
         for (let step = 0; step < MAX_STEPS; step++) {
             let anyMoving = false;
 
@@ -305,6 +317,8 @@ export class PoolService {
 
             if (!anyMoving) break;
         }
+
+        this.scene.matter.world.removeListener("collisionstart");
 
         return keyPositions;
     }

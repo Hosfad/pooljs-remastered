@@ -5,12 +5,14 @@
 import * as Phaser from "phaser";
 import {
     BALL_FRICTION,
+    BALL_LABEL,
     BALL_MASS_KG,
     BALL_RADIUS,
     BALL_RESTITUTION,
     CLOTH_ROLLING_RESISTANCE,
     CUSHION_CONSTANTS,
     DEBUG_GRAPHICS,
+    HOLE_LABEL,
     HOLE_RADIUS,
     MODAL_OPEN,
     POOL_ASSETS,
@@ -435,7 +437,7 @@ export class PoolGameScene extends Phaser.Scene {
                 friction: BALL_FRICTION,
                 frictionAir: CLOTH_ROLLING_RESISTANCE,
                 mass: BALL_MASS_KG,
-                label: `${texture}-${ballType}-ball`,
+                label: BALL_LABEL,
             }
         );
 
@@ -486,7 +488,7 @@ export class PoolGameScene extends Phaser.Scene {
                 body: this.matter.add.circle(position.x, position.y, HOLE_RADIUS, {
                     isStatic: true,
                     isSensor: true,
-                    label: "hole",
+                    label: HOLE_LABEL,
                 }),
             };
             this.holes.push(hole);
