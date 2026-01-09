@@ -16,6 +16,7 @@ import {
     POOL_ASSETS,
     POOL_SCENE_KEYS,
     RAIL_RESTITUTION,
+    USE_MATTER_JS,
 } from "../common/pool-constants";
 import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
 import { Events } from "../common/server-types";
@@ -297,8 +298,8 @@ export class PoolGameScene extends Phaser.Scene {
         const tw = this.tableWidth;
         const th = this.tableHeight;
 
-        const xRatio = this.tableWidth / 16;
-        const yRatio = this.tableHeight / 12;
+        const xRatio = tw / 16;
+        const yRatio = th / 12;
 
         const createMirroredColliders = () => {
             const leftCushionPoints = [
@@ -366,7 +367,7 @@ export class PoolGameScene extends Phaser.Scene {
                     center.y,
                     localVerts,
                     {
-                        isSensor: true, // NOTE: Until activated to use matter for collisions
+                        isSensor: !USE_MATTER_JS,
                         isStatic: true,
                         restitution: RAIL_RESTITUTION,
                         friction: 0.1,
@@ -429,7 +430,7 @@ export class PoolGameScene extends Phaser.Scene {
         sprite.setBody(
             { type: "circle", radius: BALL_RADIUS },
             {
-                isSensor: true, // NOTE: Until activated to use matter for collisions
+                isSensor: !USE_MATTER_JS,
                 restitution: BALL_RESTITUTION,
                 friction: BALL_FRICTION,
                 frictionAir: CLOTH_ROLLING_RESISTANCE,
@@ -517,9 +518,7 @@ export class PoolGameScene extends Phaser.Scene {
         const pos = new Vector2(px, py);
 
         for (const hole of this.holes) {
-            const {
-                sprite: { position },
-            } = hole;
+            const { sprite: { position } } = hole;
             const holePos = new Vector2(position.x, position.y);
 
             if (holePos.distance(pos) <= HOLE_RADIUS * 1) {

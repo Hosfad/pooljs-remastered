@@ -2,16 +2,11 @@
  * Pool game specific constants
  */
 export let DEBUG_GRAPHICS = false;
-
-export function setDebugGraphics(debug: boolean) {
-    DEBUG_GRAPHICS = debug;
-}
+export let USE_MATTER_JS = true;
 export let INIT_DISCORD_SDK = false;
 
 export let MODAL_OPEN: boolean = false;
-export function setGlobalModalOpenVariable(open: boolean) {
-    MODAL_OPEN = open;
-}
+export function setGlobalModalOpenVariable(open: boolean) { MODAL_OPEN = open; }
 
 export const CUSHION_CONSTANTS = {
     SIDE_INNER_X: 0, // Inner edge x position

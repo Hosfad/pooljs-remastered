@@ -1,5 +1,5 @@
 import * as Phaser from "phaser";
-import { BALL_RADIUS, MAX_POWER, MAX_STEPS, TIMER_DURATION } from "../common/pool-constants";
+import { BALL_RADIUS, MAX_POWER, MAX_STEPS, TIMER_DURATION, USE_MATTER_JS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 import type { PoolState } from "../common/server-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
@@ -94,7 +94,12 @@ export class PoolService {
         const whiteball = this.balls.length - 1;
         const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
 
-        velocities[whiteball]!.set(Math.cos(angle) * powerPercent * MAX_POWER, Math.sin(angle) * powerPercent * MAX_POWER);
+        const velX = Math.cos(angle) * powerPercent * MAX_POWER;
+        const velY = Math.sin(angle) * powerPercent * MAX_POWER;
+        const wbody = this.balls[whiteball]!.phaserSprite.body as MatterJS.BodyType;
+
+        this.scene.matter.body.setVelocity(wbody, { x: velX, y: velY });
+        velocities[whiteball]!.set(velX, velY);
 
         const turn = this.whoseTurn();
         const points = this.players[turn];
@@ -141,6 +146,10 @@ export class PoolService {
     }
 
     private simulate(velocities: Phaser.Math.Vector2[]): KeyPositions {
+        return USE_MATTER_JS ? this.matter_simulate() : this.classic_simulate(velocities);
+    }
+
+    private classic_simulate(velocities: Phaser.Math.Vector2[]): KeyPositions {
         const friction = 0.99;
         const minVelocity = 0.1;
         const collisionDamping = 0.98;
@@ -262,6 +271,35 @@ export class PoolService {
                     }
                 }
             }
+
+            keyPositions.push(this.getKeyPosition());
+
+            if (!anyMoving) break;
+        }
+
+        return keyPositions;
+    }
+
+    private matter_simulate(): KeyPositions {
+        const keyPositions: KeyPositions = [this.getKeyPosition()];
+        const frameRate = 16.66; // 60 fps delta
+
+        for (let step = 0; step < MAX_STEPS; step++) {
+            let anyMoving = false;
+
+            for (let i = 0; i < this.balls.length; i++) {
+                const ball = this.balls[i]!;
+
+                if (this.inHole[i] || !ball.phaserSprite.body) continue;
+
+                const velocity = ball.phaserSprite.body.velocity;
+
+                if (velocity.x * velocity.x + velocity.y + velocity.y > 0.1) {
+                    anyMoving = true;
+                }
+            }
+
+            this.scene.matter.world.step(frameRate)
 
             keyPositions.push(this.getKeyPosition());
 
