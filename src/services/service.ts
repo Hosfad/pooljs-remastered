@@ -142,6 +142,7 @@ export abstract class Service {
                   showAimLine: true,
                   powerMeterPosition: "left",
                   spinSelectorPosition: "right",
+                  cueSensitivity: "low",
               };
     }
 

@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import React, { useState } from "react";
 import type { LocalUser } from "../../../../services/service";
+import { CurrencyBadge } from "../currency-badge";
 
 export interface Tab {
     id: string;
@@ -65,7 +66,10 @@ export function Drawer({ me, isOpen, onClose, children, tabs, title, className, 
                         </div>
 
                         {tabs && (
-                            <div className="grid grid-cols-3 px-6 pt-6">
+                            <div
+                                className="grid px-6 pt-6"
+                                style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+                            >
                                 {tabs.map((tab) => (
                                     <button
                                         key={tab.id}
@@ -90,16 +94,5 @@ export function Drawer({ me, isOpen, onClose, children, tabs, title, className, 
                 </>
             )}
         </AnimatePresence>
-    );
-}
-
-// Helper component for cleaner header
-function CurrencyBadge({ icon, amount, color }: { icon: string; amount: number; color: string }) {
-    return (
-        <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
-            <Plus size={16} className={color} />
-            <div className="text-2xl">{icon}</div>
-            <span className={`${color} font-bold`}>{amount}</span>
-        </div>
     );
 }

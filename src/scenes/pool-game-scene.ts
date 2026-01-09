@@ -121,7 +121,6 @@ export class PoolGameScene extends Phaser.Scene {
         this.service.subscribe(Events.INIT, () => {
             this.service.timerStart();
             this.isGameStarted = true;
-            console.log("Pool game initialized with", this.balls.length, "balls");
         });
 
         this.service.subscribe(Events.PULL, ({ x, y, angle }) => {

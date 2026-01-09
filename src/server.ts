@@ -94,6 +94,26 @@ const wss = new WebSocketServer({ server, path: "/ws" });
 
 const rooms: Record<string, ServerRoom> = {};
 
+const error = (options: RoomEventBodyOptions, message: string, code: WebsocketError) => {
+    return {
+        type: "error",
+        data: {
+            ...options,
+            message,
+            code,
+        },
+    } as const;
+};
+function success<TData>(options: RoomEventBodyOptions, data: TData) {
+    return {
+        type: "success",
+        data: {
+            ...options,
+            ...data,
+        },
+    } as const;
+}
+
 setInterval(() => {
     // MATCH MAKING QUEUE
     const matchMakingRooms = Object.values(rooms).filter((r) => r.isMatchMaking);
@@ -114,6 +134,18 @@ setInterval(() => {
     groups.forEach((group) => {
         const combinedRoom = groupRooms(group);
         if (!combinedRoom) return;
+
+        respondToEvent(
+            Events.INIT,
+            success(
+                {
+                    roomId: combinedRoom.id,
+                    senderId: combinedRoom.hostId,
+                    broadcastEvent: BroadcastEvent.ALL,
+                },
+                reshapeRoom(combinedRoom)
+            )
+        );
     });
 }, 1000);
 
@@ -140,33 +172,12 @@ wss.on("connection", (ws) => {
     const eventListener = createEventListener(ws);
     const withRoomAuthMiddleware = roomAuthMiddleware();
 
-    const error = (options: RoomEventBodyOptions, message: string, code: WebsocketError) => {
-        return {
-            type: "error",
-            data: {
-                ...options,
-                message,
-                code,
-            },
-        } as const;
-    };
-    function success<TData>(options: RoomEventBodyOptions, data: TData) {
-        return {
-            type: "success",
-            data: {
-                ...options,
-                ...data,
-            },
-        } as const;
-    }
-
     eventListener.on(Events.JOIN_ROOM, (data) => {
         const { roomId, senderId, name, photo } = data;
         const room = roomId ? getRoom(roomId) : null;
 
         if (!room) {
             const newRoom = createNewRoom({ userId: senderId, name, photo }, ws, roomId);
-            console.log("New room created", newRoom);
             return respondToEvent(Events.JOIN_ROOM_RESPONSE, success(data, reshapeRoom(newRoom)));
         }
 
@@ -206,7 +217,6 @@ wss.on("connection", (ws) => {
 
         rooms[room.id] = room;
 
-        console.log("Room joined", data.broadcastEvent, room.clients.length);
         const responseObj = success(data, reshapeRoom(room));
         respondToEvent(Events.JOIN_ROOM_RESPONSE, responseObj);
     });
@@ -355,9 +365,7 @@ function roomAuthMiddleware(existigUserOnly = true) {
     > = (data) => {
         const { roomId, senderId } = data;
 
-        console.log("Middleware", { roomId, senderId });
         const room = getRoom(roomId);
-        console.log("Middleware room", room?.id);
         if (!room) console.error("Room not found", { rooms });
         if (existigUserOnly && !room) return { error: "Room not found" };
         if (existigUserOnly && !room?.clients.find((c) => c.id === senderId)) return { error: "User not found" };

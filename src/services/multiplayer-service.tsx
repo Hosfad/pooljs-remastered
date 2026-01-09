@@ -290,6 +290,7 @@ export class MultiplayerService extends LocalService {
         });
 
         const gameEvents = [
+            Events.INIT,
             Events.PULL,
             Events.HITS,
             Events.HAND,

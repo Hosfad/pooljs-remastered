@@ -48,4 +48,5 @@ export type GameSettings = {
 
     powerMeterPosition: "left" | "right";
     spinSelectorPosition: "left" | "right";
+    cueSensitivity: "low" | "medium" | "high";
 };

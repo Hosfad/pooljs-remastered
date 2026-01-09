@@ -32,7 +32,7 @@ export function SettingsDrawer({
     };
 
     return (
-        <Drawer title="Game Settings" isOpen={isOpen} onClose={onClose} me={me} slideFrom="bottom">
+        <Drawer title="Game Settings" isOpen={isOpen} onClose={onClose} me={me} className="min-h-screen">
             <div className="space-y-6 grid grid-cols-2  gap-4 px-12">
                 <div className="bg-white/5 border border-white/10 rounded-lg rounded-lg p-6 col-span-2">
                     <h3 className="text-accent font-bold text-lg mb-4">Audio Settings</h3>
@@ -106,6 +106,18 @@ export function SettingsDrawer({
 
                 <div className="bg-white/5 border border-white/10 rounded-lg p-6">
                     <h3 className="text-accent font-bold text-lg mb-4">Game Settings</h3>
+                    <div className="space-y-2">
+                        <RadioGroup
+                            label="Cue Sensitivity"
+                            selectedValue={settings.cueSensitivity}
+                            options={[
+                                { label: "Low", value: "low" },
+                                { label: "Medium", value: "medium" },
+                                { label: "High", value: "high" },
+                            ]}
+                            onChange={(val) => changeSetting("cueSensitivity", val)}
+                        />
+                    </div>
                     <div className="space-y-2">
                         <RadioGroup
                             label="Aim Line"
