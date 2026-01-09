@@ -103,6 +103,10 @@ const PowerMeter = ({ service, position = "right" }: { service: MultiplayerServi
         const handlePointerUp = () => {
             if (!service.isMyTurn()) return;
 
+            if (power >= 0.08) {
+                // service.call(Events.POWER_METER_HIT, { power: power / 100 });
+            }
+
             setIsDragging(false);
             isManualDraggingRef.current = false;
             setPower(0);

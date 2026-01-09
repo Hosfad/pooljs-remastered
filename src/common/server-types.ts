@@ -108,6 +108,7 @@ export type EventsData = {
     // UI UPDATES
     [Events.DROP_BALL]: { ballNumber: number | "white" | "black"; ballType: BallType };
     [Events.DRAG_POWER_METER]: { power: number };
+    [Events.POWER_METER_HIT]: { power: number };
 
     // ERRORS
     [Events.ERROR_ROOM_FULL]: RoomId;
