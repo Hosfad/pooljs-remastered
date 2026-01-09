@@ -4,13 +4,21 @@
 
 import * as Phaser from "phaser";
 import {
+    BALL_FRICTION,
+    BALL_LABEL,
+    BALL_MASS_KG,
     BALL_RADIUS,
+    BALL_RESTITUTION,
+    CLOTH_ROLLING_RESISTANCE,
     CUSHION_CONSTANTS,
     DEBUG_GRAPHICS,
+    HOLE_LABEL,
     HOLE_RADIUS,
     MODAL_OPEN,
     POOL_ASSETS,
     POOL_SCENE_KEYS,
+    RAIL_RESTITUTION,
+    USE_MATTER_JS,
 } from "../common/pool-constants";
 import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
 import { Events } from "../common/server-types";
@@ -44,14 +52,13 @@ export class PoolGameScene extends Phaser.Scene {
         isDragging: boolean;
         power: number;
     } = {
-        isDragging: false,
-        power: 0,
-    };
+            isDragging: false,
+            power: 0,
+        };
 
     // Graphics
     private hand!: Phaser.GameObjects.Sprite;
     private background!: Phaser.GameObjects.Image;
-    private holeBalls: Phaser.GameObjects.Sprite[] = [];
     private playedSounds: (number | undefined)[] = [];
 
     // Input state
@@ -245,29 +252,18 @@ export class PoolGameScene extends Phaser.Scene {
         blackBall.ballType = "black";
         blackBall.phaserSprite.setTexture(POOL_ASSETS.BLACK_BALL);
 
-        let closestBall = blackBall;
-        let closestDistance = Infinity;
+        const centroid = this.balls.reduce((acc, ball) => acc.add(ball.phaserSprite), new Vector2(0, 0));
+        centroid.divide({ x: this.balls.length, y: this.balls.length });
 
-        const distToOrigin = blackBall.phaserSprite.x - rackOrigin.x;
-        const origin = new Vector2(rackOrigin.x + distToOrigin * 0.9, blackBall.phaserSprite.y);
+        // Get the closest ball to the centroid
+        const closestBall = this.balls.reduce((acc, ball) => {
+            const distance = new Vector2(ball.phaserSprite).distance(centroid);
+            return distance < acc.distance ? { distance, ball } : acc;
+        }, { distance: Infinity, ball: blackBall });
 
-        for (const ball of this.balls) {
-            if (ball.ballType === "black") continue;
-
-            const { x, y } = ball.phaserSprite;
-            const ballPos = new Vector2(x, y);
-            const dist = ballPos.distance(origin);
-
-            if (dist < closestDistance) {
-                closestBall = ball;
-                closestDistance = dist;
-            }
-        }
-
-        // Swap black with closest to origin
-        const closestPosition = new Vector2(closestBall.phaserSprite.x, closestBall.phaserSprite.y);
-        closestBall.phaserSprite.setPosition(blackBall.phaserSprite.x, blackBall.phaserSprite.y);
-        blackBall.phaserSprite.setPosition(closestPosition.x, closestPosition.y);
+        const position = new Vector2(blackBall.phaserSprite);
+        blackBall.phaserSprite.setPosition(closestBall.ball.phaserSprite.x, closestBall.ball.phaserSprite.y);
+        closestBall.ball.phaserSprite.setPosition(position.x, position.y);
 
         //  whiteball ball ---
         const cueX = this.tableWidth * 0.75;
@@ -282,122 +278,113 @@ export class PoolGameScene extends Phaser.Scene {
 
         const whiteBall = this.balls[this.balls.length - 1]!;
         const { x, y } = this.toTableCoordinates(whiteBall.phaserSprite.x, whiteBall.phaserSprite.y);
-        const config = this.service.getSettings();
-        const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUES.BASIC);
-        cueSprite.setOrigin(1, 0.5);
-        cueSprite.setFlipX(true);
+        const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUES.BASIC).setOrigin(1, 0.5).setFlipX(true);
 
         this.cue = { phaserSprite: cueSprite, rotation: 0, power: 0 };
     }
 
+    private getTableEdges(): { left: number; right: number; top: number; bottom: number } {
+        const tw = this.tableWidth;
+        const th = this.tableHeight;
+        const mx = this.marginX;
+        const my = this.marginY;
+
+        const xRatio = tw / 16;
+        const yRatio = th / 12;
+
+        const cushionEdgeX = xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X;
+        const cushionEdgeY = yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y);
+
+        return {
+            left: mx + cushionEdgeX,
+            right: mx + tw - cushionEdgeX,
+            top: my + cushionEdgeY,
+            bottom: my + th - cushionEdgeY
+        };
+    }
+
     private createColliders(): void {
-        const xRatio = this.tableWidth / 16;
-        const yRatio = this.tableHeight / 12;
+        const tw = this.tableWidth;
+        const th = this.tableHeight;
+
+        const xRatio = tw / 16;
+        const yRatio = th / 12;
 
         const createMirroredColliders = () => {
-            // LEFT CUSHION (vertical rail)
-            const leftCushion = {
-                points: [
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X,
-                        y: yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y,
-                    },
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X,
-                        y: yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
-                    },
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X,
-                        y: this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y,
-                    },
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X,
-                        y: this.tableHeight - yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y,
-                    },
-                ],
-                normal: new Vector2(1, 0),
-            };
+            const leftCushionPoints = [
+                { x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X, y: yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y },
+                { x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X, y: yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y },
+                { x: xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X, y: th - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y },
+                { x: xRatio * CUSHION_CONSTANTS.SIDE_INNER_X, y: th - yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y },
+            ];
 
-            const rightCushion = {
-                points: leftCushion.points.map((p) => ({ x: this.tableWidth - p.x, y: p.y })),
-                normal: new Vector2(-1, 0),
-            };
+            const topLeftPoints = [
+                { x: xRatio * CUSHION_CONSTANTS.RAIL_SIDE_X, y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y },
+                {
+                    x: xRatio * CUSHION_CONSTANTS.RAIL_CORNER_X,
+                    y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
+                },
+                {
+                    x: tw / CUSHION_CONSTANTS.RAIL_POCKET_OUTER,
+                    y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
+                },
+                { x: tw / CUSHION_CONSTANTS.RAIL_POCKET_INNER, y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y },
+            ];
 
-            const topLeftCushion = {
-                points: [
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.RAIL_SIDE_X,
-                        y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y,
-                    },
-                    {
-                        x: xRatio * CUSHION_CONSTANTS.RAIL_CORNER_X,
-                        y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
-                    },
-                    {
-                        x: this.tableWidth / CUSHION_CONSTANTS.RAIL_POCKET_OUTER,
-                        y: yRatio * (CUSHION_CONSTANTS.RAIL_OUTER_Y + CUSHION_CONSTANTS.RAIL_THICKNESS_Y),
-                    },
-                    {
-                        x: this.tableWidth / CUSHION_CONSTANTS.RAIL_POCKET_INNER,
-                        y: yRatio * CUSHION_CONSTANTS.RAIL_OUTER_Y,
-                    },
-                ],
-                normal: new Vector2(0, 1),
-            };
-
-            const bottomLeftCushion = {
-                points: topLeftCushion.points.map((p) => ({ x: p.x, y: this.tableHeight - p.y })),
-                normal: new Vector2(0, -1),
-            };
-
-            const topRightCushion = {
-                points: topLeftCushion.points.map((p) => ({ x: this.tableWidth - p.x, y: p.y })),
-                normal: new Vector2(0, 1),
-            };
-
-            const bottomRightCushion = {
-                points: topLeftCushion.points.map((p) => ({ x: this.tableWidth - p.x, y: this.tableHeight - p.y })),
-                normal: new Vector2(0, -1),
-            };
-
-            return [leftCushion, rightCushion, topLeftCushion, bottomLeftCushion, topRightCushion, bottomRightCushion];
+            return [
+                leftCushionPoints,
+                leftCushionPoints.map((p) => ({ x: tw - p.x, y: p.y })),
+                topLeftPoints,
+                topLeftPoints.map((p) => ({ x: p.x, y: th - p.y })),
+                topLeftPoints.map((p) => ({ x: tw - p.x, y: p.y })),
+                topLeftPoints.map((p) => ({ x: tw - p.x, y: th - p.y })),
+            ];
         };
 
-        const colliderDefinitions = createMirroredColliders();
-
-        colliderDefinitions.forEach((def) => {
+        this.colliders = createMirroredColliders().map((points) => {
             let graphics: Phaser.GameObjects.Graphics | undefined;
 
             if (DEBUG_GRAPHICS) {
-                graphics = this.add.graphics();
-                graphics.fillStyle(0xff0000, 0.5);
-                graphics.beginPath();
+                const firstPoint = this.toTableCoordinates(points[0]!.x, points[0]!.y);
 
-                const firstPoint = this.toTableCoordinates(def.points[0]!.x, def.points[0]!.y);
-                graphics.moveTo(firstPoint.x, firstPoint.y);
+                graphics = this.add.graphics().fillStyle(0xff0000, 0.5).beginPath()
+                    .moveTo(firstPoint.x, firstPoint.y);
 
-                for (let i = 1; i < def.points.length; i++) {
-                    const point = this.toTableCoordinates(def.points[i]!.x, def.points[i]!.y);
+                for (let i = 1; i < points.length; i++) {
+                    const point = this.toTableCoordinates(points[i]!.x, points[i]!.y);
                     graphics.lineTo(point.x, point.y);
                 }
 
-                graphics.closePath();
-                graphics.fillPath();
+                graphics.closePath().fillPath();
             }
 
-            const adjustedPoints = def.points.map((p) => this.toTableCoordinates(p.x, p.y));
-            const collider: Collider = {
-                sprite: {
-                    position: new Vector2(adjustedPoints[0]!.x, adjustedPoints[0]!.y),
-                    size: { points: adjustedPoints.map((p) => new Vector2(p.x, p.y)) },
-                    normal: def.normal,
-                    color: "brown",
-                    visible: true,
-                },
-                phaserGraphics: graphics,
-            };
+            // Convert to table/world coordinates
+            const worldPoints = points.map((p) => new Vector2(this.toTableCoordinates(p.x, p.y)));
 
-            this.colliders.push(collider);
+            // Compute centroid
+            const center = worldPoints.reduce((acc, p) => acc.add(p), new Vector2(0, 0));
+            center.divide({ x: worldPoints.length, y: worldPoints.length });
+
+            // Convert to local space
+            const localVerts = worldPoints.map((p) => ({ x: p.x - center.x, y: p.y - center.y }));
+
+            return {
+                sprite: { size: { points: worldPoints } },
+                phaserGraphics: graphics,
+                body: this.matter.add.fromVertices(
+                    center.x,
+                    center.y,
+                    localVerts,
+                    {
+                        isSensor: !USE_MATTER_JS,
+                        isStatic: true,
+                        restitution: RAIL_RESTITUTION,
+                        friction: 0.1,
+                        label: "cushion",
+                    },
+                    true
+                ),
+            } as Collider;
         });
 
         console.log("Created", this.colliders.length, "colliders");
@@ -407,27 +394,29 @@ export class PoolGameScene extends Phaser.Scene {
         if (!this.keyPositions.length) return;
 
         const frame = this.keyPositions.shift()!;
+        const tw = this.tableWidth;
+        const th = this.tableHeight;
 
         if (!this.keyPositions.length) this.service.timerStart();
 
-        frame.forEach((key, i) => {
-            const sprite = this.balls[i]!.phaserSprite;
-            if (!sprite.visible && i < this.balls.length - 1) return;
+        frame.forEach(({ position: { x, y }, collision, hidden }, i) => {
+            const ball = this.balls[i]!;
 
-            const pos = {
-                x: key.position.x * this.tableWidth + this.marginX,
-                y: key.position.y * this.tableHeight + this.marginY,
-            };
+            if (hidden || ball.isAnimating) {
+                if (!ball.isAnimating) this.animateBallToHole(ball);
+                return;
+            }
+
+            const sprite = ball.phaserSprite;
+            const pos = { x: x * tw + this.marginX, y: y * th + this.marginY };
 
             // increment rotation angle of sprite
-            if (pos.x + pos.y != sprite.x + sprite.y) sprite.rotation += 0.1;
+            const spd = Math.abs((pos.x + pos.y) - (sprite.x + sprite.y));
+            if (spd != 0) sprite.rotation += spd / BALL_RADIUS * 2;
             sprite.setPosition(pos.x, pos.y);
-            sprite.visible = !key.hidden;
 
-            if (key.hidden) this.holeBalls[i]?.setAlpha(1);
-
-            if (this.playedSounds[i] === undefined && key.collision !== undefined) {
-                switch (key.collision) {
+            if (this.playedSounds[i] === undefined && collision !== undefined) {
+                switch (collision) {
                     case "wall":
                         this.sound.play(POOL_ASSETS.SOUND_EFFECTS.BALL_HITTING_TABLE_EDGE);
                         break;
@@ -444,13 +433,22 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private createBall(x: number, y: number, ballType: Ball["ballType"], texture: string): void {
-        const r = BALL_RADIUS;
         const position = this.toTableCoordinates(x, y);
+        const sprite = this.matter.add.sprite(position.x, position.y, texture);
+        sprite.setScale((BALL_RADIUS * 1.5) / sprite.width);
+        sprite.setBody(
+            { type: "circle", radius: BALL_RADIUS },
+            {
+                isSensor: !USE_MATTER_JS,
+                restitution: BALL_RESTITUTION,
+                friction: BALL_FRICTION,
+                frictionAir: CLOTH_ROLLING_RESISTANCE,
+                mass: BALL_MASS_KG,
+                label: BALL_LABEL,
+            }
+        );
 
-        const sprite = this.add.sprite(position.x, position.y, texture);
-        sprite.setScale((r * 1.5) / sprite.width);
-
-        this.balls.push({ ballType, phaserSprite: sprite, isPocketed: false });
+        this.balls.push({ ballType, phaserSprite: sprite, isPocketed: false, isAnimating: false });
     }
 
     private createHoles(): void {
@@ -491,32 +489,17 @@ export class PoolGameScene extends Phaser.Scene {
             const hole: Hole = {
                 sprite: {
                     position: new Vector2(position.x, position.y),
-                    color: "green",
                     size: { r: HOLE_RADIUS },
-                    visible: true,
                 },
                 phaserGraphics: graphics,
+                body: this.matter.add.circle(position.x, position.y, HOLE_RADIUS, {
+                    isStatic: true,
+                    isSensor: true,
+                    label: HOLE_LABEL,
+                }),
             };
             this.holes.push(hole);
         });
-    }
-
-    private getTableEdges(): { left: number; right: number; top: number; bottom: number } {
-        const tw = this.tableWidth;
-        const th = this.tableHeight;
-
-        const mx = this.marginX;
-        const my = this.marginY;
-
-        const xRatio = tw / 16;
-        const yRatio = th / 12;
-
-        return {
-            left: mx + xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS,
-            right: mx + tw - xRatio * CUSHION_CONSTANTS.SIDE_OUTER_X + BALL_RADIUS,
-            top: my + yRatio * CUSHION_CONSTANTS.SIDE_TOP_Y + BALL_RADIUS * 1.5,
-            bottom: my + th - yRatio * CUSHION_CONSTANTS.SIDE_BOTTOM_Y + BALL_RADIUS * 1.5,
-        };
     }
 
     private canPlaceBall(px: number, py: number): boolean {
@@ -526,9 +509,7 @@ export class PoolGameScene extends Phaser.Scene {
         const pos = new Vector2(px, py);
 
         for (const hole of this.holes) {
-            const {
-                sprite: { position },
-            } = hole;
+            const { sprite: { position } } = hole;
             const holePos = new Vector2(position.x, position.y);
 
             if (holePos.distance(pos) <= HOLE_RADIUS * 1) {
@@ -582,17 +563,15 @@ export class PoolGameScene extends Phaser.Scene {
 
             // Hand Stuff
             if (whiteBall.isPocketed && this.canPlaceBall(px, py)) {
+                whiteBall.isPocketed = whiteBall.isAnimating = this.hand.visible = false;
                 whiteBall.phaserSprite.visible = true;
                 whiteBall.phaserSprite.setPosition(px, py);
-                whiteBall.isPocketed = this.hand.visible = false;
                 this.service.setInHole(wb, false);
                 return;
             }
 
-            const isTouchingPowerMeter = this.isTouchingPowerMeter(pointer);
-
             // Handle by the power meter
-            if (this.isMobile && isTouchingPowerMeter) return;
+            if (this.isMobile) return;
 
             const { x, y } = whiteBall.phaserSprite!;
 
@@ -850,9 +829,40 @@ export class PoolGameScene extends Phaser.Scene {
         });
     }
 
-    private isTouchingPowerMeter({ x: px, y: py }: Phaser.Input.Pointer): boolean {
-        return false;
+    // POCKETED BALLS RAIL
+
+    private animateBallToHole(ball: Ball, skipRail: boolean = false): void {
+        if (ball.isAnimating) return;
+        ball.isAnimating = true;
+        ball.isPocketed = true;
+
+        const sprite = ball.phaserSprite;
+        const pos = new Vector2(sprite);
+
+        const closestHole = this.holes.reduce((acc, { sprite: { position } }) => {
+            const distance = pos.distance(position);
+            return distance < acc.distance ? { distance, pos: position } : acc;
+        }, { distance: Infinity, pos: new Vector2(0, 0) });
+
+        const spriteClone = this.add.sprite(sprite.x, sprite.y, sprite.texture.key).setScale(sprite.scale);
+        sprite.setVisible(false);
+
+        // ball falling into pocket animation
+        this.tweens.add({
+            targets: spriteClone,
+            scale: 0,
+            x: closestHole.pos.x,
+            y: closestHole.pos.y,
+            duration: 200,
+            onComplete: () => {
+                spriteClone.destroy();
+            },
+        });
+
+        if (!skipRail && sprite.body) this.matter.world.remove(sprite.body as MatterJS.BodyType);
     }
+
+    // POWER METER
 
     private setPower(power: number): void {
         this.powerMeter.power = power;

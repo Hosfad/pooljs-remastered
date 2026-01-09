@@ -1,5 +1,5 @@
 import * as Phaser from "phaser";
-import { BALL_RADIUS, MAX_POWER, MAX_STEPS, TIMER_DURATION } from "../common/pool-constants";
+import { BALL_RADIUS, HOLE_LABEL, MAX_POWER, MAX_STEPS, TIMER_DURATION, USE_MATTER_JS } from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 import type { PoolState } from "../common/server-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
@@ -50,13 +50,6 @@ export class PoolService {
             paused: true,
             loop: true,
         });
-
-        console.log(
-            Object.keys(this.totals)
-                .map((t) => `${t}: ${this.totals[t as BallType]}`)
-                .join(", ")
-        );
-        console.log("Players", Object.values(this.turns).join(", "));
     }
 
     public winner(): string | undefined {
@@ -75,10 +68,6 @@ export class PoolService {
 
     public setInHole(index: number, inHole: boolean) {
         this.inHole[index] = inHole;
-        const ball = this.balls[index]!;
-        if (index === this.balls.length - 1) return; // white ball
-
-        console.log("Setting ball inHole", index, inHole, ball.phaserSprite.texture.key);
     }
 
     public getState(): PoolState {
@@ -104,8 +93,17 @@ export class PoolService {
     public hitBalls(powerPercent: number, angle: number): KeyPositions {
         const whiteball = this.balls.length - 1;
         const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
+        const power = powerPercent * MAX_POWER;
 
-        velocities[whiteball]!.set(Math.cos(angle) * powerPercent * MAX_POWER, Math.sin(angle) * powerPercent * MAX_POWER);
+        const velX = Math.cos(angle) * power;
+        const velY = Math.sin(angle) * power;
+        velocities[whiteball]!.set(velX, velY);
+
+        if (USE_MATTER_JS) {
+            const wbody = this.balls[whiteball]!.phaserSprite.body as MatterJS.BodyType;
+            this.scene.matter.body.setVelocity(wbody, { x: velX, y: velY });
+            // this.scene.matter.body.setAngularVelocity(wbody, angularVel);
+        }
 
         const turn = this.whoseTurn();
         const points = this.players[turn];
@@ -152,8 +150,12 @@ export class PoolService {
     }
 
     private simulate(velocities: Phaser.Math.Vector2[]): KeyPositions {
+        return USE_MATTER_JS ? this.matter_simulate() : this.classic_simulate(velocities);
+    }
+
+    private classic_simulate(velocities: Phaser.Math.Vector2[]): KeyPositions {
         const friction = 0.99;
-        const minVelocity = 0.01;
+        const minVelocity = 0.1;
         const collisionDamping = 0.98;
 
         const keyPositions: KeyPositions = [this.getKeyPosition()];
@@ -282,14 +284,51 @@ export class PoolService {
         return keyPositions;
     }
 
-    private getNormal(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): { x: number; y: number } {
+    private matter_simulate(): KeyPositions {
+        const keyPositions: KeyPositions = [this.getKeyPosition()];
+        const frameRate = 16.66; // 60 fps delta
+        const minVelocity = 0.1;
+
+        this.scene.matter.world.addListener("collisionstart", (event: Phaser.Physics.Matter.Events.CollisionStartEvent) => {
+            event.pairs.forEach((pair) => {
+                const { bodyA, bodyB } = pair;
+
+                if (bodyA.label === HOLE_LABEL || bodyB.label === HOLE_LABEL) {
+                    const targetBody = bodyA.label === HOLE_LABEL ? bodyB : bodyA;
+                    const ball = this.balls.findIndex((b) => b.phaserSprite.body === targetBody);
+                    if (ball >= 0) this.inHole[ball] = true;
+                }
+            });
+        });
+
+        for (let step = 0; step < MAX_STEPS; step++) {
+            let anyMoving = false;
+
+            this.scene.matter.world.step(frameRate)
+
+            for (let i = 0; i < this.balls.length; i++) {
+                const ball = this.balls[i]!;
+
+                if (this.inHole[i] || !ball.phaserSprite.body) continue;
+
+                const velocity = new Vector2(ball.phaserSprite.body.velocity)
+
+                if (velocity.length() > minVelocity) {
+                    anyMoving = true;
+                }
+            }
+
+            keyPositions.push(this.getKeyPosition());
+
+            if (!anyMoving) break;
+        }
+
+        this.scene.matter.world.removeListener("collisionstart");
+
+        return keyPositions;
+    }
+
+    private getNormal(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): { x: number; y: number } {
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -314,14 +353,7 @@ export class PoolService {
         return closestNormal;
     }
 
-    public isPointInPolygon(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): boolean {
+    public isPointInPolygon(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): boolean {
         const { x, y } = b;
 
         let inside = false;

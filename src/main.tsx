@@ -1,6 +1,7 @@
 import * as Phaser from "phaser";
 import { PoolGameScene } from "./scenes/pool-game-scene";
 import { PoolPreLoadScene } from "./scenes/pool-preload-scene";
+import { DEBUG_GRAPHICS } from "./common/pool-constants";
 
 const gameConfig: Phaser.Types.Core.GameConfig = {
     type: Phaser.CANVAS,
@@ -19,6 +20,15 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
         keyboard: true,
         mouse: true,
         touch: true,
+    },
+
+    physics: {
+        default: "matter",
+        matter: {
+            gravity: { x: 0, y: 0 },
+            debug: DEBUG_GRAPHICS,
+            autoUpdate: false,
+        },
     },
 
     scene: [PoolPreLoadScene, PoolGameScene],

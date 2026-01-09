@@ -1,17 +1,12 @@
 /**
  * Pool game specific constants
  */
-export let DEBUG_GRAPHICS = false;
-
-export function setDebugGraphics(debug: boolean) {
-    DEBUG_GRAPHICS = debug;
-}
+export let DEBUG_GRAPHICS = true;
+export let USE_MATTER_JS = true;
 export let INIT_DISCORD_SDK = false;
 
 export let MODAL_OPEN: boolean = false;
-export function setGlobalModalOpenVariable(open: boolean) {
-    MODAL_OPEN = open;
-}
+export function setGlobalModalOpenVariable(open: boolean) { MODAL_OPEN = open; }
 
 export const CUSHION_CONSTANTS = {
     SIDE_INNER_X: 0, // Inner edge x position
@@ -91,13 +86,28 @@ const targetWidth = 1920;
 const screenRatio = width / targetWidth;
 
 // Game dimensions
-export const BALL_RADIUS = 15 * screenRatio;
-export const HOLE_RADIUS = 50 * screenRatio;
+export const BALL_RADIUS = 25 * screenRatio;
+export const HOLE_RADIUS = 25 * screenRatio;
+
+// REAL LIFE PHYSICS CONSTANTS
+const OZ_TO_KG = 0.0283495;
+const BALL_MASS_OZ = 6;
+export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;
+
+// Coefficients
+export const BALL_RESTITUTION = 0.998; // ball (e)
+export const BALL_FRICTION = 0.01; // ball (μ)
+export const CLOTH_ROLLING_RESISTANCE = 0.012; // cloth (frictionAir)
+export const RAIL_RESTITUTION = 0.75; // rail (e)
 
 // Physics constants
 export const MAX_POWER = 30;
-export const MAX_STEPS = 350;
+export const MAX_STEPS = 1000;
 export const TIMER_DURATION = 30;
+
+// Label Constants
+export const HOLE_LABEL = "hole";
+export const BALL_LABEL = "ball";
 
 export const COLORS = {
     primary: "#2C5530",
