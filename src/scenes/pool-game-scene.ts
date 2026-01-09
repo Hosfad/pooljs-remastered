@@ -47,12 +47,6 @@ export class PoolGameScene extends Phaser.Scene {
     public marginX!: number;
     public marginY!: number;
 
-    private powerMeter: {
-        power: number;
-    } = {
-        power: 0,
-    };
-
     // Graphics
     private hand!: Phaser.GameObjects.Sprite;
     private background!: Phaser.GameObjects.Image;
@@ -138,6 +132,10 @@ export class PoolGameScene extends Phaser.Scene {
             const my = this.marginY;
 
             this.updateCueBullback(x * width + mx, y * height + my, angle);
+        });
+
+        this.service.subscribe(Events.DRAG_POWER_METER, ({ power }) => {
+            this.cue.power = power;
         });
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
@@ -531,6 +529,7 @@ export class PoolGameScene extends Phaser.Scene {
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
+            if (!this.isClickingTable(pointer.x, pointer.y)) return console.log("Not clicking table");
             const { x: px, y: py } = pointer;
             this.mousePosition.set(px, py);
 
@@ -546,14 +545,14 @@ export class PoolGameScene extends Phaser.Scene {
                 return;
             }
 
-            if (this.isMobile && this.isDraggingShot && this.isClickingTable(px, py)) {
+            if (this.isMobile && this.isDraggingShot) {
                 const { x, y } = whiteBall.phaserSprite!;
                 this.lockedAimAngle = Math.atan2(py - y, px - x);
             }
         });
 
         this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-            if (MODAL_OPEN || !this.service.isMyTurn()) return;
+            if (MODAL_OPEN || !this.service.isMyTurn() || !this.isClickingTable(pointer.x, pointer.y)) return;
 
             const wb = this.balls.length - 1;
             const whiteBall = this.balls[wb]!;
@@ -584,14 +583,14 @@ export class PoolGameScene extends Phaser.Scene {
         this.input.on("pointerup", () => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
 
-            if (this.powerMeter.power <= 0) {
+            if (this.cue.power <= 0) {
                 this.isDraggingShot = false;
                 return;
             }
 
             if (!this.isMobile && this.isDraggingShot) {
                 this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
-                this.service.hitBalls(this.powerMeter.power, this.cue.rotation);
+                this.service.hitBalls(this.cue.power, this.cue.rotation);
                 this.setPower(0);
             }
 
@@ -602,7 +601,7 @@ export class PoolGameScene extends Phaser.Scene {
     private updateCueBullback(x: number, y: number, angle: number): void {
         // Pullback cue based on power
         const maxPullback = 200;
-        const pullbackDistance = BALL_RADIUS + this.powerMeter.power * maxPullback;
+        const pullbackDistance = BALL_RADIUS + this.cue.power * maxPullback;
 
         const offsetX = x - Math.cos(angle) * pullbackDistance;
         const offsetY = y - Math.sin(angle) * pullbackDistance;
@@ -639,13 +638,7 @@ export class PoolGameScene extends Phaser.Scene {
         if (this.isMobile) {
             // Still show aim line with current angle
             this.drawAimLine(x, y, this.cue.rotation);
-            this.service.pull(
-                (x - mx) / width,
-                (y - my) / height,
-                this.cue.rotation,
-                this.powerMeter.power,
-                shouldBroadcast
-            );
+            this.service.pull((x - mx) / width, (y - my) / height, this.cue.rotation, this.cue.power, shouldBroadcast);
             return;
         }
 
@@ -677,7 +670,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         // Aim line
         this.drawAimLine(x, y, angle);
-        this.service.pull((x - mx) / width, (y - my) / height, angle, this.powerMeter.power, shouldBroadcast);
+        this.service.pull((x - mx) / width, (y - my) / height, angle, this.cue.power, shouldBroadcast);
     }
 
     private lineStyle(width: number, color: number, alpha: number = 1): void {
@@ -822,7 +815,7 @@ export class PoolGameScene extends Phaser.Scene {
             },
 
             BALL_RADIUS: () => BALL_RADIUS,
-            POWER: () => this.powerMeter.power.toFixed(2),
+            POWER: () => this.cue.power.toFixed(2),
             "CUE ANGLE": () => Phaser.Math.RadToDeg(this.cue.rotation).toFixed(1) + "°",
             "WHITE BALL": () => {
                 const b = this.balls[this.balls.length - 1]!;
@@ -877,6 +870,6 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private setPower(power: number): void {
-        this.powerMeter.power = power;
+        this.cue.power = power;
     }
 }

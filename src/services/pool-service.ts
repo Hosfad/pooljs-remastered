@@ -1,5 +1,15 @@
 import * as Phaser from "phaser";
-import { BALL_RADIUS, HOLE_LABEL, MAX_POWER, MAX_STEPS, TIMER_DURATION, USE_MATTER_JS } from "../common/pool-constants";
+import {
+    BALL_RADIUS,
+    HOLE_LABEL,
+    MAX_POWER,
+    MAX_SPEED_MPS,
+    MAX_SPIN_RAD_PER_SEC,
+    MAX_STEPS,
+    METER_TO_PX_PER_FRAME,
+    TIMER_DURATION,
+    USE_MATTER_JS,
+} from "../common/pool-constants";
 import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
 import type { PoolState } from "../common/server-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
@@ -95,14 +105,16 @@ export class PoolService {
         const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
         const power = powerPercent * MAX_POWER;
 
-        const velX = Math.cos(angle) * power;
-        const velY = Math.sin(angle) * power;
+        const velX = powerPercent * MAX_POWER * Math.cos(angle);
+        const velY = powerPercent * MAX_POWER * Math.sin(angle);
+
         velocities[whiteball]!.set(velX, velY);
 
         if (USE_MATTER_JS) {
             const wbody = this.balls[whiteball]!.phaserSprite.body as MatterJS.BodyType;
             this.scene.matter.body.setVelocity(wbody, { x: velX, y: velY });
-            // this.scene.matter.body.setAngularVelocity(wbody, angularVel);
+            //this.scene.matter.body.setAngularVelocity(wbody, velAngular);
+            //  this.scene.matter.body.setInertia(wbody, velVertical);
         }
 
         const turn = this.whoseTurn();
@@ -304,14 +316,14 @@ export class PoolService {
         for (let step = 0; step < MAX_STEPS; step++) {
             let anyMoving = false;
 
-            this.scene.matter.world.step(frameRate)
+            this.scene.matter.world.step(frameRate);
 
             for (let i = 0; i < this.balls.length; i++) {
                 const ball = this.balls[i]!;
 
                 if (this.inHole[i] || !ball.phaserSprite.body) continue;
 
-                const velocity = new Vector2(ball.phaserSprite.body.velocity)
+                const velocity = new Vector2(ball.phaserSprite.body.velocity);
 
                 if (velocity.length() > minVelocity) {
                     anyMoving = true;
@@ -328,7 +340,14 @@ export class PoolService {
         return keyPositions;
     }
 
-    private getNormal(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): { x: number; y: number } {
+    private getNormal(
+        b: Phaser.Math.Vector2,
+        {
+            sprite: {
+                size: { points },
+            },
+        }: Collider
+    ): { x: number; y: number } {
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -353,7 +372,14 @@ export class PoolService {
         return closestNormal;
     }
 
-    public isPointInPolygon(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): boolean {
+    public isPointInPolygon(
+        b: Phaser.Math.Vector2,
+        {
+            sprite: {
+                size: { points },
+            },
+        }: Collider
+    ): boolean {
         const { x, y } = b;
 
         let inside = false;
@@ -370,5 +396,51 @@ export class PoolService {
             if (intersect) inside = !inside;
         }
         return inside;
+    }
+
+    public calculateShotPhysics(
+        powerPercentage: number,
+
+        angleRadians: number,
+
+        horizontalOffset: number = 0,
+
+        verticalOffset: number = 0
+    ) {
+        const clampedPower = Phaser.Math.Clamp(powerPercentage, 0, 50);
+
+        let normalizedPower = clampedPower / 100;
+
+        normalizedPower = Math.pow(normalizedPower, 2);
+
+        const targetSpeedMps = normalizedPower * MAX_SPEED_MPS;
+
+        const linearMagnitude = targetSpeedMps * METER_TO_PX_PER_FRAME;
+
+        const horizontalSafeOffset = Phaser.Math.Clamp(horizontalOffset, -0.8, 0.8);
+
+        const angularVelocity = normalizedPower * horizontalSafeOffset * MAX_SPIN_RAD_PER_SEC;
+
+        // TODO: adjust this depending on the sticks spin efficiency (pay to win xD)
+
+        const deflectionAmount = 0;
+
+        const deflectedVx = Math.cos(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
+
+        const deflectedVy = Math.sin(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
+
+        const verticalSafeOffset = Phaser.Math.Clamp(verticalOffset, -0.8, 0.8);
+
+        const verticalVelocity = normalizedPower * verticalSafeOffset * MAX_SPIN_RAD_PER_SEC;
+
+        return {
+            x: deflectedVx,
+
+            y: deflectedVy,
+
+            angular: angularVelocity,
+
+            vertical: verticalVelocity,
+        };
     }
 }

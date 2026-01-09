@@ -55,6 +55,7 @@ export enum Events {
     HAND = "hand",
 
     DROP_BALL = "drop-ball",
+    DRAG_POWER_METER = "drag-power-meter",
 
     ERROR_ROOM_FULL = "error-room-full",
     SHOW_MODAL = "show-error-modal",
@@ -105,6 +106,7 @@ export type EventsData = {
 
     // UI UPDATES
     [Events.DROP_BALL]: { ballNumber: number | "white" | "black"; ballType: BallType };
+    [Events.DRAG_POWER_METER]: { power: number };
 
     // ERRORS
     [Events.ERROR_ROOM_FULL]: RoomId;

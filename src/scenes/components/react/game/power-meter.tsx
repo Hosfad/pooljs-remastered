@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Events } from "../../../../common/server-types";
-import type { Service } from "../../../../services/service";
+import type { MultiplayerService } from "../../../../services/multiplayer-service";
 
 const ChevronDownIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -16,8 +16,8 @@ const chevronPattern = `url("data:image/svg+xml,%3Csvg width='40' height='40' vi
 
 const KNOB_HEIGHT = 56;
 
-const PowerMeter = ({ service, position = "right" }: { service: Service; position?: "left" | "right" }) => {
-    const [power, setPower] = useState<number>(0);
+const PowerMeter = ({ service, position = "right" }: { service: MultiplayerService; position?: "left" | "right" }) => {
+    const [power, setPowerState] = useState<number>(0);
 
     const [pixelOffset, setPixelOffset] = useState<number>(0);
     const [trackHeight, setTrackHeight] = useState<number>(0);
@@ -26,6 +26,14 @@ const PowerMeter = ({ service, position = "right" }: { service: Service; positio
     const [isDragging, setIsDragging] = useState<boolean>(false);
 
     const trackRef = useRef<HTMLDivElement>(null);
+
+    const setPower = (power: number, sendEvent: boolean = false) => {
+        setPowerState(power);
+
+        if (sendEvent) {
+            service.call(Events.DRAG_POWER_METER, { power: power / 100 });
+        }
+    };
 
     useEffect(() => {
         if (trackRef.current) setTrackHeight(trackRef.current.clientHeight);
@@ -49,7 +57,7 @@ const PowerMeter = ({ service, position = "right" }: { service: Service; positio
     }, []);
 
     const calculatePosition = useCallback((clientY: number) => {
-        if (!trackRef.current) return;
+        if (!trackRef.current || !isManualDraggingRef.current) return;
 
         const { top, height } = trackRef.current.getBoundingClientRect();
         const maxTravel = height - KNOB_HEIGHT;
@@ -64,7 +72,7 @@ const PowerMeter = ({ service, position = "right" }: { service: Service; positio
 
         if (maxTravel > 0) {
             const percentage = (newY / maxTravel) * 100;
-            setPower(Math.round(percentage));
+            setPower(Math.round(percentage), true);
         }
     }, []);
 
@@ -80,6 +88,7 @@ const PowerMeter = ({ service, position = "right" }: { service: Service; positio
 
     const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
         e.preventDefault();
+        if (!service.isMyTurn()) return;
         isManualDraggingRef.current = true;
         setIsDragging(true);
         calculatePosition(e.clientY);
@@ -87,13 +96,13 @@ const PowerMeter = ({ service, position = "right" }: { service: Service; positio
 
     useEffect(() => {
         const handlePointerMove = (e: PointerEvent) => {
-            if (!service.isMyTurn()) return;
-            if (isDragging) {
-                calculatePosition(e.clientY);
-            }
+            if (!service.isMyTurn() || !isDragging) return;
+            calculatePosition(e.clientY);
         };
 
         const handlePointerUp = () => {
+            if (!service.isMyTurn()) return;
+
             setIsDragging(false);
             isManualDraggingRef.current = false;
             setPower(0);

@@ -150,7 +150,11 @@ export class MultiplayerService extends LocalService {
 
         const POS_PER_SENT = 100;
         for (let i = 0; i < keyPositions.length; i += POS_PER_SENT) {
-            this.call(Events.HITS, { ...data, keyPositions: keyPositions.slice(i, i + POS_PER_SENT) });
+            this.call(
+                Events.HITS,
+                { ...data, keyPositions: keyPositions.slice(i, i + POS_PER_SENT) },
+                BroadcastEvent.OTHERS
+            );
         }
 
         return keyPositions;
@@ -163,11 +167,12 @@ export class MultiplayerService extends LocalService {
         const data = { x, y, angle, power };
 
         this.send(Events.PULL, { ...data });
-        if (sendMultiplayer) this.call(Events.PULL, { ...data });
+        if (sendMultiplayer) this.call(Events.PULL, { ...data }, BroadcastEvent.OTHERS);
     }
 
     override moveHand(x: number, y: number): void {
-        this.call(Events.HAND, { x, y });
+        this.send(Events.HAND, { x, y });
+        this.call(Events.HAND, { x, y }, BroadcastEvent.OTHERS);
     }
 
     public isConnected(): boolean {
@@ -231,6 +236,7 @@ export class MultiplayerService extends LocalService {
     private handleRedirect(newRoom: string) {
         const roomIdFromUrl = this.getRoomId();
         if (roomIdFromUrl !== newRoom) {
+            console.log({ roomIdFromUrl, newRoom });
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.set("room", newRoom);
             sessionStorage.setItem("roomId", newRoom);
@@ -291,8 +297,6 @@ export class MultiplayerService extends LocalService {
 
         this.listen(Events.INIT, (body) => {
             if (body.type === "error") return console.error("Error in INIT", body);
-            this.handleRedirect(body.data.id);
-
             this.send(Events.INIT, body.data);
         });
 
@@ -304,6 +308,11 @@ export class MultiplayerService extends LocalService {
         this.listen(Events.HITS, (body) => {
             if (body.type === "error") return console.error("Error in HITS", body);
             this.send(Events.HITS, body.data);
+        });
+
+        this.listen(Events.DRAG_POWER_METER, (body) => {
+            if (body.type === "error") return console.error("Error in DRAG_POWER_METER", body);
+            this.send(Events.DRAG_POWER_METER, body.data);
         });
     }
 }

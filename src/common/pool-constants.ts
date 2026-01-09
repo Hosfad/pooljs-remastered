@@ -1,7 +1,7 @@
 /**
  * Pool game specific constants
  */
-export let DEBUG_GRAPHICS = true;
+export let DEBUG_GRAPHICS = false;
 export let USE_MATTER_JS = true;
 export let INIT_DISCORD_SDK = false;
 
@@ -110,6 +110,14 @@ export const TIMER_DURATION = 30;
 // Label Constants
 export const HOLE_LABEL = "hole";
 export const BALL_LABEL = "ball";
+
+export const PIXELS_PER_METER = 300;
+export const INCH_TO_METER = 0.0254;
+// Velocity limits
+export const MAX_SPEED_MPS = 16;
+export const PHYSICS_FPS = 60;
+export const METER_TO_PX_PER_FRAME = PIXELS_PER_METER / PHYSICS_FPS;
+export const MAX_SPIN_RAD_PER_SEC = 35;
 
 export const COLORS = {
     primary: "#2C5530",

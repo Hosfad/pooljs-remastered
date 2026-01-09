@@ -154,18 +154,19 @@ wss.on("connection", (ws) => {
         return {
             type: "success",
             data: {
-                ...data,
                 ...options,
+                ...data,
             },
         } as const;
     }
 
-    eventListener.on(Events.JOIN_ROOM, withRoomAuthMiddleware, (data) => {
+    eventListener.on(Events.JOIN_ROOM, (data) => {
         const { roomId, senderId, name, photo } = data;
         const room = roomId ? getRoom(roomId) : null;
 
         if (!room) {
             const newRoom = createNewRoom({ userId: senderId, name, photo }, ws, roomId);
+            console.log("New room created", newRoom);
             return respondToEvent(Events.JOIN_ROOM_RESPONSE, success(data, reshapeRoom(newRoom)));
         }
 
@@ -205,7 +206,9 @@ wss.on("connection", (ws) => {
 
         rooms[room.id] = room;
 
-        respondToEvent(Events.JOIN_ROOM_RESPONSE, success(data, reshapeRoom(room)));
+        console.log("Room joined", data.broadcastEvent, room.clients.length);
+        const responseObj = success(data, reshapeRoom(room));
+        respondToEvent(Events.JOIN_ROOM_RESPONSE, responseObj);
     });
 
     eventListener.on(Events.MATCH_MAKE_START, withRoomAuthMiddleware, (data) => {
@@ -259,6 +262,7 @@ wss.on("connection", (ws) => {
     eventListener.on(Events.PLAYER_DISCONNECT, withRoomAuthMiddleware, (data) => {
         const { roomId, senderId } = data;
         const room = getRoom(roomId);
+        console.log("Player disconnected", senderId, roomId, room);
         if (!room) return;
         const client = room.clients.find((c) => c.id === senderId);
         if (!client) return;
@@ -291,29 +295,11 @@ wss.on("connection", (ws) => {
         respondToEvent(Events.INIT, success(data, reshapeRoom(room)));
     });
 
-    eventListener.on(Events.PULL, withRoomAuthMiddleware, (data) => {
-        const { roomId, senderId } = data;
-        const room = getRoom(roomId);
-        if (!room) return;
-        respondToEvent(Events.PULL, success(data, data));
-    });
-
-    eventListener.on(Events.HITS, withRoomAuthMiddleware, (data) => {
-        const { roomId, senderId } = data;
-        const room = getRoom(roomId)!;
-        respondToEvent(Events.HITS, success(data, data));
-    });
-
-    eventListener.on(Events.HAND, withRoomAuthMiddleware, (data) => {
-        const { roomId, senderId } = data;
-        const room = getRoom(roomId)!;
-
-        respondToEvent(Events.HAND, success(data, data));
-    });
-
-    eventListener.on(Events.DROP_BALL, withRoomAuthMiddleware, (data) => {
-        const { roomId, senderId } = data;
-        respondToEvent(Events.DROP_BALL, success(data, data));
+    const gameEvents = [Events.PULL, Events.HITS, Events.HAND, Events.DROP_BALL, Events.DRAG_POWER_METER] as const;
+    gameEvents.forEach((event) => {
+        eventListener.on(event as TEventKey, withRoomAuthMiddleware, (data) => {
+            respondToEvent(event as TEventKey, success(data, data));
+        });
     });
 
     ws.on("close", () => {
@@ -360,7 +346,11 @@ function roomAuthMiddleware(existigUserOnly = true) {
         RoomEventBodyOptions & EventsData[TEventKey]
     > = (data) => {
         const { roomId, senderId } = data;
+
+        console.log("Middleware", { roomId, senderId });
         const room = getRoom(roomId);
+        console.log("Middleware room", room?.id);
+        if (!room) console.error("Room not found", { rooms });
         if (existigUserOnly && !room) return { error: "Room not found" };
         if (existigUserOnly && !room?.clients.find((c) => c.id === senderId)) return { error: "User not found" };
 
