@@ -289,30 +289,20 @@ export class MultiplayerService extends LocalService {
             this.send(Events.UPDATE_ROOM, body.data);
         });
 
-        // Game events
-        this.listen(Events.HAND, (body) => {
-            if (body.type === "error") return console.error("Error in HAND", body);
-            this.send(Events.HAND, body.data);
-        });
+        const gameEvents = [
+            Events.PULL,
+            Events.HITS,
+            Events.HAND,
+            Events.DROP_BALL,
+            Events.DRAG_POWER_METER,
+            Events.POWER_METER_HIT,
+        ] as const;
 
-        this.listen(Events.INIT, (body) => {
-            if (body.type === "error") return console.error("Error in INIT", body);
-            this.send(Events.INIT, body.data);
-        });
-
-        this.listen(Events.PULL, (body) => {
-            if (body.type === "error") return console.error("Error in PULL", body);
-            this.send(Events.PULL, body.data);
-        });
-
-        this.listen(Events.HITS, (body) => {
-            if (body.type === "error") return console.error("Error in HITS", body);
-            this.send(Events.HITS, body.data);
-        });
-
-        this.listen(Events.DRAG_POWER_METER, (body) => {
-            if (body.type === "error") return console.error("Error in DRAG_POWER_METER", body);
-            this.send(Events.DRAG_POWER_METER, body.data);
+        gameEvents.forEach((event) => {
+            this.listen(event as TEventKey, (body) => {
+                if (body.type === "error") return console.error("Error in ", event, body);
+                this.send(event as TEventKey, body.data);
+            });
         });
     }
 }

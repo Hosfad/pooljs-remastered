@@ -56,6 +56,7 @@ export enum Events {
 
     DROP_BALL = "drop-ball",
     DRAG_POWER_METER = "drag-power-meter",
+    POWER_METER_HIT = "power-meter-hit",
 
     ERROR_ROOM_FULL = "error-room-full",
     SHOW_MODAL = "show-error-modal",

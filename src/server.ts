@@ -295,7 +295,15 @@ wss.on("connection", (ws) => {
         respondToEvent(Events.INIT, success(data, reshapeRoom(room)));
     });
 
-    const gameEvents = [Events.PULL, Events.HITS, Events.HAND, Events.DROP_BALL, Events.DRAG_POWER_METER] as const;
+    const gameEvents = [
+        Events.PULL,
+        Events.HITS,
+        Events.HAND,
+        Events.DROP_BALL,
+        Events.DRAG_POWER_METER,
+        Events.POWER_METER_HIT,
+    ] as const;
+
     gameEvents.forEach((event) => {
         eventListener.on(event as TEventKey, withRoomAuthMiddleware, (data) => {
             respondToEvent(event as TEventKey, success(data, data));

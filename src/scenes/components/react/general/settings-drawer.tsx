@@ -109,12 +109,24 @@ export function SettingsDrawer({
                     <div className="space-y-2">
                         <RadioGroup
                             label="Aim Line"
-                            selectedValue={settings.powerMeterPosition}
+                            selectedValue={settings.showAimLine ? "on" : "off"}
                             options={[
                                 { label: "On", value: "on" },
                                 { label: "Off", value: "off" },
                             ]}
-                            onChange={(val) => changeSetting("powerMeterPosition", val)}
+                            onChange={(val) => changeSetting("showAimLine", val === "on")}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <RadioGroup
+                            label="Show Hints"
+                            selectedValue={settings.showHints ? "on" : "off"}
+                            options={[
+                                { label: "On", value: "on" },
+                                { label: "Off", value: "off" },
+                            ]}
+                            onChange={(val) => changeSetting("showHints", val === "on")}
                         />
                     </div>
                 </div>
