@@ -390,16 +390,20 @@ export class PoolGameScene extends Phaser.Scene {
         if (!this.keyPositions.length) this.service.timerStart();
 
         frame.forEach(({ position: { x, y }, collision, hidden }, i) => {
-            if (hidden) return;
+            const ball = this.balls[i]!;
 
-            const sprite = this.balls[i].phaserSprite;
+            if (hidden || ball.isAnimating) {
+                ball.isPocketed = hidden;
+                return;
+            }
+
+            const sprite = ball.phaserSprite;
             const pos = { x: x * tw + this.marginX, y: y * th + this.marginY };
 
             // increment rotation angle of sprite
             const spd = Math.abs((pos.x + pos.y) - (sprite.x + sprite.y));
             if (spd != 0) sprite.rotation += spd / BALL_RADIUS * 2;
-
-            if (!hidden) sprite.setPosition(pos.x, pos.y);
+            sprite.setPosition(pos.x, pos.y);
 
             if (this.playedSounds[i] === undefined && collision !== undefined) {
                 switch (collision) {
@@ -434,7 +438,7 @@ export class PoolGameScene extends Phaser.Scene {
             }
         );
 
-        this.balls.push({ ballType, phaserSprite: sprite, isPocketed: false });
+        this.balls.push({ ballType, phaserSprite: sprite, isPocketed: false, isAnimating: false });
     }
 
     private createHoles(): void {
@@ -899,36 +903,41 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private checkForNewlyPocketedBalls(): void {
-        let i;
-
-        for (i = 0; i < this.balls.length - 1; ++i) {
-            const ball = this.balls[i]!;
-
-            if (!ball.phaserSprite.visible && !ball.isPocketed) {
+        this.balls.forEach((ball, i) => {
+            if (ball.phaserSprite.visible && ball.isPocketed) {
                 const alreadyPocketed = this.pocketedBallsRail.pocketedBalls.some((pb) => pb.ball === ball);
-
-                if (!alreadyPocketed) {
-                    ball.isPocketed = true;
-                    this.animateBallToRail(ball);
-                }
+                if (!alreadyPocketed) this.animateBallToRail(ball, i === this.balls.length - 1);
             }
-        }
-
-        const whiteBall = this.balls[i]!;
-        whiteBall.isPocketed = !whiteBall.phaserSprite.visible;
+        });
     }
 
-    private animateBallToRail(ball: Ball): void {
+    private animateBallToRail(ball: Ball, skipRail: boolean = false): void {
+        if (ball.isAnimating) return; // FIX: this thing with the whiteball
+        ball.isAnimating = true;
+
+        const sprite = ball.phaserSprite;
+        const pos = new Vector2(sprite);
+
+        const closestHole = this.holes.reduce((acc, { sprite: { position } }) => {
+            const distance = pos.distance(position);
+            return distance < acc.distance ? { distance, pos: position } : acc;
+        }, { distance: Infinity, pos: new Vector2(0, 0) });
+
         // ball falling into pocket animation
         this.tweens.add({
             targets: ball.phaserSprite,
             scale: 0,
+            x: closestHole.pos.x,
+            y: closestHole.pos.y,
             duration: 200,
             onComplete: () => {
-                ball.phaserSprite.setVisible(false);
-                this.matter.world.remove(ball.phaserSprite.body as MatterJS.BodyType);
+                ball.isAnimating = false;
+                sprite.setVisible(false);
             },
         });
+
+        if (skipRail) return;
+        if (sprite.body) this.matter.world.remove(sprite.body as MatterJS.BodyType);
 
         const { ballPositions, pocketedBalls } = this.pocketedBallsRail;
         const positionIndex = ballPositions.length - 1 - pocketedBalls.length;
@@ -942,7 +951,6 @@ export class PoolGameScene extends Phaser.Scene {
         if (!targetPosition) return;
 
         const dropStartPosition = { x: targetPosition.x, y: this.marginY - 50 };
-        const sprite = ball.phaserSprite;
         const ballClone = this.add
             .sprite(sprite.x, sprite.y, sprite.texture.key)
             .setScale(ball.phaserSprite.scale)

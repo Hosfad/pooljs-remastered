@@ -14,6 +14,7 @@ export interface Ball {
     ballType: BallType;
     phaserSprite: Phaser.GameObjects.Sprite;
     isPocketed: boolean;
+    isAnimating: boolean;
 }
 
 export interface Hole {

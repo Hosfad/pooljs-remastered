@@ -68,7 +68,7 @@ export function GameInfoWidget({ service }: { service: MultiplayerService }) {
         return false;
     });
 
-    console.log({ state, player1ScoredBalls, player2ScoredBalls });
+    // console.log({ state, player1ScoredBalls, player2ScoredBalls });
     return (
         room?.isGameStarted && (
             <div
@@ -104,15 +104,14 @@ export function GameInfoWidget({ service }: { service: MultiplayerService }) {
                 >
                     {/* Current Ball Type Image */}
                     <img
-                        src={`/assets/game/balls/${
-                            currentPlayerId === player1.id
-                                ? player1Ball === "solid"
-                                    ? "1"
-                                    : "9"
-                                : player2Ball === "solid"
+                        src={`/assets/game/balls/${currentPlayerId === player1.id
+                            ? player1Ball === "solid"
                                 ? "1"
                                 : "9"
-                        }.svg`}
+                            : player2Ball === "solid"
+                                ? "1"
+                                : "9"
+                            }.svg`}
                         alt={currentPlayerId === player1.id ? player1Ball : player2Ball}
                         style={{
                             width: 64,
