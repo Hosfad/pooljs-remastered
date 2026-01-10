@@ -36,10 +36,10 @@ export class PoolGameScene extends Phaser.Scene {
     private isGameStarted = false;
 
     // Game state
+    private cue!: Cue;
     public balls: Ball[] = [];
     public holes: Hole[] = [];
     public colliders: Collider[] = [];
-    private cue!: Cue;
 
     // Dynamic dimensions based on device scale
     public tableWidth!: number;

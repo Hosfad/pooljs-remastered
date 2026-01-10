@@ -89,7 +89,7 @@ const width = window.innerWidth;
 const targetWidth = 1920;
 const screenRatio = width / targetWidth;
 
-export const BALL_RADIUS = 20 * screenRatio;
+export const BALL_RADIUS = 18 * screenRatio;
 export const HOLE_RADIUS = 25 * screenRatio;
 
 // Real life physics constants
