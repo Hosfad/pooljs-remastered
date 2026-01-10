@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 import {
     BALL_LABEL,
     BALL_RADIUS,
+    CUSH_LABEL,
     HOLE_LABEL,
     MAX_POWER,
     MAX_SPEED_MPS,
@@ -45,7 +46,9 @@ export class PoolService {
     private turns: BallType[];
     private turnIndex = 0;
 
-    constructor(scene: PoolGameScene, onTimerEnd: () => void) {
+    private onNextPlayer: () => void;
+
+    constructor(scene: PoolGameScene, onTimerEnd: () => void, onNextPlayer: () => void) {
         this.scene = scene;
 
         this.balls = scene.balls;
@@ -69,6 +72,8 @@ export class PoolService {
             paused: true,
             loop: true,
         });
+
+        this.onNextPlayer = onNextPlayer;
     }
 
     public winner(): string | undefined {
@@ -143,6 +148,7 @@ export class PoolService {
 
         if ((this.players[turn] == points && !this.winner()) || this.inHole[wb]) {
             this.turnIndex = (this.turnIndex + 1) % this.turns.length;
+            this.onNextPlayer();
         }
 
         return keyPositions;
@@ -333,16 +339,26 @@ export class PoolService {
             event.pairs.forEach((pair) => {
                 const { bodyA, bodyB } = pair;
 
+                let targetBody: MatterJS.BodyType;
+                let ballIdx: number;
+
                 switch (bodyA.label + bodyB.label) {
                     case HOLE_LABEL + BALL_LABEL:
                     case BALL_LABEL + HOLE_LABEL:
-                        const targetBody = bodyA.label === HOLE_LABEL ? bodyB : bodyA;
-                        const ball = this.balls.findIndex((b) => b.phaserSprite.body === targetBody);
-                        if (ball >= 0) this.inHole[ball] = true;
+                        targetBody = bodyA.label === HOLE_LABEL ? bodyB : bodyA;
+                        ballIdx = this.balls.findIndex((b) => b.phaserSprite.body === targetBody);
+
+                        if (ballIdx >= 0) {
+                            this.inHole[ballIdx] = true;
+                            this.collisions[ballIdx] = "hole";
+                            this.players[this.balls[ballIdx]!.ballType]++;
+                        }
                         return;
                     case BALL_LABEL + BALL_LABEL:
+                        const ballAIdx = this.balls.findIndex((b) => b.phaserSprite.body === bodyA);
+                        this.collisions[ballAIdx] = "ball";
+
                         if (!firstHit) {
-                            const ballAIdx = this.balls.findIndex((b) => b.phaserSprite.body === bodyA);
                             const ballBIdx = this.balls.findIndex((b) => b.phaserSprite.body === bodyB);
 
                             const wb = this.balls.length - 1;
@@ -350,6 +366,11 @@ export class PoolService {
                                 firstHit = this.balls[ballAIdx === wb ? ballBIdx : ballAIdx]!.ballType;
                             }
                         }
+                        break;
+                    default: // Cushion & Ball
+                        targetBody = bodyA.label === CUSH_LABEL ? bodyB : bodyA;
+                        ballIdx = this.balls.findIndex((b) => b.phaserSprite.body === targetBody);
+                        this.collisions[ballIdx] = "wall";
                         break;
                 }
 
@@ -362,6 +383,7 @@ export class PoolService {
 
         for (let step = 0; step < MAX_STEPS; step++) {
             let anyMoving = false;
+            this.collisions.length = 0;
 
             for (let i = 0; i < this.balls.length; i++) {
                 const ball = this.balls[i]!;

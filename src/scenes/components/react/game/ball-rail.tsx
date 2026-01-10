@@ -32,7 +32,6 @@ const BallRail = ({ position = "right" }: { position?: "left" | "right" }) => {
         if (finalNumber === "8") finalNumber = "black";
         if (finalNumber === "16") finalNumber = "white";
 
-        console.log("Ball image", finalNumber);
         return `/assets/game/balls/${finalNumber}.svg`;
     };
 
@@ -77,7 +76,7 @@ const BallRail = ({ position = "right" }: { position?: "left" | "right" }) => {
             </div>
 
             <style>{`
-            
+
 @keyframes dropIn {
     0% {
         transform: translate(0, -100vh);

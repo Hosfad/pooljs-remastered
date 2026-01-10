@@ -88,10 +88,14 @@ export class PoolGameScene extends Phaser.Scene {
         this.createHand();
 
         // Setup input
-        const pool = new PoolService(this, () => {
-            if (this.service.isMyTurn()) return;
-            this.service.hitBalls(0, 0, { x: 0, y: 0 });
-        });
+        const pool = new PoolService(this,
+            () => {
+                if (!this.service.isMyTurn() || DEBUG_GRAPHICS) {
+                    this.service.hitBalls(0, 0, { x: 0, y: 0 });
+                }
+            },
+            () => { this.service.send(Events.SWITCH_PLAYER, undefined); }
+        );
         this.registerEvents(new MultiplayerService(pool));
         this.setupInput();
         this.createCue();
@@ -127,6 +131,7 @@ export class PoolGameScene extends Phaser.Scene {
             this.service.timerStart();
             this.isGameStarted = true;
         });
+
         this.service.subscribe(Events.PULL, ({ x, y, angle }) => {
             const target = this.denormalize(x, y);
             this.updateCueBullback(target.x, target.y, angle);
@@ -137,6 +142,11 @@ export class PoolGameScene extends Phaser.Scene {
         this.service.subscribe(Events.POWER_METER_HIT, ({ power }) => {
             this.service.hitBalls(power, this.cue.rotation, this.cue.offset);
         });
+
+        this.service.subscribe(Events.SWITCH_PLAYER, () => {
+            console.log("Switching player");
+        });
+
         this.service.subscribe(Events.CHANGE_SPIN_POSITION, ({ x, y }) => this.setSpinPosition(x, y));
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
