@@ -72,6 +72,11 @@ export default function SpinIndicator({
             y = (radius - 20) * Math.sin(angle);
         }
 
+        // scene.cue.offset = {
+        //     x: (x + 20) / (rect.width * 0.5),
+        //     y: (y + 20) / (rect.height * 0.5),
+        // };
+
         setSpinPosition({ x, y });
     };
 
@@ -120,9 +125,8 @@ export default function SpinIndicator({
                                 style={{
                                     left: "50%",
                                     top: "50%",
-                                    transform: `translate(calc(-50% + ${spinPosition.x * 0.25}px), calc(-50% + ${
-                                        spinPosition.y * 0.25
-                                    }px))`,
+                                    transform: `translate(calc(-50% + ${spinPosition.x * 0.25}px), calc(-50% + ${spinPosition.y * 0.25
+                                        }px))`,
                                 }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                             ></motion.div>

@@ -21,8 +21,7 @@ export type LocalUser = {
 };
 
 export abstract class Service {
-    public discordSdk: DiscordSDK | null = null;
-
+    protected discordSdk: DiscordSDK | null = null;
     protected room: Room | null = null;
 
     private events = new Phaser.Events.EventEmitter();

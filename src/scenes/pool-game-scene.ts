@@ -36,7 +36,7 @@ export class PoolGameScene extends Phaser.Scene {
     private isGameStarted = false;
 
     // Game state
-    private cue!: Cue;
+    public cue!: Cue;
     public balls: Ball[] = [];
     public holes: Hole[] = [];
     public colliders: Collider[] = [];
@@ -271,7 +271,7 @@ export class PoolGameScene extends Phaser.Scene {
         const { x, y } = this.toTableCoordinates(whiteBall.phaserSprite.x, whiteBall.phaserSprite.y);
         const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUES.BASIC).setOrigin(1, 0.5).setFlipX(true);
 
-        this.cue = { phaserSprite: cueSprite, rotation: 0, power: 0 };
+        this.cue = { phaserSprite: cueSprite, rotation: 0, power: 0, offset: { x: 0, y: 0 } };
     }
 
     private getTableEdges(): { left: number; right: number; top: number; bottom: number } {
@@ -596,7 +596,7 @@ export class PoolGameScene extends Phaser.Scene {
 
             if (!this.isMobile && this.isDraggingShot) {
                 this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
-                this.service.hitBalls(this.cue.power, this.cue.rotation, { x: 0, y: 0 });
+                this.service.hitBalls(this.cue.power, this.cue.rotation, this.cue.offset);
                 this.setPower(0);
             }
 
