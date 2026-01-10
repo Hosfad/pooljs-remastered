@@ -775,7 +775,9 @@ export class PoolGameScene extends Phaser.Scene {
                 // Draw blocked circle
                 const radius = 8;
                 // add a dark shadow like the line
-                this.lineStyle(2.5, 0xff0000); // Red
+                this.lineStyle(2.5, 0xff0000);
+                this.aimLineShadow.lineStyle(5, 0x000000);
+                this.aimLineShadow.strokeCircle(targetX, targetY, radius);
                 this.aimLine.strokeCircle(targetX, targetY, radius);
                 const slashOffset = radius * Math.cos(Math.PI / 4);
                 this.moveTo(targetX - slashOffset, targetY + slashOffset);
