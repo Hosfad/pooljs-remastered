@@ -1,5 +1,6 @@
 import * as Phaser from "phaser";
 import {
+    BALL_LABEL,
     BALL_RADIUS,
     HOLE_LABEL,
     MAX_POWER,
@@ -138,7 +139,7 @@ export class PoolService {
             }
         });
 
-        if ((this.players[turn] == points && !this.winner()) || this.balls[wb]!.isPocketed) {
+        if ((this.players[turn] == points && !this.winner()) || this.inHole[wb]) {
             this.turnIndex = (this.turnIndex + 1) % this.turns.length;
         }
 
@@ -309,8 +310,10 @@ export class PoolService {
 
     private matter_simulate(): KeyPositions {
         const keyPositions: KeyPositions = [this.getKeyPosition()];
-        const frameRate = 16.66;
+        const frameRate = 16.66 * 0.5;
         const minVelocity = 0.1;
+
+        let firstHit: BallType | undefined;
 
         const applyVerticalSpin = (body: MatterJS.BodyType) => {
             const vspin = (body as any).verticalSpin;
@@ -328,14 +331,28 @@ export class PoolService {
             event.pairs.forEach((pair) => {
                 const { bodyA, bodyB } = pair;
 
-                if (bodyA.label === HOLE_LABEL || bodyB.label === HOLE_LABEL) {
-                    const targetBody = bodyA.label === HOLE_LABEL ? bodyB : bodyA;
-                    const ball = this.balls.findIndex((b) => b.phaserSprite.body === targetBody);
-                    if (ball >= 0) this.inHole[ball] = true;
-                } else {
-                    applyVerticalSpin(bodyA);
-                    applyVerticalSpin(bodyB);
+                switch (bodyA.label + bodyB.label) {
+                    case HOLE_LABEL + BALL_LABEL:
+                    case BALL_LABEL + HOLE_LABEL:
+                        const targetBody = bodyA.label === HOLE_LABEL ? bodyB : bodyA;
+                        const ball = this.balls.findIndex((b) => b.phaserSprite.body === targetBody);
+                        if (ball >= 0) this.inHole[ball] = true;
+                        return;
+                    case BALL_LABEL + BALL_LABEL:
+                        if (!firstHit) {
+                            const ballAIdx = this.balls.findIndex((b) => b.phaserSprite.body === bodyA);
+                            const ballBIdx = this.balls.findIndex((b) => b.phaserSprite.body === bodyB);
+
+                            const wb = this.balls.length - 1;
+                            if (ballAIdx === wb || ballBIdx === wb) {
+                                firstHit = this.balls[ballAIdx === wb ? ballBIdx : ballAIdx]!.ballType;
+                            }
+                        }
+                        break;
                 }
+
+                applyVerticalSpin(bodyA);
+                applyVerticalSpin(bodyB);
             });
         };
 
@@ -363,6 +380,11 @@ export class PoolService {
         }
 
         this.scene.matter.world.off("collisionstart", collisionListener);
+
+        if (!firstHit || firstHit !== this.whoseTurn()) {
+            this.inHole[this.balls.length - 1] = true; // whiteball free hand
+            keyPositions.push(this.getKeyPosition());
+        }
 
         return keyPositions;
     }

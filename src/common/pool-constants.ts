@@ -118,6 +118,7 @@ export const TIMER_DURATION = 30;
 // Label Constants
 export const HOLE_LABEL = "hole";
 export const BALL_LABEL = "ball";
+export const CUSH_LABEL = "cushion";
 
 // Velocity limits (stop deleting this, im trying something)
 export const MAX_SPEED_MPS = 8;
