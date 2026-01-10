@@ -89,8 +89,8 @@ export class LocalService extends Service {
         this.send(Events.PULL, { x, y, angle, power: power });
     }
 
-    override hitBalls(powerPercent: number, angle: number): KeyPositions {
-        const keyPositions = this.service.hitBalls(powerPercent, angle);
+    override hitBalls(powerPercent: number, angle: number, offset: { x: number; y: number }): KeyPositions {
+        const keyPositions = this.service.hitBalls(powerPercent, angle, offset);
         this.send(Events.HITS, {
             keyPositions,
             state: { ...this.service.getState() },

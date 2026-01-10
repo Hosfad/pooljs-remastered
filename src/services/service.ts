@@ -34,7 +34,7 @@ export abstract class Service {
     abstract whoseTurn(): BallType;
     abstract isMyTurn(): boolean;
 
-    abstract hitBalls(powerPercent: number, angle: number): KeyPositions;
+    abstract hitBalls(powerPercent: number, angle: number, offset: { x: number; y: number }): KeyPositions;
     // abstract disconnect(): void;
 
     abstract setState<T>(state: T): void;

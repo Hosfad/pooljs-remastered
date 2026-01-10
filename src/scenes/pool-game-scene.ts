@@ -89,7 +89,7 @@ export class PoolGameScene extends Phaser.Scene {
         // Setup input
         const pool = new PoolService(this, () => {
             if (this.service.isMyTurn()) return;
-            this.service.hitBalls(0, 0);
+            this.service.hitBalls(0, 0, { x: 0, y: 0 });
         });
         this.registerEvents(new MultiplayerService(pool));
         this.setupInput();
@@ -596,7 +596,7 @@ export class PoolGameScene extends Phaser.Scene {
 
             if (!this.isMobile && this.isDraggingShot) {
                 this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
-                this.service.hitBalls(this.cue.power, this.cue.rotation);
+                this.service.hitBalls(this.cue.power, this.cue.rotation, { x: 0, y: 0 });
                 this.setPower(0);
             }
 

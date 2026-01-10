@@ -97,10 +97,9 @@ export class PoolService {
         return this.turns[this.turnIndex] as BallType;
     }
 
-    public hitBalls(powerPercent: number, angle: number): KeyPositions {
+    public hitBalls(powerPercent: number, angle: number, offset: { x: number; y: number }): KeyPositions {
         const wb = this.balls.length - 1;
         const power = powerPercent * MAX_POWER;
-        const offset = { x: -0.5, y: 0 };
         const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
 
         const squirtAmount = 0.01; // pay 2 win
