@@ -99,7 +99,7 @@ export const BALL_RADIUS_PX = (BALL_DIAMETER_IN * INCH_TO_METER * PIXELS_PER_MET
 const OZ_TO_KG = 0.0283495;
 const BALL_MASS_OZ = 6;
 
-export const BALL_RADIUS = BALL_RADIUS_PX;
+export const BALL_RADIUS = 18 * screenRatio;
 export const HOLE_RADIUS = 27 * screenRatio;
 
 export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;

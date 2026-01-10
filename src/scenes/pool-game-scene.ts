@@ -684,6 +684,11 @@ export class PoolGameScene extends Phaser.Scene {
         this.aimLine.lineStyle(width, color, alpha);
     }
 
+    private strokeCircle(x: number, y: number, radius: number): void {
+        this.aimLineShadow.strokeCircle(x, y, radius);
+        this.aimLine.strokeCircle(x, y, radius);
+    }
+
     private strokePath(): void {
         this.aimLineShadow.strokePath();
         this.aimLine.strokePath();
@@ -777,21 +782,20 @@ export class PoolGameScene extends Phaser.Scene {
                 // add a dark shadow like the line
                 this.lineStyle(2.5, 0xff0000);
                 this.aimLineShadow.lineStyle(5, 0x000000);
-                this.aimLineShadow.strokeCircle(targetX, targetY, radius);
-                this.aimLine.strokeCircle(targetX, targetY, radius);
+                this.strokeCircle(targetX, targetY, radius);
+
                 const slashOffset = radius * Math.cos(Math.PI / 4);
                 this.moveTo(targetX - slashOffset, targetY + slashOffset);
                 this.lineTo(targetX + slashOffset, targetY - slashOffset);
                 this.strokePath();
             } else {
                 // Drawing prediction line
-                this.aimLineShadow.strokeCircle(targetX, targetY, 5);
-                this.aimLine.strokeCircle(targetX, targetY, 5);
+                this.strokeCircle(targetX, targetY, 5);
 
                 const dx = hitBall.phaserSprite.x - targetX;
                 const dy = hitBall.phaserSprite.y - targetY;
 
-                const lineLength = BALL_RADIUS * 6;
+                const lineLength = BALL_RADIUS * 3;
                 const angle = Math.atan2(dy, dx);
 
                 const endX = targetX + Math.cos(angle) * lineLength;
