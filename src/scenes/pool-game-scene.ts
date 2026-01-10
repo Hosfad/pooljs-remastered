@@ -192,7 +192,7 @@ export class PoolGameScene extends Phaser.Scene {
         return { x: this.marginX + x, y: this.marginY + y };
     }
 
-    public override update(time: number, delta: number): void {
+    public override update(): void {
         if (!this.isGameStarted) return;
 
         this.input.enabled = !this.keyPositions.length;
