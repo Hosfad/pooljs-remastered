@@ -133,15 +133,12 @@ export class PoolGameScene extends Phaser.Scene {
             this.updateCueBullback(x * width + mx, y * height + my, angle);
         });
 
-        this.service.subscribe(Events.DRAG_POWER_METER, ({ power }) => {
-            this.cue.power = power;
-        });
+        this.service.subscribe(Events.DRAG_POWER_METER, ({ power }) => this.setPower(power));
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
             this.keyPositions.push.apply(this.keyPositions, keyPositions);
             this.service.timerStop();
             this.service.setState(state);
-            this.checkWinner();
         });
 
         this.service.subscribe(Events.HAND, ({ x, y }) => {
@@ -386,7 +383,10 @@ export class PoolGameScene extends Phaser.Scene {
         const tw = this.tableWidth;
         const th = this.tableHeight;
 
-        if (!this.keyPositions.length) this.service.timerStart();
+        if (!this.keyPositions.length) {
+            this.service.timerStart();
+            this.checkWinner();
+        }
 
         frame.forEach(({ position: { x, y }, collision, hidden }, i) => {
             const ball = this.balls[i]!;
