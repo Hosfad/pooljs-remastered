@@ -716,9 +716,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         const aimDir = new Vector2(Math.cos(angle), Math.sin(angle));
         const ballRadius = { x: BALL_RADIUS + 2, y: BALL_RADIUS + 2 };
-        const me = this.service.me();
-        const state = this.service.getCurrentRoom();
-        const myBallType = state?.players.find((p) => p.id === me.id)?.state.ballType;
+        const myBallType = this.service.whoseTurn();
 
         const currentPos = aimDir.clone().multiply(ballRadius).add({ x: ballX, y: ballY });
         const rayDirection = aimDir.clone();
@@ -772,12 +770,10 @@ export class PoolGameScene extends Phaser.Scene {
             const targetX = closestBallHitPos.x;
             const targetY = closestBallHitPos.y;
 
-            const isWrongBall = myBallType && hitBall.ballType !== myBallType;
-
             this.lineTo(targetX, targetY);
             this.strokePath();
 
-            if (isWrongBall) {
+            if (hitBall.ballType !== myBallType) {
                 // Draw blocked circle
                 const radius = 8;
                 // add a dark shadow like the line

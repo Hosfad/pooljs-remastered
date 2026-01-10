@@ -120,6 +120,7 @@ export class PoolService {
             const wbody = this.balls[wb]!.phaserSprite.body as MatterJS.BodyType;
             this.scene.matter.body.setVelocity(wbody, { x: physics.x, y: physics.y });
             this.scene.matter.body.setAngularVelocity(wbody, physics.angular);
+            // Is physics.vertical is 0, there is no vertical spin
             (wbody as any).verticalSpin = physics.vertical;
         }
 
