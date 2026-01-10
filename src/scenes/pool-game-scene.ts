@@ -721,7 +721,7 @@ export class PoolGameScene extends Phaser.Scene {
         let closestBallHitPos = new Vector2(0, 0);
         let hitBall: Ball | undefined;
 
-        const BALL_SQR = BALL_RADIUS * BALL_RADIUS;
+        const BALL_SQR = BALL_RADIUS * BALL_RADIUS * 3;
 
         for (let i = 0; i < this.balls.length - 1; i++) {
             const ball = this.balls[i]!;
