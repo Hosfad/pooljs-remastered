@@ -21,7 +21,7 @@ function GameLayout({ visible, service }: { visible: boolean; service: Multiplay
             setRoom(data);
             setSettings(service.getSettings());
         });
-    }, [service]);
+    }, []);
 
     return (
         visible && (

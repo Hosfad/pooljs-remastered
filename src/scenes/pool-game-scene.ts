@@ -682,6 +682,7 @@ export class PoolGameScene extends Phaser.Scene {
     private lineStyle(width: number, color: number, alpha: number = 1): void {
         this.aimLineShadow.lineStyle(width * 3, 0x000000, alpha);
         this.aimLine.lineStyle(width, color, alpha);
+        //disable antialiasing
     }
 
     private strokePath(): void {
@@ -774,8 +775,7 @@ export class PoolGameScene extends Phaser.Scene {
             if (isWrongBall) {
                 // Draw blocked circle
                 const radius = 8;
-                // add a dark shadow like the line
-                this.lineStyle(2.5, 0xff0000);
+                this.lineStyle(3, 0xff0000);
                 this.aimLineShadow.lineStyle(5, 0x000000);
                 this.aimLineShadow.strokeCircle(targetX, targetY, radius);
                 this.aimLine.strokeCircle(targetX, targetY, radius);

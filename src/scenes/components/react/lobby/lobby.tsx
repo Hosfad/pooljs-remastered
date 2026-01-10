@@ -21,6 +21,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
         service.call(Events.JOIN_ROOM, { ...me });
 
         service.subscribe(Events.UPDATE_ROOM, (data) => {
+            console.log("UPDATE ROOM", data);
             setRoom(data);
             setVisible(true);
         });
@@ -37,24 +38,6 @@ export function Lobby({ service }: { service: MultiplayerService }) {
     const lobbyState = room?.isMatchMaking ? "matchmaking" : "lobby";
     const [visible, setVisible] = React.useState(!room?.isGameStarted);
     const [hasCopied, setHasCopied] = React.useState(false);
-
-    React.useEffect(() => {
-        const lockOrientation = async () => {
-            if (window.screen.orientation && "lock" in window.screen.orientation) {
-                try {
-                    // @ts-ignore
-                    await window.screen.orientation.lock("landscape");
-                } catch (err) {
-                    console.log("Orientation lock not supported or failed:", err);
-                }
-            }
-        };
-
-        if (window.innerWidth < 768) {
-            lockOrientation();
-        }
-    }, []);
-
     const players = room?.players ?? [];
     const me = service.me();
     const currentPlayer = me;
@@ -87,9 +70,6 @@ export function Lobby({ service }: { service: MultiplayerService }) {
     };
     const currentPlayerIsHost = currentPlayer?.id === room?.hostId;
     const otherPlayer = players.find((p) => p.id !== currentPlayer?.id);
-
-    const maxPlayers = 2;
-    const emptySlots = maxPlayers - players.length;
 
     const handleStart = () => {
         if (!room) return;

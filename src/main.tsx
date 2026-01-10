@@ -31,6 +31,7 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
             restingThresh: 0.001,
         },
     },
+    antialias: false,
 
     scene: [PoolPreLoadScene, PoolGameScene],
 };

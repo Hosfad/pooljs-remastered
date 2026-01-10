@@ -31,7 +31,7 @@ type UIProviderContext = {
     pocketedBalls: PocketedBall[];
     dropBall: (ballNumber: number, ballType: BallType) => void;
 
-    getMessages: (userId: string) => GameMessage[];
+    getMessage: (userId: string) => GameMessage | null;
 
     showAnimatedUIMessage: (message: string, duration: number) => void;
 };
@@ -84,22 +84,27 @@ export const UIProvider: React.FC<UIProviderProps> = ({ service, children }) => 
         });
     }, [service, dropBall]);
 
-    const messagesInterval = setInterval(() => {
-        setGameMessages((prev) => prev.filter((msg) => Date.now() - msg.timestamp < 3000));
-    }, 500);
-
     useEffect(() => {
-        return () => clearInterval(messagesInterval);
-    }, [messagesInterval]);
+        const cleanupInterval = setInterval(() => {
+            const now = Date.now();
+            const THREE_SECONDS = 3000;
 
-    const getMessages = useCallback(
-        (userId: string) => {
-            const messages = gameMessages.filter((msg) => msg.from === userId);
-            const earlierFirst = messages.sort((a, b) => a.timestamp - b.timestamp);
-            return earlierFirst;
-        },
-        [gameMessages]
-    );
+            setGameMessages((prev) => {
+                const hasExpired = prev.some((msg) => now - msg.timestamp > THREE_SECONDS);
+                if (!hasExpired) return prev;
+                return prev.filter((msg) => now - msg.timestamp <= THREE_SECONDS);
+            });
+        }, 1000);
+
+        return () => clearInterval(cleanupInterval);
+    }, []);
+
+    const getMessage = (userId: string) => {
+        const messages = gameMessages.filter((msg) => msg.from === userId);
+        const earlierFirst = messages.sort((a, b) => a.timestamp - b.timestamp);
+        const first = earlierFirst[0];
+        return first ?? null;
+    };
 
     const showAnimatedUIMessage = useCallback(
         (message: string, duration: number) => {
@@ -110,7 +115,7 @@ export const UIProvider: React.FC<UIProviderProps> = ({ service, children }) => 
     );
 
     return (
-        <UIContext.Provider value={{ room, setRoom, pocketedBalls, dropBall, getMessages, showAnimatedUIMessage }}>
+        <UIContext.Provider value={{ room, setRoom, pocketedBalls, dropBall, getMessage, showAnimatedUIMessage }}>
             {children}
 
             <AnimatePresence>

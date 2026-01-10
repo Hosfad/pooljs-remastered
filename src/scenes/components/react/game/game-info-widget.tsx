@@ -11,7 +11,6 @@ const SCALED_BALL_SIZE = 22;
 
 export function GameInfoWidget({ room, service }: { room: Room; service: MultiplayerService }) {
     const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
-    const { showAnimatedUIMessage } = useUI();
 
     const players = room.players;
     const imHost = room.hostId === service.me()?.id;
@@ -27,7 +26,6 @@ export function GameInfoWidget({ room, service }: { room: Room; service: Multipl
     useEffect(() => {
         if (!room) return;
         setTimeLeft(ROUND_TIME);
-
         const interval = setInterval(() => setTimeLeft(service.timerLeft()), 200);
         return () => clearInterval(interval);
     }, [room, service]);
@@ -125,9 +123,9 @@ function PlayerAvatar({ player, isActive, progress }: any) {
     const perimeter = 4 * size - 8 * cornerRadius + 2 * Math.PI * cornerRadius;
     const dashOffset = perimeter * (1 - progress / 100);
 
-    const { getMessages } = useUI();
+    const { getMessage } = useUI();
 
-    const latestMessage = getMessages(player.id)[0];
+    const latestMessage = getMessage(player.id);
 
     return (
         <div className="relative" style={{ width: size, height: size }}>
