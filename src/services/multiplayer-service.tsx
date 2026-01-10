@@ -15,10 +15,10 @@ import { LocalService } from "./local-service";
 import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { INIT_DISCORD_SDK } from "../common/pool-constants";
-import { LoadingPage } from "../scenes/components/react/loading/loading-page";
 import { Lobby } from "../scenes/components/react/lobby/lobby";
 
 import MainScreen from "../scenes/components/react/general/main-screen";
+import { TournamentLobby } from "../scenes/components/react/lobby/tournaments";
 import { UIProvider } from "../scenes/components/react/provider";
 
 interface Preferences {
@@ -45,21 +45,22 @@ export class MultiplayerService extends LocalService {
                         <React.StrictMode>
                             <UIProvider service={this}>
                                 <BrowserRouter>
-                                    <LoadingPage service={this} />
+                                    {/* <LoadingPage service={this} /> */}
                                     <Routes>
                                         <Route path="/" element={<MainScreen service={this} />}></Route>
                                         <Route path="/lobby" element={<Lobby service={this} />}></Route>
+                                        <Route path="/tournaments" element={<TournamentLobby />}></Route>
                                     </Routes>
                                 </BrowserRouter>
                             </UIProvider>
                         </React.StrictMode>
                     );
                 }
-                this.send(Events.SHOW_LOADING, { show: true, message: "Pool Game" });
+                this.send(Events.SHOW_LOADING, { show: false });
 
                 await this.initDisocrdSDK();
                 this.registerEvents();
-                setTimeout(() => this.send(Events.SHOW_LOADING, { show: false }), 1500);
+                //    setTimeout(() => this.send(Events.SHOW_LOADING, { show: false }), 1500);
             };
 
             this.ws.onmessage = (e) => {

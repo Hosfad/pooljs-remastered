@@ -93,13 +93,13 @@ export const HOLE_RADIUS = 25 * screenRatio;
 
 // REAL LIFE PHYSICS CONSTANTS
 const OZ_TO_KG = 0.0283495;
-const BALL_MASS_OZ = 6;
+const BALL_MASS_OZ = 12;
 
 // Coefficients
 export const BALL_RESTITUTION = 0.998; // ball (e)
-export const BALL_FRICTION = 0.01; // ball (μ)
+export const BALL_FRICTION = 0.015; // ball (μ)
 export const CLOTH_ROLLING_RESISTANCE = 0.01; // cloth (frictionAir)
-export const RAIL_RESTITUTION = 0.85; // rail (e)
+export const RAIL_RESTITUTION = 0.999; // rail (e)
 
 // Physics constants
 export const MAX_POWER = 30;

@@ -26,11 +26,13 @@ function MainScreen({ service }: { service: MultiplayerService }) {
                     </button>
                 </Link>
 
-                <button className="group relative bg-gradient-to-br from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-yellow-500/50 w-64 h-64 flex flex-col items-center justify-center gap-4">
-                    <div className="text-7xl group-hover:scale-110 transition-transform">🏆</div>
-                    <div className="text-white text-3xl font-bold">Tournament</div>
-                    <div className="text-yellow-100 text-sm">Compete for prizes</div>
-                </button>
+                <Link to={`/tournaments`}>
+                    <button className="group relative bg-gradient-to-br from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-yellow-500/50 w-64 h-64 flex flex-col items-center justify-center gap-4">
+                        <div className="text-7xl group-hover:scale-110 transition-transform">🏆</div>
+                        <div className="text-white text-3xl font-bold">Tournament</div>
+                        <div className="text-yellow-100 text-sm">Compete for prizes</div>
+                    </button>
+                </Link>
 
                 <button className="group relative bg-gradient-to-br from-green-500 to-emerald-700 hover:from-green-400 hover:to-emerald-600 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-green-500/50 w-64 h-64 flex flex-col items-center justify-center gap-4">
                     <div className="text-7xl group-hover:scale-110 transition-transform">🎱</div>
