@@ -1,7 +1,7 @@
 /**
  * Pool game specific constants
  */
-export let DEBUG_GRAPHICS = true;
+export let DEBUG_GRAPHICS = false;
 export let USE_MATTER_JS = true;
 export let INIT_DISCORD_SDK = false;
 

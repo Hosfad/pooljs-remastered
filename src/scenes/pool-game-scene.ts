@@ -151,7 +151,6 @@ export class PoolGameScene extends Phaser.Scene {
             const whiteBall = this.balls[this.balls.length - 1]!;
             whiteBall.phaserSprite.setPosition(x * width + mx, y * height + my);
             whiteBall.phaserSprite.visible = true;
-            whiteBall.isPocketed = false;
         });
     }
 
@@ -392,7 +391,7 @@ export class PoolGameScene extends Phaser.Scene {
             const ball = this.balls[i]!;
 
             if (hidden || ball.isAnimating) {
-                if (!ball.isAnimating) this.animateBallToHole(ball);
+                if (!ball.isAnimating) this.animateBallToHole(ball, i === this.balls.length - 1);
                 return;
             }
 
@@ -505,8 +504,8 @@ export class PoolGameScene extends Phaser.Scene {
             }
         }
 
-        for (const ball of this.balls) {
-            const { x, y } = ball.phaserSprite;
+        for (let i = 0; i < this.balls.length - 1; ++i) {
+            const { x, y } = this.balls[i]!.phaserSprite;
             const ballPos = new Vector2(x, y);
 
             if (ballPos.distance(pos) <= BALL_RADIUS * 1.5) {
@@ -837,8 +836,8 @@ export class PoolGameScene extends Phaser.Scene {
             { distance: Infinity, pos: new Vector2(0, 0) }
         );
 
-        const spriteClone = this.add.sprite(sprite.x, sprite.y, sprite.texture.key).setScale(sprite.scale);
         sprite.setVisible(false);
+        const spriteClone = this.add.sprite(sprite.x, sprite.y, sprite.texture.key).setScale(sprite.scale);
         const textureSplit = ball.phaserSprite.texture.key.split("-");
         const ballNumber = parseInt(textureSplit[textureSplit.length - 1]!);
 

@@ -148,6 +148,7 @@ export class MultiplayerService extends LocalService {
     override hitBalls(powerPercent: number, angle: number): KeyPositions {
         const keyPositions = this.service.hitBalls(powerPercent, angle);
         const data = { keyPositions: keyPositions, state: this.service.getState() };
+
         this.send(Events.HITS, { ...data });
 
         const POS_PER_SENT = 100;
