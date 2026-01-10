@@ -98,18 +98,23 @@ export class PoolService {
     }
 
     public hitBalls(powerPercent: number, angle: number): KeyPositions {
-        const whiteball = this.balls.length - 1;
-        const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
+        const wb = this.balls.length - 1;
         const power = powerPercent * MAX_POWER;
+        const offset = { x: -0.5, y: 0 };
+        const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
 
-        const velX = power * Math.cos(angle);
-        const velY = power * Math.sin(angle);
+        const squirtAmount = 0.01; // pay 2 win
+        const adjustedAngle = angle - (offset.x * squirtAmount);
 
-        velocities[whiteball]!.set(velX, velY);
+        const velX = power * Math.cos(adjustedAngle);
+        const velY = power * Math.sin(adjustedAngle);
+        velocities[wb]!.set(velX, velY);
 
         if (USE_MATTER_JS) {
-            const wbody = this.balls[whiteball]!.phaserSprite.body as MatterJS.BodyType;
+            const wbody = this.balls[wb]!.phaserSprite.body as MatterJS.BodyType;
             this.scene.matter.body.setVelocity(wbody, { x: velX, y: velY });
+            this.scene.matter.body.setAngularVelocity(wbody, offset.x * 0.2);
+            (wbody as any).verticalSpin = offset.y;
         }
 
         const turn = this.whoseTurn();
@@ -122,7 +127,7 @@ export class PoolService {
             b.phaserSprite.visible = !key.hidden;
         });
 
-        if ((this.players[turn] == points && !this.winner()) || this.balls[whiteball]!.isPocketed) {
+        if ((this.players[turn] == points && !this.winner()) || this.balls[wb]!.isPocketed) {
             this.turnIndex = (this.turnIndex + 1) % this.turns.length;
         }
 
@@ -293,10 +298,22 @@ export class PoolService {
 
     private matter_simulate(): KeyPositions {
         const keyPositions: KeyPositions = [this.getKeyPosition()];
-        const frameRate = 16.66; // 60 fps delta
+        const frameRate = 16.66;
         const minVelocity = 0.1;
 
-        this.scene.matter.world.addListener("collisionstart", (event: Phaser.Physics.Matter.Events.CollisionStartEvent) => {
+        const applyVerticalSpin = (body: MatterJS.BodyType) => {
+            const vspin = (body as any).verticalSpin;
+            if (vspin) {
+                const spinForceDir = new Vector2(body.velocity).multiply({ x: vspin * 2, y: vspin * 2 });
+                this.scene.matter.body.setVelocity(body, {
+                    x: body.velocity.x + spinForceDir.x,
+                    y: body.velocity.y + spinForceDir.y
+                });
+                (body as any).verticalSpin = 0;
+            }
+        };
+
+        const collisionListener = (event: Phaser.Physics.Matter.Events.CollisionStartEvent) => {
             event.pairs.forEach((pair) => {
                 const { bodyA, bodyB } = pair;
 
@@ -304,33 +321,37 @@ export class PoolService {
                     const targetBody = bodyA.label === HOLE_LABEL ? bodyB : bodyA;
                     const ball = this.balls.findIndex((b) => b.phaserSprite.body === targetBody);
                     if (ball >= 0) this.inHole[ball] = true;
+                } else {
+                    applyVerticalSpin(bodyA);
+                    applyVerticalSpin(bodyB);
                 }
             });
-        });
+        };
+
+        this.scene.matter.world.on("collisionstart", collisionListener);
 
         for (let step = 0; step < MAX_STEPS; step++) {
             let anyMoving = false;
 
-            this.scene.matter.world.step(frameRate);
-
             for (let i = 0; i < this.balls.length; i++) {
                 const ball = this.balls[i]!;
+                const body = ball.phaserSprite.body as MatterJS.BodyType;
 
-                if (this.inHole[i] || !ball.phaserSprite.body) continue;
+                if (this.inHole[i] || !body) continue;
 
-                const velocity = new Vector2(ball.phaserSprite.body.velocity);
-
-                if (velocity.length() > minVelocity) {
+                if (new Vector2(body.velocity).length() > minVelocity) {
                     anyMoving = true;
                 }
             }
+
+            this.scene.matter.world.step(frameRate);
 
             keyPositions.push(this.getKeyPosition());
 
             if (!anyMoving) break;
         }
 
-        this.scene.matter.world.removeListener("collisionstart");
+        this.scene.matter.world.off("collisionstart", collisionListener);
 
         return keyPositions;
     }
