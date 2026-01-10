@@ -40,7 +40,7 @@ export abstract class Service {
     abstract setState<T>(state: T): void;
     abstract getState<T>(): T;
 
-    abstract pull(x: number, y: number, angle: number, power: number, sendMultiplayer?: boolean): void;
+    abstract pull(x: number, y: number, angle: number, power: number): void;
     abstract moveHand(x: number, y: number): void;
 
     abstract timerStart(): void;
@@ -134,16 +134,16 @@ export abstract class Service {
         return item
             ? JSON.parse(item)
             : {
-                  masterVolume: 100,
-                  sfxVolume: 100,
-                  musicVolume: 80,
-                  selectedCue: "basic",
-                  showHints: true,
-                  showAimLine: true,
-                  powerMeterPosition: "left",
-                  spinSelectorPosition: "right",
-                  cueSensitivity: "low",
-              };
+                masterVolume: 100,
+                sfxVolume: 100,
+                musicVolume: 80,
+                selectedCue: "basic",
+                showHints: true,
+                showAimLine: true,
+                powerMeterPosition: "left",
+                spinSelectorPosition: "right",
+                cueSensitivity: "low",
+            };
     }
 
     public setSettings(newData: Partial<GameSettings>) {

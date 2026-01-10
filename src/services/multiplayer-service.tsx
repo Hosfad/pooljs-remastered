@@ -199,6 +199,7 @@ export class MultiplayerService extends LocalService {
         await this.discordSdk.ready();
 
         const me = this.me();
+
         if (me.access_token) {
             const res = await this.discordSdk.commands.authenticate({ access_token: me.access_token });
             if (!res.user) return console.error("Failed to authenticate with discord", res);
@@ -213,17 +214,15 @@ export class MultiplayerService extends LocalService {
                 prompt: "none",
                 scope: ["identify", "guilds", "guilds.members.read"],
             });
+
             if (!code) return console.log("No code found");
 
             const discordUser = await fetch(`/api/api/token`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    code,
-                }),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code }),
             });
+
             const data: Partial<Player> = await discordUser.json();
             this.setLocalUser(data);
         } catch (e) {
