@@ -10,6 +10,7 @@ import {
     BALL_RADIUS,
     BALL_RESTITUTION,
     CLOTH_ROLLING_RESISTANCE,
+    CUSH_LABEL,
     CUSHION_CONSTANTS,
     DEBUG_GRAPHICS,
     HOLE_LABEL,
@@ -20,7 +21,7 @@ import {
     RAIL_RESTITUTION,
     USE_MATTER_JS,
 } from "../common/pool-constants";
-import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
+import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyPositions, type Vectorlike } from "../common/pool-types";
 import { Events } from "../common/server-types";
 import { MultiplayerService } from "../services/multiplayer-service.tsx";
 import { PoolService } from "../services/pool-service";
@@ -87,10 +88,14 @@ export class PoolGameScene extends Phaser.Scene {
         this.createHand();
 
         // Setup input
-        const pool = new PoolService(this, () => {
-            if (this.service.isMyTurn()) return;
-            this.service.hitBalls(0, 0, { x: 0, y: 0 });
-        });
+        const pool = new PoolService(this,
+            () => {
+                if (!this.service.isMyTurn() || DEBUG_GRAPHICS) {
+                    this.service.hitBalls(0, 0, { x: 0, y: 0 });
+                }
+            },
+            () => { this.service.send(Events.SWITCH_PLAYER, undefined); }
+        );
         this.registerEvents(new MultiplayerService(pool));
         this.setupInput();
         this.createCue();
@@ -126,6 +131,7 @@ export class PoolGameScene extends Phaser.Scene {
             this.service.timerStart();
             this.isGameStarted = true;
         });
+
         this.service.subscribe(Events.PULL, ({ x, y, angle }) => {
             const target = this.denormalize(x, y);
             this.updateCueBullback(target.x, target.y, angle);
@@ -136,6 +142,11 @@ export class PoolGameScene extends Phaser.Scene {
         this.service.subscribe(Events.POWER_METER_HIT, ({ power }) => {
             this.service.hitBalls(power, this.cue.rotation, this.cue.offset);
         });
+
+        this.service.subscribe(Events.SWITCH_PLAYER, () => {
+            console.log("Switching player");
+        });
+
         this.service.subscribe(Events.CHANGE_SPIN_POSITION, ({ x, y }) => this.setSpinPosition(x, y));
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
@@ -195,7 +206,7 @@ export class PoolGameScene extends Phaser.Scene {
         );
     }
 
-    private toTableCoordinates(x: number, y: number): { x: number; y: number } {
+    private toTableCoordinates(x: number, y: number): Vectorlike {
         return { x: this.marginX + x, y: this.marginY + y };
     }
 
@@ -372,7 +383,7 @@ export class PoolGameScene extends Phaser.Scene {
                         isSensor: !USE_MATTER_JS,
                         isStatic: true,
                         restitution: RAIL_RESTITUTION,
-                        label: "cushion",
+                        label: CUSH_LABEL,
                         friction: 0,
                         frictionStatic: 0,
                     },
@@ -531,14 +542,14 @@ export class PoolGameScene extends Phaser.Scene {
         return px >= left && px <= right && py >= top && py <= bottom;
     }
 
-    private normalize(x: number, y: number): { x: number; y: number } {
+    private normalize(x: number, y: number): Vectorlike {
         return {
             x: (x - this.marginX) / this.tableWidth,
             y: (y - this.marginY) / this.tableHeight,
         };
     }
 
-    private denormalize(x: number, y: number): { x: number; y: number } {
+    private denormalize(x: number, y: number): Vectorlike {
         return {
             x: x * this.tableWidth + this.marginX,
             y: y * this.tableHeight + this.marginY,
@@ -684,6 +695,11 @@ export class PoolGameScene extends Phaser.Scene {
         this.aimLine.lineStyle(width, color, alpha);
     }
 
+    private strokeCircle(x: number, y: number, radius: number): void {
+        this.aimLineShadow.strokeCircle(x, y, radius);
+        this.aimLine.strokeCircle(x, y, radius);
+    }
+
     private strokePath(): void {
         this.aimLineShadow.strokePath();
         this.aimLine.strokePath();
@@ -710,9 +726,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         const aimDir = new Vector2(Math.cos(angle), Math.sin(angle));
         const ballRadius = { x: BALL_RADIUS + 2, y: BALL_RADIUS + 2 };
-        const me = this.service.me();
-        const state = this.service.getCurrentRoom();
-        const myBallType = state?.players.find((p) => p.id === me.id)?.state.ballType;
+        const myBallType = this.service.whoseTurn();
 
         const currentPos = aimDir.clone().multiply(ballRadius).add({ x: ballX, y: ballY });
         const rayDirection = aimDir.clone();
@@ -721,7 +735,7 @@ export class PoolGameScene extends Phaser.Scene {
         let closestBallHitPos = new Vector2(0, 0);
         let hitBall: Ball | undefined;
 
-        const BALL_SQR = BALL_RADIUS * BALL_RADIUS;
+        const BALL_SQR = BALL_RADIUS * BALL_RADIUS * 3;
 
         for (let i = 0; i < this.balls.length - 1; i++) {
             const ball = this.balls[i]!;
@@ -766,32 +780,29 @@ export class PoolGameScene extends Phaser.Scene {
             const targetX = closestBallHitPos.x;
             const targetY = closestBallHitPos.y;
 
-            const isWrongBall = myBallType && hitBall.ballType !== myBallType;
-
             this.lineTo(targetX, targetY);
             this.strokePath();
 
-            if (isWrongBall) {
+            if (hitBall.ballType !== myBallType) {
                 // Draw blocked circle
                 const radius = 8;
                 // add a dark shadow like the line
                 this.lineStyle(2.5, 0xff0000);
                 this.aimLineShadow.lineStyle(5, 0x000000);
-                this.aimLineShadow.strokeCircle(targetX, targetY, radius);
-                this.aimLine.strokeCircle(targetX, targetY, radius);
+                this.strokeCircle(targetX, targetY, radius);
+
                 const slashOffset = radius * Math.cos(Math.PI / 4);
                 this.moveTo(targetX - slashOffset, targetY + slashOffset);
                 this.lineTo(targetX + slashOffset, targetY - slashOffset);
                 this.strokePath();
             } else {
                 // Drawing prediction line
-                this.aimLineShadow.strokeCircle(targetX, targetY, 5);
-                this.aimLine.strokeCircle(targetX, targetY, 5);
+                this.strokeCircle(targetX, targetY, 5);
 
                 const dx = hitBall.phaserSprite.x - targetX;
                 const dy = hitBall.phaserSprite.y - targetY;
 
-                const lineLength = BALL_RADIUS * 6;
+                const lineLength = BALL_RADIUS * 3;
                 const angle = Math.atan2(dy, dx);
 
                 const endX = targetX + Math.cos(angle) * lineLength;

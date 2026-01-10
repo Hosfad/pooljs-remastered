@@ -3,13 +3,13 @@ import type { BallType, KeyPositions } from "./pool-types";
 
 type MiddlewareResponse<TOutput> =
     | {
-          success: true;
-          data: TOutput;
-          error?: null;
-      }
+        success: true;
+        data: TOutput;
+        error?: null;
+    }
     | {
-          error: string;
-      };
+        error: string;
+    };
 
 export type Middleware<TInput, TOutput = unknown> = (
     data: TInput
@@ -48,12 +48,15 @@ export enum Events {
     PLAYER_DISCONNECT = "player-disconnect",
     PLAYER_DISCONNECT_RESPONSE = "player-disconnect-response",
 
+    // Game Events
     INIT = "game-init",
     ENDS = "game-end",
     PULL = "pull",
     HITS = "hit",
     HAND = "hand",
+    SWITCH_PLAYER = "next-player",
 
+    // UI Events
     DROP_BALL = "drop-ball",
     DRAG_POWER_METER = "drag-power-meter",
     POWER_METER_HIT = "power-meter-hit",
@@ -109,6 +112,7 @@ export type EventsData = {
     [Events.PULL]: { x: number; y: number; angle: number; power: number };
     [Events.INIT]: Room;
     [Events.HAND]: { x: number; y: number; click: boolean };
+    [Events.SWITCH_PLAYER]: void;
 
     // UI UPDATES
     [Events.DROP_BALL]: { ballNumber: number | "white" | "black"; ballType: BallType };
