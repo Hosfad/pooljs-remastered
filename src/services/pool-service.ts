@@ -105,16 +105,14 @@ export class PoolService {
         const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
         const power = powerPercent * MAX_POWER;
 
-        const velX = powerPercent * MAX_POWER * Math.cos(angle);
-        const velY = powerPercent * MAX_POWER * Math.sin(angle);
+        const velX = power * Math.cos(angle);
+        const velY = power * Math.sin(angle);
 
         velocities[whiteball]!.set(velX, velY);
 
         if (USE_MATTER_JS) {
             const wbody = this.balls[whiteball]!.phaserSprite.body as MatterJS.BodyType;
             this.scene.matter.body.setVelocity(wbody, { x: velX, y: velY });
-            //this.scene.matter.body.setAngularVelocity(wbody, velAngular);
-            //  this.scene.matter.body.setInertia(wbody, velVertical);
         }
 
         const turn = this.whoseTurn();
@@ -340,14 +338,7 @@ export class PoolService {
         return keyPositions;
     }
 
-    private getNormal(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): { x: number; y: number } {
+    private getNormal(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): { x: number; y: number } {
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -372,14 +363,7 @@ export class PoolService {
         return closestNormal;
     }
 
-    public isPointInPolygon(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): boolean {
+    public isPointInPolygon(b: Phaser.Math.Vector2, { sprite: { size: { points } } }: Collider): boolean {
         const { x, y } = b;
 
         let inside = false;

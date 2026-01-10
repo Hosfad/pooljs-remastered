@@ -1,7 +1,7 @@
 /**
  * Pool game specific constants
  */
-export let DEBUG_GRAPHICS = false;
+export let DEBUG_GRAPHICS = true;
 export let USE_MATTER_JS = true;
 export let INIT_DISCORD_SDK = false;
 
@@ -83,15 +83,17 @@ export const POOL_SCENE_KEYS = {
     POOL_GAME: "POOL_GAME",
 };
 
+// Game dimensions
+
 const width = window.innerWidth;
 const targetWidth = 1920;
 const screenRatio = width / targetWidth;
 
-// Game dimensions
-
+export const BALL_RADIUS = 20 * screenRatio;
 export const HOLE_RADIUS = 25 * screenRatio;
 
-// REAL LIFE PHYSICS CONSTANTS
+// Real life physics constants
+
 const OZ_TO_KG = 0.0283495;
 const BALL_MASS_OZ = 6;
 
@@ -111,16 +113,15 @@ export const HOLE_LABEL = "hole";
 export const BALL_LABEL = "ball";
 
 // Velocity limits
-export const PIXELS_PER_METER = 400;
-export const INCH_TO_METER = 0.0254;
+
+const PIXELS_PER_METER = 400;
+const PHYSICS_FPS = 60;
+
 export const MAX_SPEED_MPS = 16;
-export const PHYSICS_FPS = 60;
 export const METER_TO_PX_PER_FRAME = PIXELS_PER_METER / PHYSICS_FPS;
 export const MAX_SPIN_RAD_PER_SEC = 35;
 
 export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;
-export const BALL_DIAMETER_IN = 2.25;
-export const BALL_RADIUS = (BALL_DIAMETER_IN * INCH_TO_METER * PIXELS_PER_METER) / 2;
 
 export const COLORS = {
     primary: "#2C5530",

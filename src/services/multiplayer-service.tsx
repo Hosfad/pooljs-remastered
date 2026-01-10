@@ -14,7 +14,7 @@ import { LocalService } from "./local-service";
 
 import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { INIT_DISCORD_SDK } from "../common/pool-constants";
+import { DEBUG_GRAPHICS, INIT_DISCORD_SDK } from "../common/pool-constants";
 import { LoadingPage } from "../scenes/components/react/loading/loading-page";
 import { Lobby } from "../scenes/components/react/lobby/lobby";
 
@@ -87,23 +87,23 @@ export class MultiplayerService extends LocalService {
         }
     }
 
-    public listen<T extends TEventKey>(
-        event: T,
+    public listen<T extends TEventKey>(event: T,
         callback: (
             body:
                 | {
-                      type: "success";
-                      data: EventsData[T] & RoomEventBodyOptions;
-                  }
+                    type: "success";
+                    data: EventsData[T] & RoomEventBodyOptions;
+                }
                 | {
-                      type: "error";
-                      data: { message: string; code: WebsocketError } & RoomEventBodyOptions;
-                  }
+                    type: "error";
+                    data: { message: string; code: WebsocketError } & RoomEventBodyOptions;
+                }
         ) => void
     ) {
         if (!this.eventHandlers.has(event)) {
             this.eventHandlers.set(event, new Set());
         }
+
         this.eventHandlers.get(event)!.add(callback);
     }
 
@@ -116,6 +116,7 @@ export class MultiplayerService extends LocalService {
             console.error("WebSocket is not open");
             return;
         }
+
         const roomData = this.getRoomConfig();
         if (!roomData.roomId || !roomData.userId) return;
 
@@ -129,6 +130,7 @@ export class MultiplayerService extends LocalService {
     }
 
     override isMyTurn(): boolean {
+        if (DEBUG_GRAPHICS) return true;
         const imHost = this.room?.hostId === this.me()?.id;
         const index = this.service.getState().turnIndex;
 
@@ -160,14 +162,10 @@ export class MultiplayerService extends LocalService {
         return keyPositions;
     }
 
-    override pull(x: number, y: number, angle: number, power: number, sendMultiplayer: boolean = true): void {
-        const { userId, roomId } = this.getRoomConfig();
-        if (!roomId) return;
-
-        const data = { x, y, angle, power };
-
-        this.send(Events.PULL, { ...data });
-        if (sendMultiplayer) this.call(Events.PULL, { ...data }, BroadcastEvent.OTHERS);
+    override pull(x: number, y: number, angle: number, power: number): void {
+        if (!this.getRoomConfig().roomId) return;
+        this.send(Events.PULL, { x, y, angle, power });
+        this.call(Events.PULL, { x, y, angle, power }, BroadcastEvent.OTHERS);
     }
 
     override moveHand(x: number, y: number): void {

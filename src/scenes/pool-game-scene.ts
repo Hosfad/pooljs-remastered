@@ -199,7 +199,7 @@ export class PoolGameScene extends Phaser.Scene {
         if (!this.isGameStarted) return;
 
         this.input.enabled = !this.keyPositions.length;
-        this.updateCue(time, delta);
+        this.updateCue();
         this.updateKeyPositions();
 
         this.debugPanel?.update();
@@ -492,14 +492,12 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private canPlaceBall(px: number, py: number): boolean {
-        if (!this.isClickingTable(px, py)) return false;
+        if (!this.isOverTable(px, py)) return false;
 
         const pos = new Vector2(px, py);
 
         for (const hole of this.holes) {
-            const {
-                sprite: { position },
-            } = hole;
+            const { sprite: { position }, } = hole;
             const holePos = new Vector2(position.x, position.y);
 
             if (holePos.distance(pos) <= HOLE_RADIUS * 1) {
@@ -519,16 +517,15 @@ export class PoolGameScene extends Phaser.Scene {
         return true;
     }
 
-    private isClickingTable(px: number, py: number): boolean {
+    private isOverTable(px: number, py: number): boolean {
         const { left, right, top, bottom } = this.getTableEdges();
-        if (px < left || px > right || py < top || py > bottom) return false;
-        return true;
+        return px >= left && px <= right && py >= top && py <= bottom;
     }
 
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
-            if (!this.isClickingTable(pointer.x, pointer.y)) return console.log("Not clicking table");
+
             const { x: px, y: py } = pointer;
             this.mousePosition.set(px, py);
 
@@ -551,7 +548,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-            if (MODAL_OPEN || !this.service.isMyTurn() || !this.isClickingTable(pointer.x, pointer.y)) return;
+            if (MODAL_OPEN || !this.service.isMyTurn()) return;
 
             const wb = this.balls.length - 1;
             const whiteBall = this.balls[wb]!;
@@ -610,12 +607,8 @@ export class PoolGameScene extends Phaser.Scene {
         this.cue.rotation = angle;
     }
 
-    private updateCue(time: number, delta: number): void {
+    private updateCue(): void {
         // broadcast interval
-        const interval = 100;
-        const currentBucket = Math.floor(time / interval);
-        const previousBucket = Math.floor((time - delta) / interval);
-        const shouldBroadcast = currentBucket > previousBucket;
         const whiteBall = this.balls[this.balls.length - 1]!;
 
         if (!this.input.enabled || whiteBall.isPocketed) {
@@ -637,7 +630,7 @@ export class PoolGameScene extends Phaser.Scene {
         if (this.isMobile) {
             // Still show aim line with current angle
             this.drawAimLine(x, y, this.cue.rotation);
-            this.service.pull((x - mx) / width, (y - my) / height, this.cue.rotation, this.cue.power, shouldBroadcast);
+            this.service.pull((x - mx) / width, (y - my) / height, this.cue.rotation, this.cue.power);
             return;
         }
 
@@ -669,7 +662,7 @@ export class PoolGameScene extends Phaser.Scene {
 
         // Aim line
         this.drawAimLine(x, y, angle);
-        this.service.pull((x - mx) / width, (y - my) / height, angle, this.cue.power, shouldBroadcast);
+        this.service.pull((x - mx) / width, (y - my) / height, angle, this.cue.power);
     }
 
     private lineStyle(width: number, color: number, alpha: number = 1): void {
@@ -860,9 +853,7 @@ export class PoolGameScene extends Phaser.Scene {
             x: closestHole.pos.x,
             y: closestHole.pos.y,
             duration: 200,
-            onComplete: () => {
-                spriteClone.destroy();
-            },
+            onComplete: () => spriteClone.destroy(),
         });
 
         if (!skipRail && sprite.body) this.matter.world.remove(sprite.body as MatterJS.BodyType);

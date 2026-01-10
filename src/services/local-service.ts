@@ -85,7 +85,7 @@ export class LocalService extends Service {
         return this.service.getState();
     }
 
-    override pull(x: number, y: number, angle: number, power: number, sendMultiplayer: boolean = false): void {
+    override pull(x: number, y: number, angle: number, power: number): void {
         this.send(Events.PULL, { x, y, angle, power: power });
     }
 
