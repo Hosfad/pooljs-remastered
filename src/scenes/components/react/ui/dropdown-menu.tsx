@@ -32,7 +32,7 @@ export const DropdownMenuTrigger = ({
     return (
         <div
             className={`
-                        flex items-center gap-3 px-6 py-3 
+                        flex items-center gap-3 px-6 py-3 rounded-xl
                         bg-dark border border-white/10 backdrop-blur-md
                         transition-all duration-200 group-hover:border-emerald-500/50
                         ${isOpen ? "border-emerald-500 shadow-[0_0_15px_rgba(34,211,238,0.2)]" : ""}

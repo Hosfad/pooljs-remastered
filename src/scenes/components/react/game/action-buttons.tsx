@@ -22,12 +22,12 @@ export default function ActionButtons({ service, position }: { service: Multipla
     const [menuOpen, setMenuOpen] = useState<boolean>(false);
     const [messagesOpen, setMessagesOpen] = useState<boolean>(false);
 
-    const triggerPosition = position === "left" ? "left-6" : "right-6";
+    const triggerPosition = position === "left" ? "left-2" : "right-2";
     const me = service.me();
 
     return (
         <div className="relative w-full ">
-            <div className={`fixed flex flex-col gap-2 z-50 top-6 ${triggerPosition}`}>
+            <div className={`fixed flex flex-col gap-2 z-50 top-2 ${triggerPosition}`}>
                 <DropdownMenu
                     isOpen={menuOpen}
                     setOpen={setMenuOpen}

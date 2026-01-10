@@ -9,10 +9,12 @@ import type { Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 import GameLayout from "../game/game-layout";
 import { GeneralHeader } from "../general/header";
+import { useUI } from "../provider";
 import { Button } from "../ui/button";
 
 export function Lobby({ service }: { service: MultiplayerService }) {
     const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
+    const { showAnimatedUIMessage } = useUI();
 
     useEffect(() => {
         const me = service.me();
@@ -22,11 +24,16 @@ export function Lobby({ service }: { service: MultiplayerService }) {
             setRoom(data);
             setVisible(true);
         });
+        service.subscribe(Events.MATCH_FOUND, (data) => {
+            showAnimatedUIMessage("Match Found!", 3000);
+            setRoom(data);
+        });
 
         service.subscribe(Events.INIT, (data) => {
             setVisible(false);
         });
     }, []);
+
     const lobbyState = room?.isMatchMaking ? "matchmaking" : "lobby";
     const [visible, setVisible] = React.useState(!room?.isGameStarted);
     const [hasCopied, setHasCopied] = React.useState(false);
@@ -101,6 +108,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
     return (
         <div className="p-0">
             <GameLayout visible={!visible} service={service} />
+
             {visible && (
                 <div
                     className="relative flex flex-col gap-4 w-screen h-[100vh] bg-primary items-center justify-center p-2 md:p-4"

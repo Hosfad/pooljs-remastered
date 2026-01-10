@@ -97,6 +97,8 @@ export type EventsData = {
     [Events.MATCH_MAKE_START_RESPONSE]: Room;
     [Events.MATCH_MAKE_CANCEL]: {};
     [Events.MATCH_MAKE_CANCEL_RESPONSE]: Room;
+    [Events.MATCH_FOUND]: Room;
+
     [Events.KICK_PLAYER]: { kickTargetId: string };
 
     [Events.PLAYER_DISCONNECT]: {};
@@ -130,6 +132,7 @@ export const AUTO_BROADCAST_EVENTS = [
     Events.POWER_METER_HIT,
     Events.CHANGE_SPIN_POSITION,
     Events.CHAT_MESSAGE,
+    Events.MATCH_FOUND,
 ] as const;
 
 export interface PoolState {

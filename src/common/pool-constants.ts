@@ -1,8 +1,8 @@
 /**
  * Pool game specific constants
  */
-export let DEBUG_GRAPHICS = false;
-export let USE_MATTER_JS = false;
+export let DEBUG_GRAPHICS = true;
+export let USE_MATTER_JS = true;
 export let INIT_DISCORD_SDK = false;
 
 export let MODAL_OPEN: boolean = false;
@@ -89,8 +89,8 @@ const width = window.innerWidth;
 const targetWidth = 1920;
 const screenRatio = width / targetWidth;
 
-export const BALL_RADIUS = 10 * screenRatio;
-export const HOLE_RADIUS = 25 * screenRatio;
+export const BALL_RADIUS = 12 * screenRatio;
+export const HOLE_RADIUS = 27 * screenRatio;
 
 // Real life physics constants
 
@@ -106,7 +106,7 @@ export const CLOTH_ROLLING_RESISTANCE = 0.015; // cloth (frictionAir)
 export const RAIL_RESTITUTION = 0.999; // rail (e)
 
 // Physics constants
-export const MAX_POWER = 30;
+export const MAX_POWER = 50;
 export const MAX_STEPS = 600;
 export const TIMER_DURATION = 30;
 

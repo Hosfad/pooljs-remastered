@@ -103,7 +103,7 @@ export default function SpinIndicator({
         }
     }, [isDragging]);
 
-    const twPosition = position === "left" ? "left-8" : "right-8";
+    const twPosition = position === "left" ? "left-2" : "right-2";
 
     return (
         room?.isGameStarted && (
@@ -117,7 +117,7 @@ export default function SpinIndicator({
                             exit={{ scale: 0.8, opacity: 0 }}
                             transition={{ duration: 0.3, ease: "easeOut" }}
                             onClick={() => setIsExpanded(true)}
-                            className={`fixed top-8 ${twPosition} w-24 h-24 bg-gray-800 rounded-full cursor-pointer shadow-lg overflow-hidden`}
+                            className={`fixed top-2 ${twPosition} w-24 h-24 bg-gray-800 rounded-full cursor-pointer shadow-lg overflow-hidden`}
                             style={{
                                 backgroundImage: `url(/assets/game/balls/white.svg)`,
                                 backgroundSize: "cover",

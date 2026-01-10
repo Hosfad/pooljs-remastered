@@ -2,7 +2,6 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { type PoolState } from "../../../../common/server-types";
 import type { Player, Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 import { useUI } from "../provider";
@@ -11,17 +10,8 @@ const ROUND_TIME = 30;
 const SCALED_BALL_SIZE = 22;
 
 export function GameInfoWidget({ room, service }: { room: Room; service: MultiplayerService }) {
-    const [state, setState] = useState<PoolState | null>(service.getState());
     const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
-
-    useEffect(() => {
-        if (!room) return;
-        setTimeLeft(ROUND_TIME);
-        const interval = setInterval(() => setTimeLeft(service.timerLeft()), 200);
-        return () => clearInterval(interval);
-    }, [room, service]);
-
-    if (!room?.isGameStarted || !room.players[0] || !room.players[1]) return null;
+    const { showAnimatedUIMessage } = useUI();
 
     const players = room.players;
     const imHost = room.hostId === service.me()?.id;
@@ -34,6 +24,16 @@ export function GameInfoWidget({ room, service }: { room: Room; service: Multipl
     const currentPlayerId = imHost ? [player2.id, player1.id][turn] : [player1.id, player2.id][turn];
     const progress = (timeLeft / ROUND_TIME) * 100;
 
+    useEffect(() => {
+        if (!room) return;
+        setTimeLeft(ROUND_TIME);
+
+        const interval = setInterval(() => setTimeLeft(service.timerLeft()), 200);
+        return () => clearInterval(interval);
+    }, [room, service]);
+
+    if (!room?.isGameStarted || !room.players[0] || !room.players[1]) return null;
+
     return (
         <div className="fixed top-2 left-0 right-0 flex justify-center items-start px-8 pointer-events-none">
             <style>{`
@@ -45,7 +45,7 @@ export function GameInfoWidget({ room, service }: { room: Room; service: Multipl
                 .bg-dark { background-color: #1a1a1a; }
             `}</style>
 
-            <div className="flex items-center gap-12 bg-black/20 backdrop-blur-sm p-4 rounded-3xl border border-white/5 shadow-2xl pointer-events-auto">
+            <div className="flex items-center gap-12 bg-dark backdrop-blur-sm p-4 rounded-3xl border border-white/5 shadow-2xl pointer-events-auto">
                 <PlayerHUD player={player1} isActive={currentPlayerId === player1.id} progress={progress} />
 
                 {/* Center Timer Section */}
@@ -177,7 +177,7 @@ function PlayerAvatar({ player, isActive, progress }: any) {
                         transition={{ type: "spring", damping: 20, stiffness: 300 }}
                         className="absolute top-full left-1/2 mt-2 z-20"
                     >
-                        <div className="bg-white text-black text-[10px] px-2 py-1 rounded-md whitespace-nowrap shadow-xl font-semibold relative">
+                        <div className="bg-white text-black text-xl px-3 py-2 rounded-md whitespace-nowrap shadow-xl font-semibold relative">
                             {latestMessage.message}
                             <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45" />
                         </div>

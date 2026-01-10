@@ -27,6 +27,7 @@ type ServerRoom = {
     hostId: string;
     timestamp: number;
     isMatchMaking: boolean;
+    matchFoundTime?: number;
     kickedPlayers?: string[];
     isGameStarted: boolean;
 };
@@ -120,8 +121,29 @@ function success<TData>(options: RoomEventBodyOptions, data: TData) {
 }
 
 setInterval(() => {
+    // Send init to all match found rooms
+    const matchFoundRooms = Object.values(rooms).filter((r) => r.isMatchMaking && r.matchFoundTime);
+    matchFoundRooms.forEach((room) => {
+        const { id, clients, matchFoundTime } = room;
+        if (!matchFoundTime || Date.now() < matchFoundTime + 6000) return;
+        room.isMatchMaking = false;
+        room.isGameStarted = true;
+        rooms[id] = room;
+        respondToEvent(
+            Events.INIT,
+            success(
+                {
+                    roomId: id,
+                    senderId: clients[0]!.id,
+                    broadcastEvent: BroadcastEvent.ALL,
+                },
+                reshapeRoom(room)
+            )
+        );
+    });
+
     // MATCH MAKING QUEUE
-    const matchMakingRooms = Object.values(rooms).filter((r) => r.isMatchMaking);
+    const matchMakingRooms = Object.values(rooms).filter((r) => r.isMatchMaking && !r.isGameStarted && !r.matchFoundTime);
     if (matchMakingRooms.length === 0) return;
 
     console.log("Match making queue found", matchMakingRooms.length);
@@ -138,10 +160,9 @@ setInterval(() => {
 
     groups.forEach((group) => {
         const combinedRoom = groupRooms(group);
-        if (!combinedRoom) return;
-
+        if (!combinedRoom) return console.log("No combined room");
         respondToEvent(
-            Events.INIT,
+            Events.MATCH_FOUND,
             success(
                 {
                     roomId: combinedRoom.id,
@@ -161,8 +182,10 @@ const groupRooms = (rooms: ServerRoom[]) => {
     const otherRoom = rooms[1]!;
 
     combinedRoom.clients.push(...otherRoom.clients);
-    combinedRoom.isMatchMaking = false;
-    combinedRoom.isGameStarted = true;
+    combinedRoom.isMatchMaking = true;
+    combinedRoom.isGameStarted = false;
+
+    combinedRoom.matchFoundTime = Date.now();
     delete rooms[otherRoom.id as any];
 
     rooms[combinedRoom.id as any] = combinedRoom;

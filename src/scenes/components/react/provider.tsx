@@ -1,5 +1,6 @@
 // UI Provider
 
+import { AnimatePresence, motion } from "framer-motion";
 import React, { useCallback, useContext, useEffect } from "react";
 import type { BallType } from "../../../common/pool-types";
 import { Events } from "../../../common/server-types";
@@ -31,6 +32,8 @@ type UIProviderContext = {
     dropBall: (ballNumber: number, ballType: BallType) => void;
 
     getMessages: (userId: string) => GameMessage[];
+
+    showAnimatedUIMessage: (message: string, duration: number) => void;
 };
 const MAX_BALLS = 15;
 
@@ -40,8 +43,8 @@ export const UIProvider: React.FC<UIProviderProps> = ({ service, children }) => 
     const [room, setRoom] = React.useState<Room | null>(service.getCurrentRoom());
 
     const [pocketedBalls, setPocketedBalls] = React.useState<PocketedBall[]>([]);
-
     const [gameMessages, setGameMessages] = React.useState<GameMessage[]>([]);
+    const [uiMessage, setUIMessage] = React.useState<string | null>(null);
 
     const dropBall = useCallback((ballNumber: number | "white" | "black", ballType: BallType) => {
         setPocketedBalls((prev) => {
@@ -99,8 +102,39 @@ export const UIProvider: React.FC<UIProviderProps> = ({ service, children }) => 
         [gameMessages]
     );
 
+    const showAnimatedUIMessage = useCallback(
+        (message: string, duration: number) => {
+            setUIMessage(message);
+            setTimeout(() => setUIMessage(null), duration);
+        },
+        [setGameMessages]
+    );
+
     return (
-        <UIContext.Provider value={{ room, setRoom, pocketedBalls, dropBall, getMessages }}>{children}</UIContext.Provider>
+        <UIContext.Provider value={{ room, setRoom, pocketedBalls, dropBall, getMessages, showAnimatedUIMessage }}>
+            {children}
+
+            <AnimatePresence>
+                {uiMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="fixed top-[20%] left-1/2 -translate-x-1/2 z-[100] pointer-events-none"
+                    >
+                        <div className="bg-accent text-dark px-10 py-4 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-b-4 border-dark/20 flex items-center gap-4">
+                            <div className="w-3 h-3 bg-dark rounded-full animate-pulse" />
+
+                            <h1 className="text-3xl md:text-5xl font-black tracking-tight uppercase italic whitespace-nowrap">
+                                {uiMessage}
+                            </h1>
+
+                            <div className="w-3 h-3 bg-dark rounded-full animate-pulse" />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </UIContext.Provider>
     );
 };
 

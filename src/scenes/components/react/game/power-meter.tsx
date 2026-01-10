@@ -126,7 +126,7 @@ const PowerMeter = ({ service, position = "right" }: { service: MultiplayerServi
         };
     }, [isDragging, calculatePosition]);
 
-    const twPosition = position === "left" ? "left-8" : "right-8";
+    const twPosition = position === "left" ? "left-2" : "right-2";
 
     return (
         <div

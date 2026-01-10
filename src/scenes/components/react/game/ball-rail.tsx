@@ -41,7 +41,7 @@ const BallRail = ({ position = "right" }: { position?: "left" | "right" }) => {
         return restingY;
     };
 
-    const twPosition = position === "left" ? "left-8" : "right-8";
+    const twPosition = position === "left" ? "left-2" : "right-2";
 
     return (
         <div className={`fixed ${twPosition} top-1/2 transform -translate-y-1/3 h-[60vh] z-40 flex flex-col items-center`}>
