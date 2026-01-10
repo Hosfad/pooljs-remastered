@@ -380,8 +380,6 @@ export class PoolGameScene extends Phaser.Scene {
         if (!this.keyPositions.length) return;
 
         const frame = this.keyPositions.shift()!;
-        const tw = this.tableWidth;
-        const th = this.tableHeight;
 
         if (!this.keyPositions.length) {
             this.service.timerStart();
@@ -397,7 +395,7 @@ export class PoolGameScene extends Phaser.Scene {
             }
 
             const sprite = ball.phaserSprite;
-            const pos = { x: x * tw + this.marginX, y: y * th + this.marginY };
+            const pos = this.denormalize(x, y);
 
             // increment rotation angle of sprite
             const spd = Math.abs(pos.x + pos.y - (sprite.x + sprite.y));
