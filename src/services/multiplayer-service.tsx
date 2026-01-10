@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { type BallType, type KeyPositions } from "../common/pool-types";
 import {
+    AUTO_BROADCAST_EVENTS,
     BroadcastEvent,
     Events,
     type EventsData,
@@ -14,11 +15,10 @@ import { LocalService } from "./local-service";
 
 import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { INIT_DISCORD_SDK } from "../common/pool-constants";
+import { DEBUG_GRAPHICS, INIT_DISCORD_SDK } from "../common/pool-constants";
 import { Lobby } from "../scenes/components/react/lobby/lobby";
 
 import MainScreen from "../scenes/components/react/general/main-screen";
-import { TournamentLobby } from "../scenes/components/react/lobby/tournaments";
 import { UIProvider } from "../scenes/components/react/provider";
 
 interface Preferences {
@@ -30,8 +30,7 @@ export class MultiplayerService extends LocalService {
     private eventHandlers = new Map<keyof EventsData, Set<(data: any) => void>>();
 
     override async connect(): Promise<boolean> {
-        const wsUrl = INIT_DISCORD_SDK ? `wss://${location.host}/.proxy/api/ws` : "ws://localhost:6969/ws";
-        console.log("Connecting to", wsUrl);
+        const wsUrl = INIT_DISCORD_SDK ? `wss://${location.host}/.proxy/api/ws` : "wss://d8a685017363.ngrok-free.app/ws";
 
         try {
             if (!this.ws) this.ws = new WebSocket(wsUrl);
@@ -49,7 +48,7 @@ export class MultiplayerService extends LocalService {
                                     <Routes>
                                         <Route path="/" element={<MainScreen service={this} />}></Route>
                                         <Route path="/lobby" element={<Lobby service={this} />}></Route>
-                                        <Route path="/tournaments" element={<TournamentLobby />}></Route>
+                                        {/* <Route path="/tournaments" element={<TournamentLobby />}></Route> */}
                                     </Routes>
                                 </BrowserRouter>
                             </UIProvider>
@@ -105,6 +104,7 @@ export class MultiplayerService extends LocalService {
         if (!this.eventHandlers.has(event)) {
             this.eventHandlers.set(event, new Set());
         }
+
         this.eventHandlers.get(event)!.add(callback);
     }
 
@@ -117,6 +117,7 @@ export class MultiplayerService extends LocalService {
             console.error("WebSocket is not open");
             return;
         }
+
         const roomData = this.getRoomConfig();
         if (!roomData.roomId || !roomData.userId) return;
 
@@ -130,6 +131,7 @@ export class MultiplayerService extends LocalService {
     }
 
     override isMyTurn(): boolean {
+        if (DEBUG_GRAPHICS) return true;
         const imHost = this.room?.hostId === this.me()?.id;
         const index = this.service.getState().turnIndex;
 
@@ -144,9 +146,10 @@ export class MultiplayerService extends LocalService {
         return this.service.whoseTurn();
     }
 
-    override hitBalls(powerPercent: number, angle: number): KeyPositions {
-        const keyPositions = this.service.hitBalls(powerPercent, angle);
+    override hitBalls(powerPercent: number, angle: number, offset: { x: number; y: number }): KeyPositions {
+        const keyPositions = this.service.hitBalls(powerPercent, angle, offset);
         const data = { keyPositions: keyPositions, state: this.service.getState() };
+
         this.send(Events.HITS, { ...data });
 
         const POS_PER_SENT = 100;
@@ -161,19 +164,15 @@ export class MultiplayerService extends LocalService {
         return keyPositions;
     }
 
-    override pull(x: number, y: number, angle: number, power: number, sendMultiplayer: boolean = true): void {
-        const { userId, roomId } = this.getRoomConfig();
-        if (!roomId) return;
-
-        const data = { x, y, angle, power };
-
-        this.send(Events.PULL, { ...data });
-        if (sendMultiplayer) this.call(Events.PULL, { ...data }, BroadcastEvent.OTHERS);
+    override pull(x: number, y: number, angle: number, power: number): void {
+        if (!this.getRoomConfig().roomId) return;
+        this.send(Events.PULL, { x, y, angle, power });
+        this.call(Events.PULL, { x, y, angle, power }, BroadcastEvent.OTHERS);
     }
 
-    override moveHand(x: number, y: number): void {
-        this.send(Events.HAND, { x, y });
-        this.call(Events.HAND, { x, y }, BroadcastEvent.OTHERS);
+    override moveHand(x: number, y: number, click: boolean): void {
+        this.send(Events.HAND, { x, y, click });
+        this.call(Events.HAND, { x, y, click }, BroadcastEvent.OTHERS);
     }
 
     public isConnected(): boolean {
@@ -202,6 +201,7 @@ export class MultiplayerService extends LocalService {
         await this.discordSdk.ready();
 
         const me = this.me();
+
         if (me.access_token) {
             const res = await this.discordSdk.commands.authenticate({ access_token: me.access_token });
             if (!res.user) return console.error("Failed to authenticate with discord", res);
@@ -216,17 +216,15 @@ export class MultiplayerService extends LocalService {
                 prompt: "none",
                 scope: ["identify", "guilds", "guilds.members.read"],
             });
+
             if (!code) return console.log("No code found");
 
             const discordUser = await fetch(`/api/api/token`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    code,
-                }),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code }),
             });
+
             const data: Partial<Player> = await discordUser.json();
             this.setLocalUser(data);
         } catch (e) {
@@ -290,17 +288,7 @@ export class MultiplayerService extends LocalService {
             this.send(Events.UPDATE_ROOM, body.data);
         });
 
-        const gameEvents = [
-            Events.INIT,
-            Events.PULL,
-            Events.HITS,
-            Events.HAND,
-            Events.DROP_BALL,
-            Events.DRAG_POWER_METER,
-            Events.POWER_METER_HIT,
-        ] as const;
-
-        gameEvents.forEach((event) => {
+        AUTO_BROADCAST_EVENTS.forEach((event) => {
             this.listen(event as TEventKey, (body) => {
                 if (body.type === "error") return console.error("Error in ", event, body);
                 this.send(event as TEventKey, body.data);

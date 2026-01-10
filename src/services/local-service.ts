@@ -41,8 +41,8 @@ export class LocalService extends Service {
         });
     }
 
-    override moveHand(x: number, y: number): void {
-        this.send(Events.HAND, { x, y });
+    override moveHand(x: number, y: number, click: boolean): void {
+        this.send(Events.HAND, { x, y, click });
     }
 
     override setInHole(index: number, inHole: boolean): void {
@@ -85,12 +85,12 @@ export class LocalService extends Service {
         return this.service.getState();
     }
 
-    override pull(x: number, y: number, angle: number, power: number, sendMultiplayer: boolean = false): void {
+    override pull(x: number, y: number, angle: number, power: number): void {
         this.send(Events.PULL, { x, y, angle, power: power });
     }
 
-    override hitBalls(powerPercent: number, angle: number): KeyPositions {
-        const keyPositions = this.service.hitBalls(powerPercent, angle);
+    override hitBalls(powerPercent: number, angle: number, offset: { x: number; y: number }): KeyPositions {
+        const keyPositions = this.service.hitBalls(powerPercent, angle, offset);
         this.send(Events.HITS, {
             keyPositions,
             state: { ...this.service.getState() },

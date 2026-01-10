@@ -130,7 +130,7 @@ const PowerMeter = ({ service, position = "right" }: { service: MultiplayerServi
 
     return (
         <div
-            className={`fixed ${twPosition} top-1/2 transform -translate-y-1/3 h-[60vh] z-50 flex flex-col items-center select-none`}
+            className={`fixed ${twPosition} top-1/2 transform -translate-y-1/3 h-[60vh] z-49 flex flex-col items-center select-none`}
         >
             <div
                 className="relative h-full w-18 bg-dark rounded-xl p-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),_0_4px_8px_rgba(0,0,0,0.5)] border-2 border-dark"

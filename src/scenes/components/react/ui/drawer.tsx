@@ -19,14 +19,21 @@ interface DrawerProps {
     tabs?: Tab[];
     title?: string;
     className?: string;
-    slideFrom?: "top" | "bottom";
+    slideFrom?: "top" | "bottom" | "left" | "right";
 }
 
 export function Drawer({ me, isOpen, onClose, children, tabs, title, className, slideFrom = "top" }: DrawerProps) {
     const [activeTabId, setActiveTabId] = useState(tabs?.[0]?.id);
 
-    const motionValue = slideFrom === "top" ? "-100%" : "100%";
-    const positionClass = slideFrom === "top" ? "top-0" : "bottom-0";
+    const isHorizontal = slideFrom === "left" || slideFrom === "right";
+    const motionValue = slideFrom === "top" || slideFrom === "left" ? "-100%" : "100%";
+
+    const positionClasses = {
+        top: "top-0 left-0 right-0 border-b",
+        bottom: "bottom-0 left-0 right-0 border-t",
+        left: "left-0 top-0 bottom-0 border-r w-80",
+        right: "right-0 top-0 bottom-0 border-l w-80",
+    };
 
     return (
         <AnimatePresence>
@@ -42,13 +49,11 @@ export function Drawer({ me, isOpen, onClose, children, tabs, title, className, 
 
                     {/* Drawer */}
                     <motion.div
-                        initial={{ y: motionValue }}
-                        animate={{ y: 0 }}
-                        exit={{ y: motionValue }}
+                        initial={isHorizontal ? { x: motionValue } : { y: motionValue }}
+                        animate={isHorizontal ? { x: 0 } : { y: 0 }}
+                        exit={isHorizontal ? { x: motionValue } : { y: motionValue }}
                         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                        className={`fixed ${positionClass} left-0 right-0 z-50 bg-black/20 backdrop-blur-2xl shadow-lg border-accent/10 ${
-                            slideFrom === "top" ? "border-b" : "border-t"
-                        } ${className}`}
+                        className={`fixed z-50 bg-black/20 backdrop-blur-2xl shadow-lg border-accent/10 ${positionClasses[slideFrom]} ${className}`}
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-accent/10">

@@ -2,7 +2,7 @@
  * Pool game specific constants
  */
 export let DEBUG_GRAPHICS = false;
-export let USE_MATTER_JS = true;
+export let USE_MATTER_JS = false;
 export let INIT_DISCORD_SDK = false;
 
 export let MODAL_OPEN: boolean = false;
@@ -83,44 +83,36 @@ export const POOL_SCENE_KEYS = {
     POOL_GAME: "POOL_GAME",
 };
 
+// Game dimensions
+
 const width = window.innerWidth;
 const targetWidth = 1920;
 const screenRatio = width / targetWidth;
 
-// Game dimensions
-
+export const BALL_RADIUS = 10 * screenRatio;
 export const HOLE_RADIUS = 25 * screenRatio;
 
-// REAL LIFE PHYSICS CONSTANTS
+// Real life physics constants
+
 const OZ_TO_KG = 0.0283495;
 const BALL_MASS_OZ = 12;
+
+export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;
 
 // Coefficients
 export const BALL_RESTITUTION = 0.998; // ball (e)
 export const BALL_FRICTION = 0.015; // ball (μ)
-export const CLOTH_ROLLING_RESISTANCE = 0.01; // cloth (frictionAir)
+export const CLOTH_ROLLING_RESISTANCE = 0.015; // cloth (frictionAir)
 export const RAIL_RESTITUTION = 0.999; // rail (e)
 
 // Physics constants
 export const MAX_POWER = 30;
-export const MAX_STEPS = 1000;
+export const MAX_STEPS = 600;
 export const TIMER_DURATION = 30;
 
 // Label Constants
 export const HOLE_LABEL = "hole";
 export const BALL_LABEL = "ball";
-
-// Velocity limits
-export const PIXELS_PER_METER = 400;
-export const INCH_TO_METER = 0.0254;
-export const MAX_SPEED_MPS = 16;
-export const PHYSICS_FPS = 60;
-export const METER_TO_PX_PER_FRAME = PIXELS_PER_METER / PHYSICS_FPS;
-export const MAX_SPIN_RAD_PER_SEC = 35;
-
-export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;
-export const BALL_DIAMETER_IN = 2.25;
-export const BALL_RADIUS = (BALL_DIAMETER_IN * INCH_TO_METER * PIXELS_PER_METER) / 2;
 
 export const COLORS = {
     primary: "#2C5530",

@@ -6,15 +6,21 @@ import { Events } from "../../../common/server-types";
 import type { Room } from "../../../server";
 import type { MultiplayerService } from "../../../services/multiplayer-service";
 
-type UIProviderProps = {
-    service: MultiplayerService;
-    children: React.ReactNode;
-};
-
 interface PocketedBall {
     number: number | "white" | "black";
     ballType: BallType;
 }
+
+type GameMessage = {
+    message: string;
+    from: string;
+    timestamp: number;
+};
+
+type UIProviderProps = {
+    service: MultiplayerService;
+    children: React.ReactNode;
+};
 
 type UIProviderContext = {
     room: Room | null;
@@ -23,6 +29,8 @@ type UIProviderContext = {
     // Pocketed balls
     pocketedBalls: PocketedBall[];
     dropBall: (ballNumber: number, ballType: BallType) => void;
+
+    getMessages: (userId: string) => GameMessage[];
 };
 const MAX_BALLS = 15;
 
@@ -33,6 +41,8 @@ export const UIProvider: React.FC<UIProviderProps> = ({ service, children }) => 
 
     const [pocketedBalls, setPocketedBalls] = React.useState<PocketedBall[]>([]);
 
+    const [gameMessages, setGameMessages] = React.useState<GameMessage[]>([]);
+
     const dropBall = useCallback((ballNumber: number | "white" | "black", ballType: BallType) => {
         setPocketedBalls((prev) => {
             if (prev.length >= MAX_BALLS || prev.some((b) => b.number === ballNumber)) return prev;
@@ -42,12 +52,9 @@ export const UIProvider: React.FC<UIProviderProps> = ({ service, children }) => 
 
     // LISTENERS
     useEffect(() => {
-        service.listen(Events.DROP_BALL, (body) => {
-            const { type, data } = body;
-
-            if (type === "error") return console.error("Error in DROP_BALL", body);
-
-            const { ballNumber, ballType } = data;
+        // Local events
+        service.subscribe(Events.DROP_BALL, (body) => {
+            const { ballNumber, ballType } = body;
             dropBall(ballNumber, ballType);
 
             console.log("Dropped ball", ballNumber, ballType);
@@ -58,12 +65,43 @@ export const UIProvider: React.FC<UIProviderProps> = ({ service, children }) => 
                 }, 1500);
             }
         });
-        service.listen(Events.UPDATE_ROOM, () => {
+        service.subscribe(Events.CHAT_MESSAGE, (body) => {
+            const { message, from } = body;
+            setGameMessages((prev) => [
+                ...prev,
+                {
+                    message,
+                    from,
+                    timestamp: Date.now(),
+                },
+            ]);
+        });
+
+        service.subscribe(Events.UPDATE_ROOM, () => {
             setRoom(service.getCurrentRoom());
         });
     }, [service, dropBall]);
 
-    return <UIContext.Provider value={{ room, setRoom, pocketedBalls, dropBall }}>{children}</UIContext.Provider>;
+    const messagesInterval = setInterval(() => {
+        setGameMessages((prev) => prev.filter((msg) => Date.now() - msg.timestamp < 3000));
+    }, 500);
+
+    useEffect(() => {
+        return () => clearInterval(messagesInterval);
+    }, [messagesInterval]);
+
+    const getMessages = useCallback(
+        (userId: string) => {
+            const messages = gameMessages.filter((msg) => msg.from === userId);
+            const earlierFirst = messages.sort((a, b) => a.timestamp - b.timestamp);
+            return earlierFirst;
+        },
+        [gameMessages]
+    );
+
+    return (
+        <UIContext.Provider value={{ room, setRoom, pocketedBalls, dropBall, getMessages }}>{children}</UIContext.Provider>
+    );
 };
 
 export const useUI = () => {

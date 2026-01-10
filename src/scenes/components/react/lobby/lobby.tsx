@@ -67,7 +67,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
     const handleInvite = () => {
         if (INIT_DISCORD_SDK) {
             console.log("Opening invite dialog");
-            service.discordSdk?.commands.openInviteDialog();
+            //   service.discordSdk?.commands.openInviteDialog();
         }
         if (!room) return;
         setHasCopied(true);
@@ -99,7 +99,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
     const spectators = room?.players.filter((p) => p.isSpectator) ?? [];
 
     return (
-        <>
+        <div className="p-0">
             <GameLayout visible={!visible} service={service} />
             {visible && (
                 <div
@@ -280,6 +280,6 @@ export function Lobby({ service }: { service: MultiplayerService }) {
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 }

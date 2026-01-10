@@ -1,6 +1,6 @@
 import { Users } from "lucide-react";
 import React from "react";
-import { getEXPForLevel } from "../../../../common";
+import { Experience } from "../../../../common";
 import { Events } from "../../../../common/server-types";
 import type { Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
@@ -36,7 +36,9 @@ export function GeneralHeader({ service }: { service: MultiplayerService }) {
         setActiveDrawer(null);
     };
 
-    const width = (me.exp / getEXPForLevel(me.level)) * 100;
+    const {
+        progress: { percent: expPercentage },
+    } = Experience.getUserLevelInfo(me.exp);
 
     if (room?.isGameStarted) return null;
 
@@ -64,7 +66,7 @@ export function GeneralHeader({ service }: { service: MultiplayerService }) {
                             <div className="w-24 h-2 bg-accent/20 rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-gradient-to-r from-accent to-accent/80"
-                                    style={{ width: `${width}%` }}
+                                    style={{ width: `${expPercentage}%` }}
                                 />
                             </div>
                         </div>

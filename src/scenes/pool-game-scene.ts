@@ -36,10 +36,10 @@ export class PoolGameScene extends Phaser.Scene {
     private isGameStarted = false;
 
     // Game state
+    public cue!: Cue;
     public balls: Ball[] = [];
     public holes: Hole[] = [];
     public colliders: Collider[] = [];
-    private cue!: Cue;
 
     // Dynamic dimensions based on device scale
     public tableWidth!: number;
@@ -87,7 +87,11 @@ export class PoolGameScene extends Phaser.Scene {
         this.createHand();
 
         // Setup input
-        this.registerEvents(new MultiplayerService(new PoolService(this)));
+        const pool = new PoolService(this, () => {
+            if (this.service.isMyTurn()) return;
+            this.service.hitBalls(0, 0, { x: 0, y: 0 });
+        });
+        this.registerEvents(new MultiplayerService(pool));
         this.setupInput();
         this.createCue();
 
@@ -124,37 +128,34 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.service.subscribe(Events.PULL, ({ x, y, angle }) => {
-            const width = this.tableWidth;
-            const height = this.tableHeight;
-
-            const mx = this.marginX;
-            const my = this.marginY;
-
-            this.updateCueBullback(x * width + mx, y * height + my, angle);
+            const target = this.denormalize(x, y);
+            this.updateCueBullback(target.x, target.y, angle);
         });
 
-        this.service.subscribe(Events.DRAG_POWER_METER, ({ power }) => {
-            this.cue.power = power;
-        });
+        this.service.subscribe(Events.DRAG_POWER_METER, ({ power }) => this.setPower(power));
+        this.service.subscribe(Events.CHANGE_SPIN_POSITION, ({ x, y }) => this.setSpinPosition(x, y));
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
             this.keyPositions.push.apply(this.keyPositions, keyPositions);
             this.service.timerStop();
             this.service.setState(state);
-            this.checkWinner();
         });
 
-        this.service.subscribe(Events.HAND, ({ x, y }) => {
-            const width = this.tableWidth;
-            const height = this.tableHeight;
+        this.service.subscribe(Events.HAND, ({ x, y, click }) => {
+            const wb = this.balls.length - 1;
+            const whiteBall = this.balls[wb]!;
+            const { x: px, y: py } = this.denormalize(x, y);
 
-            const mx = this.marginX;
-            const my = this.marginY;
-
-            const whiteBall = this.balls[this.balls.length - 1]!;
-            whiteBall.phaserSprite.setPosition(x * width + mx, y * height + my);
-            whiteBall.phaserSprite.visible = true;
-            whiteBall.isPocketed = false;
+            if (click) {
+                whiteBall.isPocketed = whiteBall.isAnimating = this.hand.visible = false;
+                whiteBall.phaserSprite.visible = true;
+                whiteBall.phaserSprite.setPosition(px, py);
+                this.service.setInHole(wb, false);
+            } else {
+                this.hand.setPosition(px, py);
+                whiteBall.phaserSprite.setPosition(px, py);
+                whiteBall.phaserSprite.visible = this.hand.visible = true;
+            }
         });
     }
 
@@ -195,11 +196,11 @@ export class PoolGameScene extends Phaser.Scene {
         return { x: this.marginX + x, y: this.marginY + y };
     }
 
-    public override update(time: number, delta: number): void {
+    public override update(): void {
         if (!this.isGameStarted) return;
 
         this.input.enabled = !this.keyPositions.length;
-        this.updateCue(time, delta);
+        this.updateCue();
         this.updateKeyPositions();
 
         this.debugPanel?.update();
@@ -209,8 +210,8 @@ export class PoolGameScene extends Phaser.Scene {
         const ROWS = 5;
         const r = BALL_RADIUS;
         const DIAMETER = r * 2;
-        const ROW_SPACING = DIAMETER * 0.8;
-        const COL_SPACING = DIAMETER * 0.8;
+        const ROW_SPACING = DIAMETER * 1;
+        const COL_SPACING = DIAMETER * 1;
 
         const rackOrigin = new Vector2(this.tableWidth / 4, this.tableHeight / 2);
         const solids = Object.values(POOL_ASSETS.SOLID);
@@ -270,7 +271,7 @@ export class PoolGameScene extends Phaser.Scene {
         const { x, y } = this.toTableCoordinates(whiteBall.phaserSprite.x, whiteBall.phaserSprite.y);
         const cueSprite = this.add.sprite(x, y, POOL_ASSETS.CUES.BASIC).setOrigin(1, 0.5).setFlipX(true);
 
-        this.cue = { phaserSprite: cueSprite, rotation: 0, power: 0 };
+        this.cue = { phaserSprite: cueSprite, rotation: 0, power: 0, offset: { x: 0, y: 0 } };
     }
 
     private getTableEdges(): { left: number; right: number; top: number; bottom: number } {
@@ -383,21 +384,22 @@ export class PoolGameScene extends Phaser.Scene {
         if (!this.keyPositions.length) return;
 
         const frame = this.keyPositions.shift()!;
-        const tw = this.tableWidth;
-        const th = this.tableHeight;
 
-        if (!this.keyPositions.length) this.service.timerStart();
+        if (!this.keyPositions.length) {
+            this.service.timerStart();
+            this.checkWinner();
+        }
 
         frame.forEach(({ position: { x, y }, collision, hidden }, i) => {
             const ball = this.balls[i]!;
 
             if (hidden || ball.isAnimating) {
-                if (!ball.isAnimating) this.animateBallToHole(ball);
+                if (!ball.isAnimating) this.animateBallToHole(ball, i === this.balls.length - 1);
                 return;
             }
 
             const sprite = ball.phaserSprite;
-            const pos = { x: x * tw + this.marginX, y: y * th + this.marginY };
+            const pos = this.denormalize(x, y);
 
             // increment rotation angle of sprite
             const spd = Math.abs(pos.x + pos.y - (sprite.x + sprite.y));
@@ -492,7 +494,7 @@ export class PoolGameScene extends Phaser.Scene {
     }
 
     private canPlaceBall(px: number, py: number): boolean {
-        if (!this.isClickingTable(px, py)) return false;
+        if (!this.isOverTable(px, py)) return false;
 
         const pos = new Vector2(px, py);
 
@@ -507,8 +509,8 @@ export class PoolGameScene extends Phaser.Scene {
             }
         }
 
-        for (const ball of this.balls) {
-            const { x, y } = ball.phaserSprite;
+        for (let i = 0; i < this.balls.length - 1; ++i) {
+            const { x, y } = this.balls[i]!.phaserSprite;
             const ballPos = new Vector2(x, y);
 
             if (ballPos.distance(pos) <= BALL_RADIUS * 1.5) {
@@ -519,28 +521,37 @@ export class PoolGameScene extends Phaser.Scene {
         return true;
     }
 
-    private isClickingTable(px: number, py: number): boolean {
+    private isOverTable(px: number, py: number): boolean {
         const { left, right, top, bottom } = this.getTableEdges();
-        if (px < left || px > right || py < top || py > bottom) return false;
-        return true;
+        return px >= left && px <= right && py >= top && py <= bottom;
+    }
+
+    private normalize(x: number, y: number): { x: number; y: number } {
+        return {
+            x: (x - this.marginX) / this.tableWidth,
+            y: (y - this.marginY) / this.tableHeight,
+        };
+    }
+
+    private denormalize(x: number, y: number): { x: number; y: number } {
+        return {
+            x: x * this.tableWidth + this.marginX,
+            y: y * this.tableHeight + this.marginY,
+        };
     }
 
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
-            if (!this.isClickingTable(pointer.x, pointer.y)) return console.log("Not clicking table");
+
             const { x: px, y: py } = pointer;
             this.mousePosition.set(px, py);
 
             const whiteBall = this.balls[this.balls.length - 1]!;
 
             if (whiteBall.isPocketed && this.canPlaceBall(px, py)) {
-                const mx = this.marginX;
-                const my = this.marginY;
-
-                this.hand.visible = true;
-                this.hand.setPosition(px, py);
-                this.service.moveHand((px - mx) / this.tableWidth, (py - my) / this.tableHeight);
+                const data = this.normalize(px, py);
+                this.service.moveHand(data.x, data.y, false);
                 return;
             }
 
@@ -551,7 +562,7 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-            if (MODAL_OPEN || !this.service.isMyTurn() || !this.isClickingTable(pointer.x, pointer.y)) return;
+            if (MODAL_OPEN || !this.service.isMyTurn()) return;
 
             const wb = this.balls.length - 1;
             const whiteBall = this.balls[wb]!;
@@ -559,10 +570,8 @@ export class PoolGameScene extends Phaser.Scene {
 
             // Hand Stuff
             if (whiteBall.isPocketed && this.canPlaceBall(px, py)) {
-                whiteBall.isPocketed = whiteBall.isAnimating = this.hand.visible = false;
-                whiteBall.phaserSprite.visible = true;
-                whiteBall.phaserSprite.setPosition(px, py);
-                this.service.setInHole(wb, false);
+                const data = this.normalize(px, py);
+                this.service.moveHand(data.x, data.y, true);
                 return;
             }
 
@@ -589,7 +598,7 @@ export class PoolGameScene extends Phaser.Scene {
 
             if (!this.isMobile && this.isDraggingShot) {
                 this.sound.play(POOL_ASSETS.SOUND_EFFECTS.CUE_HIT_WHITE_BALL);
-                this.service.hitBalls(this.cue.power, this.cue.rotation);
+                this.service.hitBalls(this.cue.power, this.cue.rotation, this.cue.offset);
                 this.setPower(0);
             }
 
@@ -610,12 +619,8 @@ export class PoolGameScene extends Phaser.Scene {
         this.cue.rotation = angle;
     }
 
-    private updateCue(time: number, delta: number): void {
+    private updateCue(): void {
         // broadcast interval
-        const interval = 100;
-        const currentBucket = Math.floor(time / interval);
-        const previousBucket = Math.floor((time - delta) / interval);
-        const shouldBroadcast = currentBucket > previousBucket;
         const whiteBall = this.balls[this.balls.length - 1]!;
 
         if (!this.input.enabled || whiteBall.isPocketed) {
@@ -626,18 +631,13 @@ export class PoolGameScene extends Phaser.Scene {
 
         if (!this.cue.phaserSprite || !this.service.isMyTurn()) return;
 
-        const width = this.tableWidth;
-        const height = this.tableHeight;
-
-        const mx = this.marginX;
-        const my = this.marginY;
-
         const { x, y } = whiteBall.phaserSprite!;
 
         if (this.isMobile) {
             // Still show aim line with current angle
+            const data = this.normalize(x, y);
             this.drawAimLine(x, y, this.cue.rotation);
-            this.service.pull((x - mx) / width, (y - my) / height, this.cue.rotation, this.cue.power, shouldBroadcast);
+            this.service.pull(data.x, data.y, this.cue.rotation, this.cue.power);
             return;
         }
 
@@ -668,8 +668,10 @@ export class PoolGameScene extends Phaser.Scene {
         }
 
         // Aim line
+        const data = this.normalize(x, y);
+
         this.drawAimLine(x, y, angle);
-        this.service.pull((x - mx) / width, (y - my) / height, angle, this.cue.power, shouldBroadcast);
+        this.service.pull(data.x, data.y, angle, this.cue.power);
     }
 
     private lineStyle(width: number, color: number, alpha: number = 1): void {
@@ -844,8 +846,8 @@ export class PoolGameScene extends Phaser.Scene {
             { distance: Infinity, pos: new Vector2(0, 0) }
         );
 
-        const spriteClone = this.add.sprite(sprite.x, sprite.y, sprite.texture.key).setScale(sprite.scale);
         sprite.setVisible(false);
+        const spriteClone = this.add.sprite(sprite.x, sprite.y, sprite.texture.key).setScale(sprite.scale);
         const textureSplit = ball.phaserSprite.texture.key.split("-");
         const ballNumber = parseInt(textureSplit[textureSplit.length - 1]!);
 
@@ -860,9 +862,7 @@ export class PoolGameScene extends Phaser.Scene {
             x: closestHole.pos.x,
             y: closestHole.pos.y,
             duration: 200,
-            onComplete: () => {
-                spriteClone.destroy();
-            },
+            onComplete: () => spriteClone.destroy(),
         });
 
         if (!skipRail && sprite.body) this.matter.world.remove(sprite.body as MatterJS.BodyType);
@@ -870,5 +870,8 @@ export class PoolGameScene extends Phaser.Scene {
 
     private setPower(power: number): void {
         this.cue.power = power;
+    }
+    private setSpinPosition(x: number, y: number): void {
+        this.cue.offset = { x, y };
     }
 }

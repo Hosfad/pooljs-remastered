@@ -4,6 +4,7 @@ import WebSocket, { WebSocketServer } from "ws";
 import { Experience } from "./common";
 import type { BallType } from "./common/pool-types";
 import {
+    AUTO_BROADCAST_EVENTS,
     BroadcastEvent,
     Events,
     type EventsData,
@@ -85,9 +86,13 @@ app.post("/api/token", async (req, res) => {
 });
 
 const server = app.listen(6969, () => {
-    console.log("Multiplayer server running on :6969", process.cwd());
-
-    console.log("EXP for level 99", Experience.getXpForLevel(100));
+    console.log("Multiplayer server running on :6969");
+    const exp = 0;
+    let currentLevel = 1;
+    for (let i = 0; i < 90; i++) {
+        console.log(`Level: ${currentLevel}`, `Total exp needed ${Experience.getXpForLevel(currentLevel)}`);
+        currentLevel++;
+    }
 });
 
 const wss = new WebSocketServer({ server, path: "/ws" });
@@ -305,16 +310,7 @@ wss.on("connection", (ws) => {
         respondToEvent(Events.INIT, success(data, reshapeRoom(room)));
     });
 
-    const gameEvents = [
-        Events.PULL,
-        Events.HITS,
-        Events.HAND,
-        Events.DROP_BALL,
-        Events.DRAG_POWER_METER,
-        Events.POWER_METER_HIT,
-    ] as const;
-
-    gameEvents.forEach((event) => {
+    AUTO_BROADCAST_EVENTS.forEach((event) => {
         eventListener.on(event as TEventKey, withRoomAuthMiddleware, (data) => {
             respondToEvent(event as TEventKey, success(data, data));
         });

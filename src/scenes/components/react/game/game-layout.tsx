@@ -2,6 +2,7 @@ import React from "react";
 import { Events } from "../../../../common/server-types";
 import type { Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
+import ActionButtons from "./action-buttons";
 import BallRail from "./ball-rail";
 import { GameInfoWidget } from "./game-info-widget";
 import PowerMeter from "./power-meter";
@@ -29,6 +30,7 @@ function GameLayout({ visible, service }: { visible: boolean; service: Multiplay
                 <BallRail position={settings.powerMeterPosition === "left" ? "right" : "left"} />
                 <GameInfoWidget room={room!} service={service} />
                 <SpinIndicator room={room!} service={service} position={settings.spinSelectorPosition} />
+                <ActionButtons service={service} position={settings.spinSelectorPosition === "left" ? "right" : "left"} />
             </>
         )
     );

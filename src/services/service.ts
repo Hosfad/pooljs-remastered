@@ -21,8 +21,7 @@ export type LocalUser = {
 };
 
 export abstract class Service {
-    public discordSdk: DiscordSDK | null = null;
-
+    protected discordSdk: DiscordSDK | null = null;
     protected room: Room | null = null;
 
     private events = new Phaser.Events.EventEmitter();
@@ -34,14 +33,14 @@ export abstract class Service {
     abstract whoseTurn(): BallType;
     abstract isMyTurn(): boolean;
 
-    abstract hitBalls(powerPercent: number, angle: number): KeyPositions;
+    abstract hitBalls(powerPercent: number, angle: number, offset: { x: number; y: number }): KeyPositions;
     // abstract disconnect(): void;
 
     abstract setState<T>(state: T): void;
     abstract getState<T>(): T;
 
-    abstract pull(x: number, y: number, angle: number, power: number, sendMultiplayer?: boolean): void;
-    abstract moveHand(x: number, y: number): void;
+    abstract pull(x: number, y: number, angle: number, power: number): void;
+    abstract moveHand(x: number, y: number, click: boolean): void;
 
     abstract timerStart(): void;
     abstract timerLeft(): number;

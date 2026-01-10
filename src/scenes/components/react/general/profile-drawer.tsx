@@ -1,4 +1,4 @@
-import { getEXPForLevel } from "../../../../common";
+import { Experience } from "../../../../common";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 import { Drawer } from "../ui/drawer";
 
@@ -14,8 +14,9 @@ export function ProfileDrawer({
     const me = service.me();
     if (!me) return null;
 
-    const maxExp = getEXPForLevel(me.level);
-    const expPercentage = (50 / maxExp) * 100;
+    const {
+        progress: { exp: expProgress, percent: expPercentage, totalExp: totalExp, remaining: remainingExp },
+    } = Experience.getUserLevelInfo(me.exp);
 
     const trophiesPercentage = (1 / 8) * 100;
 
@@ -50,7 +51,7 @@ export function ProfileDrawer({
                                 <p className="text-xs italic text-white mb-1">Level progress:</p>
                                 <div className="relative h-7 bg-accent/20 rounded-sm overflow-hidden ">
                                     <div className="absolute inset-0 flex items-center justify-center z-10 text-xs italic font-bold text-white">
-                                        {50}/{maxExp}
+                                        {expProgress}/{totalExp}
                                     </div>
 
                                     <div className="absolute right-2 top-1 text-orange-500 text-sm">⭐</div>

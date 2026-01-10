@@ -36,6 +36,7 @@ export interface Cue {
     phaserSprite: Phaser.GameObjects.Sprite;
     rotation: number;
     power: number;
+    offset: { x: number; y: number };
 }
 
 export type GameSettings = {

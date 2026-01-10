@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
+import { Events } from "../../../../common/server-types";
 import type { Room } from "../../../../server";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 
@@ -72,6 +73,17 @@ export default function SpinIndicator({
             y = (radius - 20) * Math.sin(angle);
         }
 
+        // scene.cue.offset = {
+        //     x: (x + 20) / (rect.width * 0.5),
+        //     y: (y + 20) / (rect.height * 0.5),
+        // };
+
+        const offeset = {
+            x: (x + 20) / (rect.width * 0.5),
+            y: (y + 20) / (rect.height * 0.5),
+        };
+
+        service.call(Events.CHANGE_SPIN_POSITION, { ...offeset });
         setSpinPosition({ x, y });
     };
 

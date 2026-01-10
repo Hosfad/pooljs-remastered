@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { type PoolState } from "../../../../common/server-types";
 import type { Player, Room } from "../../../../server";
@@ -124,9 +125,12 @@ function PlayerAvatar({ player, isActive, progress }: any) {
     const perimeter = 4 * size - 8 * cornerRadius + 2 * Math.PI * cornerRadius;
     const dashOffset = perimeter * (1 - progress / 100);
 
+    const { getMessages } = useUI();
+
+    const latestMessage = getMessages(player.id)[0];
+
     return (
         <div className="relative" style={{ width: size, height: size }}>
-            {/* Animated Progress Border */}
             <svg
                 width={size + strokeWidth * 2}
                 height={size + strokeWidth * 2}
@@ -151,7 +155,6 @@ function PlayerAvatar({ player, isActive, progress }: any) {
                 )}
             </svg>
 
-            {/* Avatar Content */}
             <div
                 className={`w-full h-full rounded-2xl overflow-hidden flex items-center justify-center text-xl font-bold transition-all duration-500
                     ${isActive ? " shadow-[0_0_15px_rgba(255,215,0,0.3)] " : "border-white/10 opacity-60"}`}
@@ -163,6 +166,24 @@ function PlayerAvatar({ player, isActive, progress }: any) {
             >
                 {!player.photo && player.name[0]?.toUpperCase()}
             </div>
+
+            <AnimatePresence>
+                {latestMessage && (
+                    <motion.div
+                        key={`message-${latestMessage.from}-${latestMessage.message}-${latestMessage.timestamp}`}
+                        initial={{ opacity: 0, scale: 0.8, y: 10, x: "-50%" }}
+                        animate={{ opacity: 1, scale: 1, y: 0, x: "-50%" }}
+                        exit={{ opacity: 0, scale: 0.8, y: 5, x: "-50%" }}
+                        transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                        className="absolute top-full left-1/2 mt-2 z-20"
+                    >
+                        <div className="bg-white text-black text-[10px] px-2 py-1 rounded-md whitespace-nowrap shadow-xl font-semibold relative">
+                            {latestMessage.message}
+                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45" />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
