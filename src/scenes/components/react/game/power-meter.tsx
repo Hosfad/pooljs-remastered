@@ -37,23 +37,6 @@ const PowerMeter = ({ service, position = "right" }: { service: MultiplayerServi
 
     useEffect(() => {
         if (trackRef.current) setTrackHeight(trackRef.current.clientHeight);
-
-        service.subscribe(Events.PULL, (data) => {
-            if (isManualDraggingRef.current) return;
-            const { power } = data;
-            const finalPower = power * 100;
-
-            setIsDragging(true);
-            setPixelOffset(calculatePoistionFromPower(finalPower));
-            setPower(finalPower);
-        });
-
-        service.subscribe(Events.HITS, () => {
-            isManualDraggingRef.current = false;
-            setIsDragging(false);
-            setPixelOffset(0);
-            setPower(0);
-        });
     }, []);
 
     const calculatePosition = useCallback((clientY: number) => {
@@ -101,16 +84,13 @@ const PowerMeter = ({ service, position = "right" }: { service: MultiplayerServi
         };
 
         const handlePointerUp = () => {
-            if (!service.isMyTurn()) return;
+            if (!service.isMyTurn() || !isDragging || !isManualDraggingRef.current) return;
 
-            if (power >= 0.08) {
-                // service.call(Events.POWER_METER_HIT, { power: power / 100 });
-            }
-
-            setIsDragging(false);
-            isManualDraggingRef.current = false;
-            setPower(0);
+            service.call(Events.POWER_METER_HIT, { power: power / 100 });
+            setPower(0, true);
             setPixelOffset(0);
+            isManualDraggingRef.current = false;
+            setIsDragging(false);
         };
 
         if (isDragging) {

@@ -30,7 +30,7 @@ export class MultiplayerService extends LocalService {
     private eventHandlers = new Map<keyof EventsData, Set<(data: any) => void>>();
 
     override async connect(): Promise<boolean> {
-        const wsUrl = INIT_DISCORD_SDK ? `wss://${location.host}/.proxy/api/ws` : "wss://d8a685017363.ngrok-free.app/ws";
+        const wsUrl = INIT_DISCORD_SDK ? `wss://${location.host}/.proxy/api/ws` : "ws://localhost:6969/ws";
 
         try {
             if (!this.ws) this.ws = new WebSocket(wsUrl);

@@ -59,6 +59,7 @@ export enum Events {
     POWER_METER_HIT = "power-meter-hit",
     CHANGE_SPIN_POSITION = "change-spin-position",
     CHAT_MESSAGE = "chat-message",
+    CURRENT_PLAYER_CHANGE = "current-player-change",
 
     ERROR_ROOM_FULL = "error-room-full",
     SHOW_MODAL = "show-error-modal",

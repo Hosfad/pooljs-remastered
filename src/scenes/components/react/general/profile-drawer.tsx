@@ -1,6 +1,7 @@
 import { Experience } from "../../../../common";
 import type { MultiplayerService } from "../../../../services/multiplayer-service";
 import { Drawer } from "../ui/drawer";
+import { StatProgressBar } from "../ui/progress-bar";
 
 export function ProfileDrawer({
     isOpen,
@@ -47,36 +48,30 @@ export function ProfileDrawer({
 
                     <div className="col-span-8  space-y-4">
                         <div className="h-fit flex gap-4">
-                            <div className="flex-1  p-4 rounded-md bg-accent/10 border border-white/10">
-                                <p className="text-xs italic text-white mb-1">Level progress:</p>
-                                <div className="relative h-7 bg-accent/20 rounded-sm overflow-hidden ">
-                                    <div className="absolute inset-0 flex items-center justify-center z-10 text-xs italic font-bold text-white">
-                                        {expProgress}/{totalExp}
-                                    </div>
+                            <StatProgressBar
+                                label="Level progress:"
+                                currentValue={expProgress}
+                                maxValue={totalExp}
+                                percentage={expPercentage}
+                                icon="⭐"
+                                tooltipData={{
+                                    "Current EXP": expProgress.toString(),
+                                    Required: totalExp.toString(),
+                                    Remaining: remainingExp.toString(),
+                                }}
+                            />
 
-                                    <div className="absolute right-2 top-1 text-orange-500 text-sm">⭐</div>
-
-                                    <div
-                                        className="h-full bg-gradient-to-r from-lime-400 to-green-600"
-                                        style={{ width: `${expPercentage}%` }}
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex-1  p-4 rounded-md bg-accent/10 border border-white/10">
-                                <p className="text-xs italic text-white mb-1">Trophies:</p>
-                                <div className="relative h-7 bg-accent/20 rounded-sm overflow-hidden ">
-                                    <div className="absolute inset-0 flex items-center justify-center z-10 text-xs italic font-bold text-white">
-                                        1/8
-                                    </div>
-
-                                    <div className="absolute right-2  top-1 text-orange-500 text-sm">🏆</div>
-
-                                    <div
-                                        className="h-full bg-gradient-to-r from-lime-400 to-green-600"
-                                        style={{ width: `${trophiesPercentage}%` }}
-                                    />
-                                </div>
-                            </div>
+                            <StatProgressBar
+                                label="Trophies:"
+                                currentValue={1}
+                                maxValue={8}
+                                percentage={trophiesPercentage}
+                                icon="🏆"
+                                tooltipData={{
+                                    Trophies: "1",
+                                    Required: "8",
+                                }}
+                            />
                         </div>
 
                         <div className="h-auto p-3 rounded-md border bg-accent/10 border-white/10 space-y-3">

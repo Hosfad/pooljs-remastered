@@ -126,13 +126,16 @@ export class PoolGameScene extends Phaser.Scene {
             this.service.timerStart();
             this.isGameStarted = true;
         });
-
         this.service.subscribe(Events.PULL, ({ x, y, angle }) => {
             const target = this.denormalize(x, y);
             this.updateCueBullback(target.x, target.y, angle);
         });
 
         this.service.subscribe(Events.DRAG_POWER_METER, ({ power }) => this.setPower(power));
+
+        this.service.subscribe(Events.POWER_METER_HIT, ({ power }) => {
+            this.service.hitBalls(power, this.cue.rotation, this.cue.offset);
+        });
         this.service.subscribe(Events.CHANGE_SPIN_POSITION, ({ x, y }) => this.setSpinPosition(x, y));
 
         this.service.subscribe(Events.HITS, ({ keyPositions, state }) => {
@@ -210,8 +213,8 @@ export class PoolGameScene extends Phaser.Scene {
         const ROWS = 5;
         const r = BALL_RADIUS;
         const DIAMETER = r * 2;
-        const ROW_SPACING = DIAMETER * 1;
-        const COL_SPACING = DIAMETER * 1;
+        const ROW_SPACING = DIAMETER * 1.01;
+        const COL_SPACING = DIAMETER * 1.01;
 
         const rackOrigin = new Vector2(this.tableWidth / 4, this.tableHeight / 2);
         const solids = Object.values(POOL_ASSETS.SOLID);
@@ -369,8 +372,9 @@ export class PoolGameScene extends Phaser.Scene {
                         isSensor: !USE_MATTER_JS,
                         isStatic: true,
                         restitution: RAIL_RESTITUTION,
-                        friction: 0.1,
                         label: "cushion",
+                        friction: 0,
+                        frictionStatic: 0,
                     },
                     true
                 ),
@@ -428,12 +432,13 @@ export class PoolGameScene extends Phaser.Scene {
         const sprite = this.matter.add.sprite(position.x, position.y, texture);
         sprite.setDisplaySize(r * 2, r * 2);
         sprite.setBody(
-            { type: "circle", radius: BALL_RADIUS },
+            { type: "circle", radius: r },
             {
                 isSensor: !USE_MATTER_JS,
                 restitution: BALL_RESTITUTION,
                 friction: BALL_FRICTION,
                 frictionAir: CLOTH_ROLLING_RESISTANCE,
+                frictionStatic: 0,
                 mass: BALL_MASS_KG,
                 label: BALL_LABEL,
             }
@@ -705,6 +710,9 @@ export class PoolGameScene extends Phaser.Scene {
 
         const aimDir = new Vector2(Math.cos(angle), Math.sin(angle));
         const ballRadius = { x: BALL_RADIUS + 2, y: BALL_RADIUS + 2 };
+        const me = this.service.me();
+        const state = this.service.getCurrentRoom();
+        const myBallType = state?.players.find((p) => p.id === me.id)?.state.ballType;
 
         const currentPos = aimDir.clone().multiply(ballRadius).add({ x: ballX, y: ballY });
         const rayDirection = aimDir.clone();
@@ -758,39 +766,53 @@ export class PoolGameScene extends Phaser.Scene {
             const targetX = closestBallHitPos.x;
             const targetY = closestBallHitPos.y;
 
+            const isWrongBall = myBallType && hitBall.ballType !== myBallType;
+
             this.lineTo(targetX, targetY);
             this.strokePath();
 
-            this.aimLineShadow.strokeCircle(targetX, targetY, 5);
-            this.aimLine.strokeCircle(targetX, targetY, 5);
+            if (isWrongBall) {
+                // Draw blocked circle
+                const radius = 8;
+                // add a dark shadow like the line
+                this.lineStyle(2.5, 0xff0000); // Red
+                this.aimLine.strokeCircle(targetX, targetY, radius);
+                const slashOffset = radius * Math.cos(Math.PI / 4);
+                this.moveTo(targetX - slashOffset, targetY + slashOffset);
+                this.lineTo(targetX + slashOffset, targetY - slashOffset);
+                this.strokePath();
+            } else {
+                // Drawing prediction line
+                this.aimLineShadow.strokeCircle(targetX, targetY, 5);
+                this.aimLine.strokeCircle(targetX, targetY, 5);
 
-            // Drawing prediction line
-            const dx = hitBall.phaserSprite.x - targetX;
-            const dy = hitBall.phaserSprite.y - targetY;
+                const dx = hitBall.phaserSprite.x - targetX;
+                const dy = hitBall.phaserSprite.y - targetY;
 
-            const lineLength = BALL_RADIUS * 4;
-            const angle = Math.atan2(dy, dx);
+                const lineLength = BALL_RADIUS * 6;
+                const angle = Math.atan2(dy, dx);
 
-            const endX = targetX + Math.cos(angle) * lineLength;
-            const endY = targetY + Math.sin(angle) * lineLength;
+                const endX = targetX + Math.cos(angle) * lineLength;
+                const endY = targetY + Math.sin(angle) * lineLength;
 
-            this.moveTo(targetX, targetY);
-            this.lineTo(endX, endY);
-            this.strokePath();
+                this.moveTo(targetX, targetY);
+                this.lineTo(endX, endY);
+                this.strokePath();
 
-            let inc = Math.PI * 0.5;
-            if (dy < 0) inc = -inc;
-            if (dx > 0) inc = -inc;
+                let inc = Math.PI * 0.5;
+                if (dy < 0) inc = -inc;
+                if (dx > 0) inc = -inc;
 
-            // Drawing white ball prediction
-            const wAngle = Math.atan2(dy, dx) + inc;
+                // Drawing white ball prediction
+                const wAngle = Math.atan2(dy, dx) + inc;
 
-            const wendX = targetX + Math.cos(wAngle) * lineLength * 0.5;
-            const wendY = targetY + Math.sin(wAngle) * lineLength * 0.5;
+                const wendX = targetX + Math.cos(wAngle) * lineLength * 0.5;
+                const wendY = targetY + Math.sin(wAngle) * lineLength * 0.5;
 
-            this.moveTo(targetX, targetY);
-            this.lineTo(wendX, wendY);
-            this.strokePath();
+                this.moveTo(targetX, targetY);
+                this.lineTo(wendX, wendY);
+                this.strokePath();
+            }
         } else {
             // Hit wall
             const aimX = aimDir.x;

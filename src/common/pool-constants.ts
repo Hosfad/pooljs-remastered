@@ -89,30 +89,41 @@ const width = window.innerWidth;
 const targetWidth = 1920;
 const screenRatio = width / targetWidth;
 
-export const BALL_RADIUS = 12 * screenRatio;
-export const HOLE_RADIUS = 27 * screenRatio;
-
 // Real life physics constants
 
+export const PIXELS_PER_METER = 400;
+export const INCH_TO_METER = 0.0254;
+export const BALL_DIAMETER_IN = 2.25;
+export const BALL_RADIUS_PX = (BALL_DIAMETER_IN * INCH_TO_METER * PIXELS_PER_METER) / 2;
+
 const OZ_TO_KG = 0.0283495;
-const BALL_MASS_OZ = 12;
+const BALL_MASS_OZ = 6;
+
+export const BALL_RADIUS = BALL_RADIUS_PX;
+export const HOLE_RADIUS = 27 * screenRatio;
 
 export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;
 
 // Coefficients
 export const BALL_RESTITUTION = 0.998; // ball (e)
-export const BALL_FRICTION = 0.015; // ball (μ)
-export const CLOTH_ROLLING_RESISTANCE = 0.015; // cloth (frictionAir)
-export const RAIL_RESTITUTION = 0.999; // rail (e)
+export const BALL_FRICTION = 0.01; // ball (μ)
+export const CLOTH_ROLLING_RESISTANCE = 0.012; // cloth (frictionAir)
+export const RAIL_RESTITUTION = 0.75; // rail (e)
 
 // Physics constants
-export const MAX_POWER = 50;
+export const MAX_POWER = 60;
 export const MAX_STEPS = 600;
 export const TIMER_DURATION = 30;
 
 // Label Constants
 export const HOLE_LABEL = "hole";
 export const BALL_LABEL = "ball";
+
+// Velocity limits (stop deleting this, im trying something)
+export const MAX_SPEED_MPS = 8;
+export const PHYSICS_FPS = 60;
+export const METER_TO_PX_PER_FRAME = PIXELS_PER_METER / PHYSICS_FPS;
+export const MAX_SPIN_RAD_PER_SEC = 35;
 
 export const COLORS = {
     primary: "#2C5530",
