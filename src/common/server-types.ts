@@ -3,13 +3,13 @@ import type { BallType, KeyPositions } from "./pool-types";
 
 type MiddlewareResponse<TOutput> =
     | {
-          success: true;
-          data: TOutput;
-          error?: null;
-      }
+        success: true;
+        data: TOutput;
+        error?: null;
+    }
     | {
-          error: string;
-      };
+        error: string;
+    };
 
 export type Middleware<TInput, TOutput = unknown> = (
     data: TInput
@@ -103,7 +103,7 @@ export type EventsData = {
     [Events.HITS]: { keyPositions: KeyPositions; state: PoolState };
     [Events.PULL]: { x: number; y: number; angle: number; power: number };
     [Events.INIT]: Room;
-    [Events.HAND]: { x: number; y: number };
+    [Events.HAND]: { x: number; y: number, click: boolean };
 
     // UI UPDATES
     [Events.DROP_BALL]: { ballNumber: number | "white" | "black"; ballType: BallType };

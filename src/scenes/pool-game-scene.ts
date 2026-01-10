@@ -124,13 +124,8 @@ export class PoolGameScene extends Phaser.Scene {
         });
 
         this.service.subscribe(Events.PULL, ({ x, y, angle }) => {
-            const width = this.tableWidth;
-            const height = this.tableHeight;
-
-            const mx = this.marginX;
-            const my = this.marginY;
-
-            this.updateCueBullback(x * width + mx, y * height + my, angle);
+            const target = this.denormalize(x, y);
+            this.updateCueBullback(target.x, target.y, angle);
         });
 
         this.service.subscribe(Events.DRAG_POWER_METER, ({ power }) => this.setPower(power));
@@ -141,16 +136,22 @@ export class PoolGameScene extends Phaser.Scene {
             this.service.setState(state);
         });
 
-        this.service.subscribe(Events.HAND, ({ x, y }) => {
-            const width = this.tableWidth;
-            const height = this.tableHeight;
+        this.service.subscribe(Events.HAND, ({ x, y, click }) => {
+            const wb = this.balls.length - 1;
+            const whiteBall = this.balls[wb]!;
+            const { x: px, y: py } = this.denormalize(x, y);
 
-            const mx = this.marginX;
-            const my = this.marginY;
+            if (click) {
+                whiteBall.isPocketed = whiteBall.isAnimating = this.hand.visible = false;
+                whiteBall.phaserSprite.visible = true;
+                whiteBall.phaserSprite.setPosition(px, py);
+                this.service.setInHole(wb, false);
+            } else {
+                this.hand.setPosition(px, py);
+                whiteBall.phaserSprite.setPosition(px, py);
+                whiteBall.phaserSprite.visible = this.hand.visible = true;
+            }
 
-            const whiteBall = this.balls[this.balls.length - 1]!;
-            whiteBall.phaserSprite.setPosition(x * width + mx, y * height + my);
-            whiteBall.phaserSprite.visible = true;
         });
     }
 
@@ -521,6 +522,20 @@ export class PoolGameScene extends Phaser.Scene {
         return px >= left && px <= right && py >= top && py <= bottom;
     }
 
+    private normalize(x: number, y: number): { x: number; y: number } {
+        return {
+            x: (x - this.marginX) / this.tableWidth,
+            y: (y - this.marginY) / this.tableHeight
+        };
+    }
+
+    private denormalize(x: number, y: number): { x: number; y: number } {
+        return {
+            x: x * this.tableWidth + this.marginX,
+            y: y * this.tableHeight + this.marginY
+        };
+    }
+
     private setupInput(): void {
         this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
             if (MODAL_OPEN || !this.service.isMyTurn()) return;
@@ -531,12 +546,8 @@ export class PoolGameScene extends Phaser.Scene {
             const whiteBall = this.balls[this.balls.length - 1]!;
 
             if (whiteBall.isPocketed && this.canPlaceBall(px, py)) {
-                const mx = this.marginX;
-                const my = this.marginY;
-
-                this.hand.visible = true;
-                this.hand.setPosition(px, py);
-                this.service.moveHand((px - mx) / this.tableWidth, (py - my) / this.tableHeight);
+                const data = this.normalize(px, py);
+                this.service.moveHand(data.x, data.y, false);
                 return;
             }
 
@@ -555,10 +566,8 @@ export class PoolGameScene extends Phaser.Scene {
 
             // Hand Stuff
             if (whiteBall.isPocketed && this.canPlaceBall(px, py)) {
-                whiteBall.isPocketed = whiteBall.isAnimating = this.hand.visible = false;
-                whiteBall.phaserSprite.visible = true;
-                whiteBall.phaserSprite.setPosition(px, py);
-                this.service.setInHole(wb, false);
+                const data = this.normalize(px, py);
+                this.service.moveHand(data.x, data.y, true);
                 return;
             }
 
@@ -618,18 +627,13 @@ export class PoolGameScene extends Phaser.Scene {
 
         if (!this.cue.phaserSprite || !this.service.isMyTurn()) return;
 
-        const width = this.tableWidth;
-        const height = this.tableHeight;
-
-        const mx = this.marginX;
-        const my = this.marginY;
-
         const { x, y } = whiteBall.phaserSprite!;
 
         if (this.isMobile) {
             // Still show aim line with current angle
+            const data = this.normalize(x, y);
             this.drawAimLine(x, y, this.cue.rotation);
-            this.service.pull((x - mx) / width, (y - my) / height, this.cue.rotation, this.cue.power);
+            this.service.pull(data.x, data.y, this.cue.rotation, this.cue.power);
             return;
         }
 
@@ -660,8 +664,10 @@ export class PoolGameScene extends Phaser.Scene {
         }
 
         // Aim line
+        const data = this.normalize(x, y);
+
         this.drawAimLine(x, y, angle);
-        this.service.pull((x - mx) / width, (y - my) / height, angle, this.cue.power);
+        this.service.pull(data.x, data.y, angle, this.cue.power);
     }
 
     private lineStyle(width: number, color: number, alpha: number = 1): void {

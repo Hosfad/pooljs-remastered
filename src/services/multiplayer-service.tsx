@@ -169,9 +169,9 @@ export class MultiplayerService extends LocalService {
         this.call(Events.PULL, { x, y, angle, power }, BroadcastEvent.OTHERS);
     }
 
-    override moveHand(x: number, y: number): void {
-        this.send(Events.HAND, { x, y });
-        this.call(Events.HAND, { x, y }, BroadcastEvent.OTHERS);
+    override moveHand(x: number, y: number, click: boolean): void {
+        this.send(Events.HAND, { x, y, click });
+        this.call(Events.HAND, { x, y, click }, BroadcastEvent.OTHERS);
     }
 
     public isConnected(): boolean {

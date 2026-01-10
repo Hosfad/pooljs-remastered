@@ -41,7 +41,7 @@ export abstract class Service {
     abstract getState<T>(): T;
 
     abstract pull(x: number, y: number, angle: number, power: number): void;
-    abstract moveHand(x: number, y: number): void;
+    abstract moveHand(x: number, y: number, click: boolean): void;
 
     abstract timerStart(): void;
     abstract timerLeft(): number;

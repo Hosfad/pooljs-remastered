@@ -41,8 +41,8 @@ export class LocalService extends Service {
         });
     }
 
-    override moveHand(x: number, y: number): void {
-        this.send(Events.HAND, { x, y });
+    override moveHand(x: number, y: number, click: boolean): void {
+        this.send(Events.HAND, { x, y, click });
     }
 
     override setInHole(index: number, inHole: boolean): void {

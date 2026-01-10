@@ -105,7 +105,7 @@ export const RAIL_RESTITUTION = 0.85; // rail (e)
 
 // Physics constants
 export const MAX_POWER = 30;
-export const MAX_STEPS = 1000;
+export const MAX_STEPS = 600;
 export const TIMER_DURATION = 30;
 
 // Label Constants
