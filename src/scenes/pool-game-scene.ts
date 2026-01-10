@@ -87,7 +87,11 @@ export class PoolGameScene extends Phaser.Scene {
         this.createHand();
 
         // Setup input
-        this.registerEvents(new MultiplayerService(new PoolService(this)));
+        const pool = new PoolService(this, () => {
+            if (this.service.isMyTurn()) return;
+            this.service.hitBalls(0, 0);
+        });
+        this.registerEvents(new MultiplayerService(pool));
         this.setupInput();
         this.createCue();
 

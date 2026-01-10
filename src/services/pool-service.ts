@@ -36,7 +36,7 @@ export class PoolService {
     private turns: BallType[];
     private turnIndex = 0;
 
-    constructor(scene: PoolGameScene) {
+    constructor(scene: PoolGameScene, onTimerEnd: () => void) {
         this.scene = scene;
 
         this.balls = scene.balls;
@@ -54,7 +54,7 @@ export class PoolService {
             callback: () => {
                 if (++this.timerCount >= TIMER_DURATION) {
                     this.timerStop();
-                    console.log("Timer finished");
+                    onTimerEnd();
                 }
             },
             paused: true,
@@ -384,47 +384,26 @@ export class PoolService {
 
     public calculateShotPhysics(
         powerPercentage: number,
-
         angleRadians: number,
-
         horizontalOffset: number = 0,
-
         verticalOffset: number = 0
     ) {
-        const clampedPower = Phaser.Math.Clamp(powerPercentage, 0, 50);
-
-        let normalizedPower = clampedPower / 100;
-
-        normalizedPower = Math.pow(normalizedPower, 2);
-
+        const normalizedPower = Math.pow(powerPercentage, 2);
         const targetSpeedMps = normalizedPower * MAX_SPEED_MPS;
-
         const linearMagnitude = targetSpeedMps * METER_TO_PX_PER_FRAME;
-
         const horizontalSafeOffset = Phaser.Math.Clamp(horizontalOffset, -0.8, 0.8);
-
         const angularVelocity = normalizedPower * horizontalSafeOffset * MAX_SPIN_RAD_PER_SEC;
 
         // TODO: adjust this depending on the sticks spin efficiency (pay to win xD)
 
         const deflectionAmount = 0;
-
-        const deflectedVx = Math.cos(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
-
-        const deflectedVy = Math.sin(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
+        const deflection = angleRadians - horizontalSafeOffset * deflectionAmount;
+        const deflectedVx = Math.cos(deflection) * linearMagnitude;
+        const deflectedVy = Math.sin(deflection) * linearMagnitude;
 
         const verticalSafeOffset = Phaser.Math.Clamp(verticalOffset, -0.8, 0.8);
-
         const verticalVelocity = normalizedPower * verticalSafeOffset * MAX_SPIN_RAD_PER_SEC;
 
-        return {
-            x: deflectedVx,
-
-            y: deflectedVy,
-
-            angular: angularVelocity,
-
-            vertical: verticalVelocity,
-        };
+        return { x: deflectedVx, y: deflectedVy, angular: angularVelocity, vertical: verticalVelocity };
     }
 }
