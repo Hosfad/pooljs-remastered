@@ -3,10 +3,7 @@ import {
     BALL_RADIUS,
     HOLE_LABEL,
     MAX_POWER,
-    MAX_SPEED_MPS,
-    MAX_SPIN_RAD_PER_SEC,
     MAX_STEPS,
-    METER_TO_PX_PER_FRAME,
     TIMER_DURATION,
     USE_MATTER_JS,
 } from "../common/pool-constants";
@@ -380,30 +377,5 @@ export class PoolService {
             if (intersect) inside = !inside;
         }
         return inside;
-    }
-
-    public calculateShotPhysics(
-        powerPercentage: number,
-        angleRadians: number,
-        horizontalOffset: number = 0,
-        verticalOffset: number = 0
-    ) {
-        const normalizedPower = Math.pow(powerPercentage, 2);
-        const targetSpeedMps = normalizedPower * MAX_SPEED_MPS;
-        const linearMagnitude = targetSpeedMps * METER_TO_PX_PER_FRAME;
-        const horizontalSafeOffset = Phaser.Math.Clamp(horizontalOffset, -0.8, 0.8);
-        const angularVelocity = normalizedPower * horizontalSafeOffset * MAX_SPIN_RAD_PER_SEC;
-
-        // TODO: adjust this depending on the sticks spin efficiency (pay to win xD)
-
-        const deflectionAmount = 0;
-        const deflection = angleRadians - horizontalSafeOffset * deflectionAmount;
-        const deflectedVx = Math.cos(deflection) * linearMagnitude;
-        const deflectedVy = Math.sin(deflection) * linearMagnitude;
-
-        const verticalSafeOffset = Phaser.Math.Clamp(verticalOffset, -0.8, 0.8);
-        const verticalVelocity = normalizedPower * verticalSafeOffset * MAX_SPIN_RAD_PER_SEC;
-
-        return { x: deflectedVx, y: deflectedVy, angular: angularVelocity, vertical: verticalVelocity };
     }
 }

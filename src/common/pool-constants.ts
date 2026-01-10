@@ -97,6 +97,8 @@ export const HOLE_RADIUS = 25 * screenRatio;
 const OZ_TO_KG = 0.0283495;
 const BALL_MASS_OZ = 6;
 
+export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;
+
 // Coefficients
 export const BALL_RESTITUTION = 0.998; // ball (e)
 export const BALL_FRICTION = 0.01; // ball (μ)
@@ -111,17 +113,6 @@ export const TIMER_DURATION = 30;
 // Label Constants
 export const HOLE_LABEL = "hole";
 export const BALL_LABEL = "ball";
-
-// Velocity limits
-
-const PIXELS_PER_METER = 400;
-const PHYSICS_FPS = 60;
-
-export const MAX_SPEED_MPS = 16;
-export const METER_TO_PX_PER_FRAME = PIXELS_PER_METER / PHYSICS_FPS;
-export const MAX_SPIN_RAD_PER_SEC = 35;
-
-export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;
 
 export const COLORS = {
     primary: "#2C5530",
