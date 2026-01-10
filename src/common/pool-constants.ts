@@ -3,6 +3,7 @@
  */
 export let DEBUG_GRAPHICS = true;
 export let USE_MATTER_JS = true;
+export let USE_REALISTIC_PHYSICS = false;
 export let INIT_DISCORD_SDK = false;
 
 export let MODAL_OPEN: boolean = false;
@@ -91,16 +92,16 @@ const screenRatio = width / targetWidth;
 
 // Real life physics constants
 
-export const PIXELS_PER_METER = 400;
-export const INCH_TO_METER = 0.0254;
-export const BALL_DIAMETER_IN = 2.25;
-export const BALL_RADIUS_PX = (BALL_DIAMETER_IN * INCH_TO_METER * PIXELS_PER_METER) / 2;
+const PIXELS_PER_METER = 400;
+const INCH_TO_METER = 0.0254;
+const BALL_DIAMETER_IN = 2.25;
+const BALL_RADIUS_PX = (BALL_DIAMETER_IN * INCH_TO_METER * PIXELS_PER_METER) / 2;
+
+export const BALL_RADIUS = USE_REALISTIC_PHYSICS ? BALL_RADIUS_PX : 18 * screenRatio;
+export const HOLE_RADIUS = 27 * screenRatio;
 
 const OZ_TO_KG = 0.0283495;
 const BALL_MASS_OZ = 6;
-
-export const BALL_RADIUS = 18 * screenRatio;
-export const HOLE_RADIUS = 27 * screenRatio;
 
 export const BALL_MASS_KG = BALL_MASS_OZ * OZ_TO_KG;
 

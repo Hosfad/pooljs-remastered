@@ -21,7 +21,7 @@ import {
     RAIL_RESTITUTION,
     USE_MATTER_JS,
 } from "../common/pool-constants";
-import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyPositions } from "../common/pool-types";
+import { type Ball, type BallType, type Collider, type Cue, type Hole, type KeyPositions, type Vectorlike } from "../common/pool-types";
 import { Events } from "../common/server-types";
 import { MultiplayerService } from "../services/multiplayer-service.tsx";
 import { PoolService } from "../services/pool-service";
@@ -196,7 +196,7 @@ export class PoolGameScene extends Phaser.Scene {
         );
     }
 
-    private toTableCoordinates(x: number, y: number): { x: number; y: number } {
+    private toTableCoordinates(x: number, y: number): Vectorlike {
         return { x: this.marginX + x, y: this.marginY + y };
     }
 
@@ -532,14 +532,14 @@ export class PoolGameScene extends Phaser.Scene {
         return px >= left && px <= right && py >= top && py <= bottom;
     }
 
-    private normalize(x: number, y: number): { x: number; y: number } {
+    private normalize(x: number, y: number): Vectorlike {
         return {
             x: (x - this.marginX) / this.tableWidth,
             y: (y - this.marginY) / this.tableHeight,
         };
     }
 
-    private denormalize(x: number, y: number): { x: number; y: number } {
+    private denormalize(x: number, y: number): Vectorlike {
         return {
             x: x * this.tableWidth + this.marginX,
             y: y * this.tableHeight + this.marginY,

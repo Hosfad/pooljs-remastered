@@ -10,8 +10,9 @@ import {
     METER_TO_PX_PER_FRAME,
     TIMER_DURATION,
     USE_MATTER_JS,
+    USE_REALISTIC_PHYSICS,
 } from "../common/pool-constants";
-import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
+import type { Ball, BallType, Collider, Collision, Hole, KeyPositions, Vectorlike } from "../common/pool-types";
 import type { PoolState } from "../common/server-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
 
@@ -108,11 +109,11 @@ export class PoolService {
         return this.turns[this.turnIndex] as BallType;
     }
 
-    public hitBalls(powerPercent: number, angle: number, offset: { x: number; y: number }): KeyPositions {
+    public hitBalls(powerPercent: number, angle: number, offset: Vectorlike): KeyPositions {
         const wb = this.balls.length - 1;
         const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
 
-        const physics = this.calculateShotPhysics(powerPercent, angle, offset, false);
+        const physics = this.calculateShotPhysics(powerPercent, angle, offset);
         velocities[wb]!.set(physics.x, physics.y);
 
         if (USE_MATTER_JS) {
@@ -389,7 +390,7 @@ export class PoolService {
         return keyPositions;
     }
 
-    private getNormal(b: Phaser.Math.Vector2, collider: Collider): { x: number; y: number } {
+    private getNormal(b: Phaser.Math.Vector2, collider: Collider): Vectorlike {
         const { sprite: { size: { points } } } = collider;
 
         let minDistance = Infinity;
@@ -435,13 +436,8 @@ export class PoolService {
         return inside;
     }
 
-    private calculateShotPhysics(
-        powerPercentage: number,
-        angleRadians: number,
-        offset: { x: number; y: number },
-        firasVersion: boolean = true
-    ): Physics {
-        if (firasVersion) {
+    private calculateShotPhysics(powerPercentage: number, angleRadians: number, offset: Vectorlike): Physics {
+        if (USE_REALISTIC_PHYSICS) {
             const normalizedPower = Math.pow(Phaser.Math.Clamp(powerPercentage, 0, MAX_POWER / 100), 2);
 
             const targetSpeedMps = normalizedPower * MAX_SPEED_MPS;
