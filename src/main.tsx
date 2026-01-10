@@ -33,6 +33,9 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
     },
     antialias: false,
 
+    antialias: false,
+    antialiasGL: false,
+
     scene: [PoolPreLoadScene, PoolGameScene],
 };
 

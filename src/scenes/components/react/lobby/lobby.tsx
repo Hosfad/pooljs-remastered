@@ -82,6 +82,7 @@ export function Lobby({ service }: { service: MultiplayerService }) {
         if (!currentPlayerIsHost || !currentPlayer || !room) return;
         service.call(Events.KICK_PLAYER, { kickTargetId: id });
     };
+
     const spectators = room?.players.filter((p) => p.isSpectator) ?? [];
 
     return (
@@ -211,8 +212,8 @@ export function Lobby({ service }: { service: MultiplayerService }) {
                                             {otherPlayer
                                                 ? "Ready to play"
                                                 : lobbyState === "matchmaking"
-                                                ? "Searching..."
-                                                : "Empty slot"}
+                                                    ? "Searching..."
+                                                    : "Empty slot"}
                                         </p>
                                     </div>
                                 </div>

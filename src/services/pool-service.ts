@@ -1,6 +1,8 @@
 import * as Phaser from "phaser";
 import {
+    BALL_LABEL,
     BALL_RADIUS,
+    CUSH_LABEL,
     HOLE_LABEL,
     MAX_POWER,
     MAX_SPEED_MPS,
@@ -9,12 +11,20 @@ import {
     METER_TO_PX_PER_FRAME,
     TIMER_DURATION,
     USE_MATTER_JS,
+    USE_REALISTIC_PHYSICS,
 } from "../common/pool-constants";
-import type { Ball, BallType, Collider, Collision, Hole, KeyPositions } from "../common/pool-types";
+import type { Ball, BallType, Collider, Collision, Hole, KeyPositions, Vectorlike } from "../common/pool-types";
 import type { PoolState } from "../common/server-types";
 import type { PoolGameScene } from "../scenes/pool-game-scene";
 
 export const Vector2 = Phaser.Math.Vector2;
+
+interface Physics {
+    x: number;
+    y: number;
+    angular: number;
+    vertical: number;
+}
 
 type Scores = Record<BallType, number>;
 
@@ -36,7 +46,9 @@ export class PoolService {
     private turns: BallType[];
     private turnIndex = 0;
 
-    constructor(scene: PoolGameScene, onTimerEnd: () => void) {
+    private onNextPlayer: () => void;
+
+    constructor(scene: PoolGameScene, onTimerEnd: () => void, onNextPlayer: () => void) {
         this.scene = scene;
 
         this.balls = scene.balls;
@@ -60,6 +72,8 @@ export class PoolService {
             paused: true,
             loop: true,
         });
+
+        this.onNextPlayer = onNextPlayer;
     }
 
     public winner(): string | undefined {
@@ -100,26 +114,19 @@ export class PoolService {
         return this.turns[this.turnIndex] as BallType;
     }
 
-    public hitBalls(powerPercent: number, angle: number, offset: { x: number; y: number }): KeyPositions {
+    public hitBalls(powerPercent: number, angle: number, offset: Vectorlike): KeyPositions {
         const wb = this.balls.length - 1;
-        const power = powerPercent;
         const velocities = Array.from({ length: this.balls.length }, () => new Vector2());
 
-        const squirtAmount = 0.01; // pay 2 win
-        const adjustedAngle = angle - offset.x * squirtAmount;
-
-        const velX = power * Math.cos(adjustedAngle);
-        const velY = power * Math.sin(adjustedAngle);
-
-        const firasVelocities = this.calculateShotPhysics(powerPercent * 100, adjustedAngle, offset.x, offset.y);
-
-        velocities[wb]!.set(firasVelocities.x, firasVelocities.y);
+        const physics = this.calculateShotPhysics(powerPercent, angle, offset);
+        velocities[wb]!.set(physics.x, physics.y);
 
         if (USE_MATTER_JS) {
             const wbody = this.balls[wb]!.phaserSprite.body as MatterJS.BodyType;
-            this.scene.matter.body.setVelocity(wbody, { x: firasVelocities.x, y: firasVelocities.y });
-            // this.scene.matter.body.setAngularVelocity(wbody, firasVelocities.angular);
-            // (wbody as any).verticalSpin = firasVelocities.vertical;
+            this.scene.matter.body.setVelocity(wbody, { x: physics.x, y: physics.y });
+            this.scene.matter.body.setAngularVelocity(wbody, physics.angular);
+            // Is physics.vertical is 0, there is no vertical spin
+            (wbody as any).verticalSpin = physics.vertical;
         }
 
         const turn = this.whoseTurn();
@@ -128,12 +135,20 @@ export class PoolService {
 
         this.balls.forEach((b, i) => {
             const key = keyPositions[0]![i]!;
+            const body = b.phaserSprite.body as MatterJS.BodyType;
+
             b.phaserSprite.setPosition(key.position.x, key.position.y);
             b.phaserSprite.visible = !key.hidden;
+
+            if (USE_MATTER_JS && body) {
+                this.scene.matter.body.setVelocity(body, { x: 0, y: 0 });
+                this.scene.matter.body.setAngularVelocity(body, 0);
+            }
         });
 
-        if ((this.players[turn] == points && !this.winner()) || this.balls[wb]!.isPocketed) {
+        if ((this.players[turn] == points && !this.winner()) || this.inHole[wb]) {
             this.turnIndex = (this.turnIndex + 1) % this.turns.length;
+            this.onNextPlayer();
         }
 
         return keyPositions;
@@ -303,8 +318,10 @@ export class PoolService {
 
     private matter_simulate(): KeyPositions {
         const keyPositions: KeyPositions = [this.getKeyPosition()];
-        const frameRate = 16.66;
+        const frameRate = 16.66 * 0.5;
         const minVelocity = 0.1;
+
+        let firstHit: BallType | undefined;
 
         const applyVerticalSpin = (body: MatterJS.BodyType) => {
             const vspin = (body as any).verticalSpin;
@@ -322,14 +339,43 @@ export class PoolService {
             event.pairs.forEach((pair) => {
                 const { bodyA, bodyB } = pair;
 
-                if (bodyA.label === HOLE_LABEL || bodyB.label === HOLE_LABEL) {
-                    const targetBody = bodyA.label === HOLE_LABEL ? bodyB : bodyA;
-                    const ball = this.balls.findIndex((b) => b.phaserSprite.body === targetBody);
-                    if (ball >= 0) this.inHole[ball] = true;
-                } else {
-                    // applyVerticalSpin(bodyA);
-                    // applyVerticalSpin(bodyB);
+                let targetBody: MatterJS.BodyType;
+                let ballIdx: number;
+
+                switch (bodyA.label + bodyB.label) {
+                    case HOLE_LABEL + BALL_LABEL:
+                    case BALL_LABEL + HOLE_LABEL:
+                        targetBody = bodyA.label === HOLE_LABEL ? bodyB : bodyA;
+                        ballIdx = this.balls.findIndex((b) => b.phaserSprite.body === targetBody);
+
+                        if (ballIdx >= 0) {
+                            this.inHole[ballIdx] = true;
+                            this.collisions[ballIdx] = "hole";
+                            this.players[this.balls[ballIdx]!.ballType]++;
+                        }
+                        return;
+                    case BALL_LABEL + BALL_LABEL:
+                        const ballAIdx = this.balls.findIndex((b) => b.phaserSprite.body === bodyA);
+                        this.collisions[ballAIdx] = "ball";
+
+                        if (!firstHit) {
+                            const ballBIdx = this.balls.findIndex((b) => b.phaserSprite.body === bodyB);
+
+                            const wb = this.balls.length - 1;
+                            if (ballAIdx === wb || ballBIdx === wb) {
+                                firstHit = this.balls[ballAIdx === wb ? ballBIdx : ballAIdx]!.ballType;
+                            }
+                        }
+                        break;
+                    default: // Cushion & Ball
+                        targetBody = bodyA.label === CUSH_LABEL ? bodyB : bodyA;
+                        ballIdx = this.balls.findIndex((b) => b.phaserSprite.body === targetBody);
+                        this.collisions[ballIdx] = "wall";
+                        break;
                 }
+
+                applyVerticalSpin(bodyA);
+                applyVerticalSpin(bodyB);
             });
         };
 
@@ -337,6 +383,7 @@ export class PoolService {
 
         for (let step = 0; step < MAX_STEPS; step++) {
             let anyMoving = false;
+            this.collisions.length = 0;
 
             for (let i = 0; i < this.balls.length; i++) {
                 const ball = this.balls[i]!;
@@ -358,17 +405,17 @@ export class PoolService {
 
         this.scene.matter.world.off("collisionstart", collisionListener);
 
+        if (!firstHit || firstHit !== this.whoseTurn()) {
+            this.inHole[this.balls.length - 1] = true; // whiteball free hand
+            keyPositions.push(this.getKeyPosition());
+        }
+
         return keyPositions;
     }
 
-    private getNormal(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): { x: number; y: number } {
+    private getNormal(b: Phaser.Math.Vector2, collider: Collider): Vectorlike {
+        const { sprite: { size: { points } } } = collider;
+
         let minDistance = Infinity;
         let closestNormal = { x: 0, y: 1 };
 
@@ -393,15 +440,8 @@ export class PoolService {
         return closestNormal;
     }
 
-    public isPointInPolygon(
-        b: Phaser.Math.Vector2,
-        {
-            sprite: {
-                size: { points },
-            },
-        }: Collider
-    ): boolean {
-        const { x, y } = b;
+    public isPointInPolygon({ x, y }: Phaser.Math.Vector2, collider: Collider): boolean {
+        const { sprite: { size: { points } } } = collider;
 
         let inside = false;
         for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
@@ -419,38 +459,41 @@ export class PoolService {
         return inside;
     }
 
-    private calculateShotPhysics(
-        powerPercentage: number,
-        angleRadians: number,
-        horizontalOffset: number = 0,
-        verticalOffset: number = 0
-    ) {
-        const clampedPower = Phaser.Math.Clamp(powerPercentage, 0, MAX_POWER);
-        let normalizedPower = clampedPower / 100;
+    private calculateShotPhysics(powerPercentage: number, angleRadians: number, offset: Vectorlike): Physics {
+        if (USE_REALISTIC_PHYSICS) {
+            const normalizedPower = Math.pow(Phaser.Math.Clamp(powerPercentage, 0, MAX_POWER / 100), 2);
 
-        normalizedPower = Math.pow(normalizedPower, 2);
+            const targetSpeedMps = normalizedPower * MAX_SPEED_MPS;
+            const linearMagnitude = targetSpeedMps * METER_TO_PX_PER_FRAME;
 
-        const targetSpeedMps = normalizedPower * MAX_SPEED_MPS;
-        const linearMagnitude = targetSpeedMps * METER_TO_PX_PER_FRAME;
+            const horizontalSafeOffset = Phaser.Math.Clamp(offset.x, -0.8, 0.8);
+            const angularVelocity = normalizedPower * horizontalSafeOffset * MAX_SPIN_RAD_PER_SEC;
 
-        const horizontalSafeOffset = Phaser.Math.Clamp(horizontalOffset, -0.8, 0.8);
+            // TODO: adjust this depending on the sticks spin efficiency (pay to win xD)
+            const deflectionAmount = 0;
+            const deflectedVx = Math.cos(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
+            const deflectedVy = Math.sin(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
 
-        const angularVelocity = normalizedPower * horizontalSafeOffset * MAX_SPIN_RAD_PER_SEC;
+            const verticalSafeOffset = Phaser.Math.Clamp(offset.y, -0.8, 0.8);
+            const verticalVelocity = normalizedPower * verticalSafeOffset * MAX_SPIN_RAD_PER_SEC;
 
-        // TODO: adjust this depending on the sticks spin efficiency (pay to win xD)
-        const deflectionAmount = 0;
-        const deflectedVx = Math.cos(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
-        const deflectedVy = Math.sin(angleRadians - horizontalSafeOffset * deflectionAmount) * linearMagnitude;
+            return {
+                x: deflectedVx,
+                y: deflectedVy,
+                angular: angularVelocity,
+                vertical: verticalVelocity,
+            };
+        }
 
-        const verticalSafeOffset = Phaser.Math.Clamp(verticalOffset, -0.8, 0.8);
-
-        const verticalVelocity = normalizedPower * verticalSafeOffset * MAX_SPIN_RAD_PER_SEC;
+        const squirtAmount = 0.01; // pay 2 win
+        const adjustedAngle = angleRadians - offset.x * squirtAmount;
+        const power = powerPercentage * MAX_POWER;
 
         return {
-            x: deflectedVx,
-            y: deflectedVy,
-            angular: angularVelocity,
-            vertical: verticalVelocity,
+            x: power * Math.cos(adjustedAngle),
+            y: power * Math.sin(adjustedAngle),
+            angular: offset.x * 0.02,
+            vertical: offset.y,
         };
     }
 }
