@@ -60,7 +60,6 @@ export const UIProvider: React.FC<UIProviderProps> = ({ service, children }) => 
             const { ballNumber, ballType } = body;
             dropBall(ballNumber, ballType);
 
-            console.log("Dropped ball", ballNumber, ballType);
             if (ballType === "white") {
                 setTimeout(() => {
                     // remove white ball from pocket

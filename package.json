@@ -24,15 +24,19 @@
     },
     "dependencies": {
         "@discord/embedded-app-sdk": "^2.4.0",
+        "@react-three/drei": "^10.7.7",
         "@tailwindcss/vite": "^4.1.18",
+        "@types/three": "^0.182.0",
         "express": "^5.2.1",
         "framer-motion": "^12.23.26",
+        "jszip": "^3.10.1",
         "lucide-react": "^0.562.0",
         "phaser": "3.87.0",
         "playroomkit": "0.0.81",
         "react": "18.3.1",
         "react-dom": "18.3.1",
         "react-router-dom": "^7.11.0",
+        "three": "^0.182.0",
         "webfontloader": "1.6.28",
         "ws": "^8.18.3"
     }

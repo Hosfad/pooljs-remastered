@@ -18,6 +18,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { DEBUG_GRAPHICS, INIT_DISCORD_SDK } from "../common/pool-constants";
 import { Lobby } from "../scenes/components/react/lobby/lobby";
 
+import ThreeScene from "../scenes/components/react/ball-model";
 import MainScreen from "../scenes/components/react/general/main-screen";
 import { UIProvider } from "../scenes/components/react/provider";
 
@@ -48,6 +49,7 @@ export class MultiplayerService extends LocalService {
                                     <Routes>
                                         <Route path="/" element={<MainScreen service={this} />}></Route>
                                         <Route path="/lobby" element={<Lobby service={this} />}></Route>
+                                        {DEBUG_GRAPHICS && <Route path="/ball-sim" element={<ThreeScene />}></Route>}
                                         {/* <Route path="/tournaments" element={<TournamentLobby />}></Route> */}
                                     </Routes>
                                 </BrowserRouter>
