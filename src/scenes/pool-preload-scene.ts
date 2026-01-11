@@ -11,14 +11,15 @@ export class PoolPreLoadScene extends Phaser.Scene {
         this.load.image(POOL_ASSETS.LOADING_BACKGROUND, "/images/loading-background.png");
 
         // BALLS
-        this.load.svg(POOL_ASSETS.WHITE_BALL, "/game/balls/white.svg");
-        this.load.svg(POOL_ASSETS.BLACK_BALL, "/game/balls/black.svg");
+        const grid = { frameWidth: 256, frameHeight: 256 };
+        this.load.spritesheet(POOL_ASSETS.WHITE_BALL, "/game/balls/ball_1.png", grid);
+        this.load.spritesheet(POOL_ASSETS.BLACK_BALL, "/game/balls/ball_black.png", grid);
 
         const solid = Object.values(POOL_ASSETS.SOLID);
         const stripes = Object.values(POOL_ASSETS.STRIPES);
         for (let i = 0; i < solid.length; i++) {
-            this.load.svg(solid[i]!, `/game/balls/${i + 1}.svg`);
-            this.load.svg(stripes[i]!, `/game/balls/${i + stripes.length + 2}.svg`);
+            this.load.spritesheet(solid[i]!, `/game/balls/ball_${i + 1}.png`, grid);
+            this.load.spritesheet(stripes[i]!, `/game/balls/ball_${i + stripes.length + 2}.png`, grid);
         }
 
         this.load.image(POOL_ASSETS.BACKGROUND, "/game/background.png");

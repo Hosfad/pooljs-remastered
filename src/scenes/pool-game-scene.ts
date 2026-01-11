@@ -26,6 +26,7 @@ import { Events } from "../common/server-types";
 import { MultiplayerService } from "../services/multiplayer-service.tsx";
 import { PoolService } from "../services/pool-service";
 import { DebugPanelModal } from "./components/debug-panel-modal";
+import { round } from "three/tsl";
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -62,6 +63,8 @@ export class PoolGameScene extends Phaser.Scene {
     private aimLine!: Phaser.GameObjects.Graphics;
     private aimLineShadow!: Phaser.GameObjects.Graphics;
     private isMobile = false;
+
+    private frame = 0;
 
     constructor() {
         super({ key: POOL_SCENE_KEYS.POOL_GAME });
@@ -212,6 +215,7 @@ export class PoolGameScene extends Phaser.Scene {
 
     public override update(): void {
         if (!this.isGameStarted) return;
+        this.frame++;
 
         this.input.enabled = !this.keyPositions.length;
         this.updateCue();
@@ -418,7 +422,25 @@ export class PoolGameScene extends Phaser.Scene {
 
             // increment rotation angle of sprite
             const spd = Math.abs(pos.x + pos.y - (sprite.x + sprite.y));
-            if (spd != 0) sprite.rotation += (spd / BALL_RADIUS) * 2;
+
+            if (spd != 0) {
+                const every = Math.round(BALL_RADIUS / (spd * 2));
+                const isUpdateFrame = this.frame % every == 0;
+
+                if (isUpdateFrame) {
+                    const maxFrame = 9;
+                    const frame = parseInt(sprite.frame.name);
+
+                    const nextFrame = frame + ball.frameDirection;
+                    sprite.rotation += spd / (BALL_RADIUS * 2);
+
+                    if (nextFrame < 0 || nextFrame > maxFrame) ball.frameDirection *= -1;
+
+                    sprite.flipY = ball.frameDirection < 0;
+                    sprite.setFrame(Math.min(Math.max(nextFrame, 0), maxFrame));
+                }
+
+            }
             sprite.setPosition(pos.x, pos.y);
 
             if (this.playedSounds[i] === undefined && collision !== undefined) {
@@ -455,7 +477,7 @@ export class PoolGameScene extends Phaser.Scene {
             }
         );
 
-        this.balls.push({ ballType, phaserSprite: sprite, isPocketed: false, isAnimating: false });
+        this.balls.push({ ballType, phaserSprite: sprite, isPocketed: false, isAnimating: false, frameDirection: 1 });
     }
 
     private createHoles(): void {
